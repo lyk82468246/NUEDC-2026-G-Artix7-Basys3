@@ -17,7 +17,7 @@ AFE_Capture --(adc_clk, 4.096 MHz)--> BRAM_TimeDomain
 
 - `sources/rtl/AFE_Capture.v`：ADC 格式转换、FIR 例化、慢速 DC 跟踪、过零触发和 8192 点写入。
 - `sources/rtl/Time_Domain_Calc.v`：BRAM 遍历、signed max/min、平方累加、CORDIC 开方。
-- `sources/rtl/BRAM_TimeDomain.v`：8192 x 16-bit 双时钟真双口 BRAM 推断模板。
+- `sources/rtl/BRAM_TimeDomain.v`：8192 x 16-bit 双时钟时域缓存；当前为一个 ADC 写口加三份独立同步读副本，分别服务时域统计、FFT 和 HMI。
 - `sources/rtl/Capture_Calc_Subsystem.v`：本阶段临时联调封装，不含 MMCM 和板级引脚。
 - `sources/coeffs/fir_lp_600k_95t.coe`：95 个实数 FIR 系数，按 Q1.15 量化。
 - `scripts/setup_capture_calc.tcl`：加入 RTL、创建/配置 IP、生成 IP 输出并设置临时 top。
