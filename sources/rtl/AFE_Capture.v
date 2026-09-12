@@ -11,8 +11,9 @@
 //   5) 从过零点开始，将连续 8192 个 16-bit 有符号采样写入时域 BRAM。
 //
 // 时钟域：
-//   本模块所有逻辑均工作在 adc_clk 域。adc_clk 应为 AD9226 的 4.096 MHz
-//   随路采样时钟（或由 MMCM 产生的等效时钟）。
+//   本模块所有逻辑均工作在 adc_clk 端口所接入的处理时钟域。最终板级顶层
+//   将该端口接到 100 MHz 全局算法时钟，并通过 sample_valid 输入逐样本驱动
+//   FIR；AD9226 的实际 4.096 MHz 随路时钟由 ADC_Input_CDC 在 BUFR 域采样。
 //
 // 关于 FIR IP：
 //   本文件约定工程中存在一个名为 fir_compiler_lp_600k 的 FIR Compiler IP，
@@ -44,6 +45,7 @@ module AFE_Capture #(
     input  wire                         adc_clk,
     input  wire                         rst,                 // 高有效同步复位
     input  wire [ADC_WIDTH-1:0]         adc_data,
+    input  wire                         sample_valid,
 
     // 时域 BRAM 写端口。BRAM_TimeDomain 使用 wr_en/wr_addr/wr_data。
     output reg                          bram_wr_en,
@@ -95,8 +97,9 @@ module AFE_Capture #(
     wire signed [FIR_DATA_WIDTH-1:0]  fir_output_s;
     wire                              fir_output_fire;
 
-    // ADC 数据持续送入 FIR；FIR 应配置为单速率、吞吐率 1 sample/clock。
-    assign fir_s_axis_tvalid = ~rst;
+    // FIR 工作在 100 MHz，但只在 ADC_Input_CDC 提供有效样本时推进一个
+    // single-rate sample。AXI4-Stream valid 间隙不会改变 FIR 的状态序列。
+    assign fir_s_axis_tvalid = sample_valid && ~rst;
     assign fir_s_axis_tdata  = adc_fir_input_s;
     assign fir_m_axis_tready = 1'b1;
     assign fir_output_s      = fir_m_axis_tdata;

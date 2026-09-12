@@ -78,8 +78,9 @@ module Time_Domain_Calc #(
     localparam [2:0] ST_IDLE         = 3'd0;
     localparam [2:0] ST_READ_REQUEST = 3'd1;
     localparam [2:0] ST_PROCESS      = 3'd2;
-    localparam [2:0] ST_CORDIC_SEND  = 3'd3;
-    localparam [2:0] ST_CORDIC_WAIT  = 3'd4;
+    localparam [2:0] ST_ACCUMULATE   = 3'd3;
+    localparam [2:0] ST_CORDIC_SEND  = 3'd4;
+    localparam [2:0] ST_CORDIC_WAIT  = 3'd5;
 
     reg [2:0] state;
     reg [ADDR_WIDTH-1:0] sample_count;
@@ -87,6 +88,8 @@ module Time_Domain_Calc #(
     reg signed [DATA_WIDTH-1:0] max_value_s;
     reg signed [DATA_WIDTH-1:0] min_value_s;
     reg        [SUM_WIDTH-1:0]  sum_square;
+    reg signed [DATA_WIDTH-1:0] sample_data_reg;
+    reg        [(2*DATA_WIDTH)-1:0] sample_square_reg;
 
     // bram_rd_en 为组合译码信号：进入 READ_REQUEST 后，BRAM 在该周期结束
     // 的时钟沿采样地址，下一拍进入 PROCESS 时数据可被逻辑使用。
@@ -100,7 +103,7 @@ module Time_Domain_Calc #(
     wire        [SUM_WIDTH-1:0]      mean_square_wide;
 
     assign sample_product_s = $signed(bram_rd_data) * $signed(bram_rd_data);
-    assign sample_square    = sample_product_s[(2*DATA_WIDTH)-1:0];
+    assign sample_square    = sample_square_reg;
     assign sample_square_ext = {{(SUM_WIDTH-(2*DATA_WIDTH)){1'b0}},
                                  sample_square};
     assign sum_square_next  = sum_square + sample_square_ext;
@@ -112,10 +115,10 @@ module Time_Domain_Calc #(
     wire signed [DATA_WIDTH-1:0] min_after_sample_s;
     wire signed [DATA_WIDTH:0]   vpp_candidate_s;
 
-    assign max_after_sample_s = (bram_rd_data > max_value_s) ?
-                                bram_rd_data : max_value_s;
-    assign min_after_sample_s = (bram_rd_data < min_value_s) ?
-                                bram_rd_data : min_value_s;
+    assign max_after_sample_s = (sample_data_reg > max_value_s) ?
+                                sample_data_reg : max_value_s;
+    assign min_after_sample_s = (sample_data_reg < min_value_s) ?
+                                sample_data_reg : min_value_s;
     assign vpp_candidate_s =
         $signed({max_after_sample_s[DATA_WIDTH-1], max_after_sample_s}) -
         $signed({min_after_sample_s[DATA_WIDTH-1], min_after_sample_s});
@@ -156,6 +159,8 @@ module Time_Domain_Calc #(
             max_value_s        <= {DATA_WIDTH{1'b0}};
             min_value_s        <= {DATA_WIDTH{1'b0}};
             sum_square         <= {SUM_WIDTH{1'b0}};
+            sample_data_reg    <= {DATA_WIDTH{1'b0}};
+            sample_square_reg  <= {(2*DATA_WIDTH){1'b0}};
             cordic_s_axis_tdata  <= 32'd0;
             cordic_s_axis_tvalid <= 1'b0;
             vpp_out             <= {(DATA_WIDTH+1){1'b0}};
@@ -188,12 +193,23 @@ module Time_Domain_Calc #(
                 end
 
                 ST_PROCESS: begin
-                    // 在该状态，bram_rd_data 是当前 sample_count 地址的数据。
+                    // First register the BRAM sample and its DSP product.
+                    // The following ST_ACCUMULATE state adds the registered
+                    // square to the wide accumulator.  This breaks the
+                    // BRAM-Q -> DSP48 -> 44-bit carry-chain path that was
+                    // marginal at 100 MHz on the Basys 3 speed grade.
+                    sample_data_reg   <= bram_rd_data;
+                    sample_square_reg <= sample_product_s[(2*DATA_WIDTH)-1:0];
+                    state              <= ST_ACCUMULATE;
+                end
+
+                ST_ACCUMULATE: begin
+                    // The registered sample belongs to sample_count.
                     sum_square <= sum_square_next;
 
                     if (sample_count == {ADDR_WIDTH{1'b0}}) begin
-                        max_value_s <= bram_rd_data;
-                        min_value_s <= bram_rd_data;
+                        max_value_s <= sample_data_reg;
+                        min_value_s <= sample_data_reg;
                     end
                     else begin
                         max_value_s <= max_after_sample_s;

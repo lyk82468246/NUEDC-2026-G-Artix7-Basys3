@@ -10,10 +10,10 @@
 //      -> FFT_Processor -> BRAM_FreqDomain -> Peak_Search
 //      -> HMI_UART_Ctrl -> UART TX
 //
-// 该模块故意不包含 100 MHz -> 4.096 MHz 的 MMCM；最终 Basys 3 顶层应将：
-//   adc_clk 接到 AD9226 的 4.096 MHz 采样时钟；
-//   calc_clk 接到算法时钟（建议 100 MHz）；
-//   rst 使用统一的高有效复位。
+// 该模块故意不包含板级时钟管理；最终 Basys 3 顶层负责产生 adc_clk 和
+// calc_clk。ADC 随路时钟域只负责并行总线采样寄存器；ADC_Input_CDC 将样本
+// 送到 calc_clk，FIR、过零和时域 BRAM 写入均在全局算法时钟域完成，避免
+// 把 DSP/BRAM 绑定到 Artix-7 的 BUFR 区域时钟资源。
 //
 // 它仍然是没有板级引脚约束的联调 synthesis top，后续只需在更外层加入
 // MMCM、ADC 引脚、UART 引脚和实际 Basys 3 XDC 即可。
@@ -22,7 +22,9 @@ module Capture_Calc_Subsystem (
     input  wire             adc_clk,
     input  wire             calc_clk,
     input  wire             rst,
+    input  wire             rst_adc,
     input  wire [11:0]      adc_data,
+    input  wire             display_three_cycles,
 
     output wire [16:0]      vpp_out,
     output wire [15:0]      vrms_out,
@@ -40,7 +42,9 @@ module Capture_Calc_Subsystem (
     output wire             peak_busy,
     output wire             hmi_busy,
     output wire             waveform_done,
-    output wire             uart_tx
+    output wire             uart_tx,
+    output wire             frame_valid,
+    output wire [4:0]       uart_state
 );
 
     wire                    bram_wr_en;
@@ -49,6 +53,31 @@ module Capture_Calc_Subsystem (
     wire                    frame_done_toggle;
     wire                    frame_done_pulse;
     wire                    frame_start_pulse;
+
+    wire                    adc_sample_valid_calc;
+    wire [11:0]             adc_data_calc;
+
+    // Re-create a calc_clk-domain frame pulse for the top-level ILA.  The
+    // processing modules retain their own CDC synchronizers; this copy is
+    // solely an observation signal and is safe to probe at 100 MHz.
+    (* ASYNC_REG = "TRUE" *) reg frame_valid_sync_ff1;
+    (* ASYNC_REG = "TRUE" *) reg frame_valid_sync_ff2;
+    reg frame_valid_sync_d;
+
+    always @(posedge calc_clk) begin
+        if (rst) begin
+            frame_valid_sync_ff1 <= 1'b0;
+            frame_valid_sync_ff2 <= 1'b0;
+            frame_valid_sync_d   <= 1'b0;
+        end
+        else begin
+            frame_valid_sync_ff1 <= frame_done_toggle;
+            frame_valid_sync_ff2 <= frame_valid_sync_ff1;
+            frame_valid_sync_d   <= frame_valid_sync_ff2;
+        end
+    end
+
+    assign frame_valid = frame_valid_sync_ff2 ^ frame_valid_sync_d;
 
     wire [12:0]             bram_rd_addr;
     wire                    bram_rd_en;
@@ -72,10 +101,25 @@ module Capture_Calc_Subsystem (
     wire                    freq_rd_en;
     wire [31:0]             freq_rd_data;
 
+    ADC_Input_CDC #(
+        .ADC_WIDTH(12)
+    ) u_adc_input_cdc (
+        .adc_clk           (adc_clk),
+        .rst_adc           (rst_adc),
+        .adc_data          (adc_data),
+        .calc_clk          (calc_clk),
+        .rst_calc          (rst),
+        .sample_valid_calc(adc_sample_valid_calc),
+        .adc_data_calc     (adc_data_calc)
+    );
+
+    // All FIR/DSP and frame-write logic is clocked by calc_clk.  The sample
+    // valid pulse preserves the original ADC sample cadence.
     AFE_Capture u_afe_capture (
-        .adc_clk          (adc_clk),
+        .adc_clk          (calc_clk),
         .rst              (rst),
-        .adc_data         (adc_data),
+        .adc_data         (adc_data_calc),
+        .sample_valid     (adc_sample_valid_calc),
         .bram_wr_en       (bram_wr_en),
         .bram_wr_addr     (bram_wr_addr),
         .bram_wr_data     (bram_wr_data),
@@ -86,7 +130,7 @@ module Capture_Calc_Subsystem (
     );
 
     BRAM_TimeDomain u_bram_time_domain (
-        .wr_clk  (adc_clk),
+        .wr_clk  (calc_clk),
         .wr_en   (bram_wr_en),
         .wr_addr (bram_wr_addr),
         .wr_data (bram_wr_data),
@@ -175,12 +219,14 @@ module Capture_Calc_Subsystem (
         .f1_index_in       (max_index_out),
         .f1_hz_in          (f1_hz_out),
         .amp_f1_in         (amp_f1_out),
+        .display_three_cycles(display_three_cycles),
         .time_rd_en        (hmi_time_rd_en),
         .time_rd_addr      (hmi_time_rd_addr),
         .time_rd_data      (hmi_time_rd_data),
         .uart_tx           (uart_tx),
         .busy              (hmi_busy),
-        .waveform_done     (waveform_done)
+        .waveform_done     (waveform_done),
+        .state_debug       (uart_state)
     );
 
 endmodule

@@ -35,6 +35,10 @@ module HMI_UART_Ctrl #(
     input  wire [31:0]                            f1_hz_in,
     input  wire [31:0]                            amp_f1_in,
 
+    // 0: display one period, 1: display three periods.  The value is
+    // latched when a new measurement packet starts.
+    input  wire                                  display_three_cycles,
+
     // HMI 专用时域 BRAM 同步读口。
     output wire                                  time_rd_en,
     output reg  [TIME_ADDR_WIDTH-1:0]            time_rd_addr,
@@ -42,7 +46,9 @@ module HMI_UART_Ctrl #(
 
     output wire                                  uart_tx,
     output reg                                  busy,
-    output reg                                  waveform_done
+    output reg                                  waveform_done,
+    // HMI message FSM state for the top-level ILA.
+    output wire [4:0]                            state_debug
 );
 
     //-------------------------------------------------------------------------
@@ -53,6 +59,7 @@ module HMI_UART_Ctrl #(
     reg [11:0] f1_index_latched;
     reg [31:0] f1_hz_latched;
     reg [31:0] amp_f1_latched;
+    reg        display_three_cycles_latched;
     reg        have_time_result;
     reg        have_peak_result;
 
@@ -229,6 +236,7 @@ module HMI_UART_Ctrl #(
     // For example, one cycle with N_cycle samples uses addresses 0..N_cycle-1.
     function [31:0] calculate_wave_span;
         input [11:0] index;
+        input        display_three_cycles_sel;
         reg [31:0] n_cycle;
         reg [31:0] total_samples;
         begin
@@ -240,7 +248,14 @@ module HMI_UART_Ctrl #(
             if (n_cycle == 0)
                 n_cycle = 1;
 
-            total_samples = n_cycle * DISPLAY_CYCLES;
+            // Prefer the runtime selection.  The parameter remains a useful
+            // static default for standalone reuse of this module.
+            if (display_three_cycles_sel === 1'b1)
+                total_samples = n_cycle * 3;
+            else if (DISPLAY_CYCLES >= 3)
+                total_samples = n_cycle * 3;
+            else
+                total_samples = n_cycle;
             if (total_samples >= FRAME_LENGTH)
                 calculate_wave_span = FRAME_LENGTH - 1;
             else
@@ -262,19 +277,16 @@ module HMI_UART_Ctrl #(
 
     // Fallback mapping used only when Vpp=0. Normal waveforms use the dynamic
     // signed mapping below, so a small signal still occupies the display height.
+    //
+    // For this fallback path the screen coordinate only needs 8-bit visual
+    // resolution.  Adding 32768 to a signed 16-bit two's-complement sample is
+    // exactly equivalent to flipping its sign bit; taking bits [15:8] then
+    // maps the full signed range to 0..255 without inferring a 16x255 DSP
+    // multiplier on the 100 MHz BRAM-read path.
     function [7:0] full_scale_y;
         input signed [15:0] sample;
-        reg signed [16:0] sample_ext;
-        reg [16:0] sample_unsigned;
-        reg [24:0] scaled;
         begin
-            sample_ext      = sample;
-            sample_unsigned = sample_ext + 17'sd32768;
-            scaled          = (sample_unsigned * 17'd255 + 25'd32768) >> 16;
-            if (scaled > 255)
-                full_scale_y = 8'd255;
-            else
-                full_scale_y = scaled[7:0];
+            full_scale_y = {~sample[15], sample[14:8]};
         end
     endfunction
 
@@ -288,14 +300,20 @@ module HMI_UART_Ctrl #(
     localparam [4:0] ST_TEXT_DIGITS   = 5'd4;
     localparam [4:0] ST_TEXT_CLOSE    = 5'd5;
     localparam [4:0] ST_TEXT_TERM     = 5'd6;
-    localparam [4:0] ST_WAVE_PREP    = 5'd7;
-    localparam [4:0] ST_WAVE_READ    = 5'd8;
-    localparam [4:0] ST_WAVE_PROCESS  = 5'd9;
-    localparam [4:0] ST_WAVE_DIVIDE   = 5'd10;
-    localparam [4:0] ST_WAVE_Y_PREP   = 5'd11;
-    localparam [4:0] ST_WAVE_PREFIX   = 5'd12;
-    localparam [4:0] ST_WAVE_DIGITS   = 5'd13;
-    localparam [4:0] ST_WAVE_TERM     = 5'd14;
+    localparam [4:0] ST_WAVE_PREP      = 5'd7;
+    localparam [4:0] ST_WAVE_SPAN_DIV  = 5'd8;
+    localparam [4:0] ST_WAVE_READ      = 5'd9;
+    localparam [4:0] ST_WAVE_PROCESS   = 5'd10;
+    localparam [4:0] ST_WAVE_DIVIDE    = 5'd11;
+    localparam [4:0] ST_WAVE_Y_PREP    = 5'd12;
+    localparam [4:0] ST_WAVE_PREFIX    = 5'd13;
+    localparam [4:0] ST_WAVE_DIGITS    = 5'd14;
+    localparam [4:0] ST_WAVE_TERM      = 5'd15;
+    localparam [4:0] ST_WAVE_ADDR_DIV  = 5'd16;
+    // Extra register stage after the synchronous BRAM read.  This keeps the
+    // BRAM output -> signed-absolute-value -> DSP48 input path comfortably
+    // below the 100 MHz clock period.
+    localparam [4:0] ST_WAVE_CAPTURE   = 5'd17;
 
     reg [4:0] state;
     reg [1:0] text_id;
@@ -312,6 +330,66 @@ module HMI_UART_Ctrl #(
     reg [3:0]  wave_prefix_index;
     reg [1:0]  wave_term_index;
     reg        wave_sample_negative;
+    reg signed [15:0] wave_sample_reg;
+
+    // The two waveform address calculations are intentionally iterative.
+    // A variable-width divide in the ST_WAVE_PREP combinational cone made
+    // Vivado infer a very deep carry chain (and failed a 100 MHz timing
+    // target).  Both operations are far shorter than a UART byte time, so
+    // spending a few algorithm-clock cycles here is the correct tradeoff.
+    localparam integer SPAN_DIV_BITS = 14; // 8192 / f1_index
+    reg [SPAN_DIV_BITS-1:0] span_div_num;
+    reg [SPAN_DIV_BITS-1:0] span_div_quot;
+    reg [12:0]               span_div_rem;
+    reg [3:0]                span_div_count;
+    reg [11:0]               span_div_den;
+
+    wire [13:0] span_div_rem_shifted;
+    wire        span_div_subtract;
+    wire [12:0] span_div_rem_next;
+    wire [13:0] span_div_quot_next;
+    assign span_div_rem_shifted = {span_div_rem[11:0],
+                                   span_div_num[SPAN_DIV_BITS-1-span_div_count]};
+    assign span_div_subtract    = (span_div_rem_shifted >= {1'b0, span_div_den});
+    assign span_div_rem_next    = span_div_subtract ?
+                                  (span_div_rem_shifted - {1'b0, span_div_den}) :
+                                  span_div_rem_shifted[12:0];
+    assign span_div_quot_next   = span_div_subtract ?
+                                  (span_div_quot |
+                                   ({{(SPAN_DIV_BITS-1){1'b0}},1'b1} <<
+                                    (SPAN_DIV_BITS-1-span_div_count))) :
+                                  span_div_quot;
+
+    wire [13:0] span_n_cycle = (span_div_quot_next == 0) ?
+                               14'd1 : span_div_quot_next;
+    wire [15:0] span_total_samples =
+        (display_three_cycles_latched || (DISPLAY_CYCLES >= 3)) ?
+        (span_n_cycle * 14'd3) : span_n_cycle;
+    wire [15:0] span_limited =
+        (span_total_samples >= FRAME_LENGTH) ?
+        (FRAME_LENGTH - 1) : (span_total_samples - 1'b1);
+
+    localparam integer ADDR_DIV_BITS = 23; // max phase is < 400 * 8192
+    reg [ADDR_DIV_BITS-1:0] addr_div_num;
+    reg [ADDR_DIV_BITS-1:0] addr_div_quot;
+    reg [9:0]                addr_div_rem;
+    reg [4:0]                addr_div_count;
+
+    wire [9:0] addr_div_rem_shifted;
+    wire       addr_div_subtract;
+    wire [9:0] addr_div_rem_next;
+    wire [ADDR_DIV_BITS-1:0] addr_div_quot_next;
+    assign addr_div_rem_shifted = {addr_div_rem[8:0],
+                                   addr_div_num[ADDR_DIV_BITS-1-addr_div_count]};
+    assign addr_div_subtract    = (addr_div_rem_shifted >= 10'd399);
+    assign addr_div_rem_next    = addr_div_subtract ?
+                                  (addr_div_rem_shifted - 10'd399) :
+                                  addr_div_rem_shifted;
+    assign addr_div_quot_next   = addr_div_subtract ?
+                                  (addr_div_quot |
+                                   ({{(ADDR_DIV_BITS-1){1'b0}},1'b1} <<
+                                    (ADDR_DIV_BITS-1-addr_div_count))) :
+                                  addr_div_quot;
 
     assign bcd_start = (state == ST_CONV_START);
 
@@ -325,9 +403,9 @@ module HMI_UART_Ctrl #(
 
     wire [16:0] wave_abs_sample;
     wire [24:0] wave_numerator;
-    assign wave_abs_sample = time_rd_data[15] ?
-                             (~{1'b0, time_rd_data} + 17'd1) :
-                             {1'b0, time_rd_data};
+    assign wave_abs_sample = wave_sample_reg[15] ?
+                             (~{1'b0, wave_sample_reg} + 17'd1) :
+                             {1'b0, wave_sample_reg};
     assign wave_numerator = wave_abs_sample * 25'd255;
 
     wire [17:0] div_rem_shifted;
@@ -345,6 +423,8 @@ module HMI_UART_Ctrl #(
 
     wire [39:0] selected_bcd;
     assign selected_bcd = select_bcd(text_id);
+
+    assign state_debug = state;
 
     reg  [7:0] uart_data;
     wire       uart_start;
@@ -402,6 +482,7 @@ module HMI_UART_Ctrl #(
             f1_index_latched   <= 12'd0;
             f1_hz_latched      <= 32'd0;
             amp_f1_latched     <= 32'd0;
+            display_three_cycles_latched <= 1'b0;
             have_time_result   <= 1'b0;
             have_peak_result   <= 1'b0;
             text_id             <= 2'd0;
@@ -418,11 +499,21 @@ module HMI_UART_Ctrl #(
             wave_prefix_index   <= 4'd0;
             wave_term_index     <= 2'd0;
             wave_sample_negative<= 1'b0;
+            wave_sample_reg     <= 16'sd0;
             div_num             <= 25'd0;
             div_den             <= 17'd0;
             div_quot            <= 25'd0;
             div_rem             <= 18'd0;
             div_count           <= 5'd0;
+            span_div_num        <= {SPAN_DIV_BITS{1'b0}};
+            span_div_quot       <= {SPAN_DIV_BITS{1'b0}};
+            span_div_rem        <= 13'd0;
+            span_div_count      <= 4'd0;
+            span_div_den        <= 12'd0;
+            addr_div_num        <= {ADDR_DIV_BITS{1'b0}};
+            addr_div_quot       <= {ADDR_DIV_BITS{1'b0}};
+            addr_div_rem        <= 10'd0;
+            addr_div_count      <= 5'd0;
             busy                <= 1'b0;
             waveform_done       <= 1'b0;
         end
@@ -455,6 +546,7 @@ module HMI_UART_Ctrl #(
                         // idle-to-conversion boundary.
                         have_time_result <= time_result_valid;
                         have_peak_result <= peak_result_valid;
+                        display_three_cycles_latched <= display_three_cycles;
                         busy              <= 1'b1;
                         state             <= ST_CONV_START;
                     end
@@ -530,30 +622,64 @@ module HMI_UART_Ctrl #(
 
                 ST_WAVE_PREP: begin
                     busy             <= 1'b1;
-                    wave_span        <= calculate_wave_span(f1_index_latched);
                     wave_phase_acc   <= 32'd0;
                     wave_point_index <= 9'd0;
                     time_rd_addr     <= {TIME_ADDR_WIDTH{1'b0}};
-                    wave_prefix_index<= 4'd0;
-                    state            <= ST_WAVE_READ;
+                    wave_prefix_index <= 4'd0;
+
+                    if (f1_index_latched == 0) begin
+                        // No valid peak: display the complete frame.
+                        wave_span <= FRAME_LENGTH - 1;
+                        state     <= ST_WAVE_READ;
+                    end
+                    else begin
+                        // Iteratively calculate N_cycle = FRAME_LENGTH / f1.
+                        span_div_num   <= FRAME_LENGTH;
+                        span_div_den   <= f1_index_latched;
+                        span_div_quot  <= {SPAN_DIV_BITS{1'b0}};
+                        span_div_rem   <= 13'd0;
+                        span_div_count <= 4'd0;
+                        state          <= ST_WAVE_SPAN_DIV;
+                    end
+                end
+
+                ST_WAVE_SPAN_DIV: begin
+                    busy            <= 1'b1;
+                    span_div_rem    <= span_div_rem_next;
+                    span_div_quot   <= span_div_quot_next;
+
+                    if (span_div_count == SPAN_DIV_BITS-1) begin
+                        wave_span <= span_limited;
+                        state     <= ST_WAVE_READ;
+                    end
+                    else begin
+                        span_div_count <= span_div_count + 1'b1;
+                    end
                 end
 
                 ST_WAVE_READ: begin
                     busy  <= 1'b1;
-                    // time_rd_en is high for this cycle. The next state consumes
-                    // the synchronous BRAM output.
-                    state <= ST_WAVE_PROCESS;
+                    // time_rd_en is high for this cycle.  The BRAM output is
+                    // registered, so capture it on the following state edge
+                    // before doing any arithmetic on the sample.
+                    state <= ST_WAVE_CAPTURE;
+                end
+
+                ST_WAVE_CAPTURE: begin
+                    busy                  <= 1'b1;
+                    wave_sample_reg      <= time_rd_data;
+                    wave_sample_negative <= time_rd_data[15];
+                    state                 <= ST_WAVE_PROCESS;
                 end
 
                 ST_WAVE_PROCESS: begin
-                    busy                 <= 1'b1;
-                    wave_sample_negative <= time_rd_data[15];
+                    busy <= 1'b1;
 
                     if (vpp_latched == 0) begin
-                        wave_y <= full_scale_y(time_rd_data);
-                        if (full_scale_y(time_rd_data) >= 100)
+                        wave_y <= full_scale_y(wave_sample_reg);
+                        if (full_scale_y(wave_sample_reg) >= 100)
                             wave_y_length <= 2'd3;
-                        else if (full_scale_y(time_rd_data) >= 10)
+                        else if (full_scale_y(wave_sample_reg) >= 10)
                             wave_y_length <= 2'd2;
                         else
                             wave_y_length <= 2'd1;
@@ -661,14 +787,36 @@ module HMI_UART_Ctrl #(
                             else begin
                                 wave_point_index <= wave_point_index + 1'b1;
                                 wave_phase_acc   <= wave_phase_acc + wave_span;
-                                time_rd_addr     <= address_from_phase(
-                                                       wave_phase_acc + wave_span);
-                                state             <= ST_WAVE_READ;
+                                // Address = floor((point+1)*wave_span / 399).
+                                // Calculate it in a 23-cycle restoring divider
+                                // so the 100 MHz critical path stays shallow.
+                                addr_div_num   <= wave_phase_acc + wave_span;
+                                addr_div_quot  <= {ADDR_DIV_BITS{1'b0}};
+                                addr_div_rem   <= 10'd0;
+                                addr_div_count <= 5'd0;
+                                state          <= ST_WAVE_ADDR_DIV;
                             end
                         end
                         else begin
                             wave_term_index <= wave_term_index + 1'b1;
                         end
+                    end
+                end
+
+                ST_WAVE_ADDR_DIV: begin
+                    busy          <= 1'b1;
+                    addr_div_rem  <= addr_div_rem_next;
+                    addr_div_quot <= addr_div_quot_next;
+
+                    if (addr_div_count == ADDR_DIV_BITS-1) begin
+                        if (addr_div_quot_next >= FRAME_LENGTH)
+                            time_rd_addr <= FRAME_LENGTH - 1;
+                        else
+                            time_rd_addr <= addr_div_quot_next[TIME_ADDR_WIDTH-1:0];
+                        state <= ST_WAVE_READ;
+                    end
+                    else begin
+                        addr_div_count <= addr_div_count + 1'b1;
                     end
                 end
 

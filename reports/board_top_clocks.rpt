@@ -1,0 +1,78 @@
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+---------------------------------------------------------------------------------------------------------------------------------------------
+| Tool Version : Vivado v.2025.2 (win64) Build 6299465 Fri Nov 14 19:35:11 GMT 2025
+| Date         : Sat Sep 12 14:19:58 2026
+| Host         : LAPTOP-LI running 64-bit major release  (build 9200)
+| Command      : report_clocks -file C:/Users/Joe/Documents/Verilog/G_FPGA/reports/board_top_clocks.rpt
+| Design       : G_FPGA_Top
+| Device       : 7a35t-cpg236
+| Speed File   : -1  PRODUCTION 1.23 2018-06-13
+| Design State : Routed
+---------------------------------------------------------------------------------------------------------------------------------------------
+
+Clock Report
+
+
+Attributes
+  P: Propagated
+  G: Generated
+  A: Auto-derived
+  R: Renamed
+  V: Virtual
+  I: Inverted
+  S: Pin phase-shifted with Latency mode
+
+Clock                                                                                       Period(ns)  Waveform(ns)    Attributes  Sources
+dbg_hub/inst/BSCANID.u_xsdbm_id/SWITCH_N_EXT_BSCAN.bscan_inst/SERIES7_BSCAN.bscan_inst/TCK  33.000      {0.000 16.500}  P           {dbg_hub/inst/BSCANID.u_xsdbm_id/SWITCH_N_EXT_BSCAN.bscan_inst/SERIES7_BSCAN.bscan_inst/TCK}
+sys_clk                                                                                     10.000      {0.000 5.000}   P           {sys_clk}
+clk_adc                                                                                     244.138     {0.000 81.379}  P,G,A       {u_mmcm_top/u_adc_clock_bufr/O}
+clk_out1_mmcm_top_wiz                                                                       10.000      {0.000 5.000}   P,G,A       {u_mmcm_top/u_mmcm_top_wiz/inst/mmcm_adv_inst/CLKOUT0}
+clk_out2_mmcm_top_wiz                                                                       81.379      {0.000 40.690}  P,G,A       {u_mmcm_top/u_mmcm_top_wiz/inst/mmcm_adv_inst/CLKOUT1}
+clkfbout_mmcm_top_wiz                                                                       10.000      {0.000 5.000}   P,G,A       {u_mmcm_top/u_mmcm_top_wiz/inst/mmcm_adv_inst/CLKFBOUT}
+
+
+====================================================
+Generated Clocks
+====================================================
+
+Generated Clock     : clk_adc
+Master Source       : u_mmcm_top/u_adc_clock_bufr/I
+Master Clock        : clk_out2_mmcm_top_wiz
+Edges               : {1 2 3}
+Edge Shifts(ns)     : {0.000 40.690 162.759}
+Generated Sources   : {u_mmcm_top/u_adc_clock_bufr/O}
+
+Generated Clock     : clk_out1_mmcm_top_wiz
+Master Source       : u_mmcm_top/u_mmcm_top_wiz/inst/mmcm_adv_inst/CLKIN1
+Master Clock        : sys_clk
+Multiply By         : 1
+Generated Sources   : {u_mmcm_top/u_mmcm_top_wiz/inst/mmcm_adv_inst/CLKOUT0}
+
+Generated Clock     : clk_out2_mmcm_top_wiz
+Master Source       : u_mmcm_top/u_mmcm_top_wiz/inst/mmcm_adv_inst/CLKIN1
+Master Clock        : sys_clk
+Edges               : {1 2 3}
+Edge Shifts(ns)     : {0.000 35.690 71.379}
+Generated Sources   : {u_mmcm_top/u_mmcm_top_wiz/inst/mmcm_adv_inst/CLKOUT1}
+
+Generated Clock     : clkfbout_mmcm_top_wiz
+Master Source       : u_mmcm_top/u_mmcm_top_wiz/inst/mmcm_adv_inst/CLKIN1
+Master Clock        : sys_clk
+Multiply By         : 1
+Generated Sources   : {u_mmcm_top/u_mmcm_top_wiz/inst/mmcm_adv_inst/CLKFBOUT}
+
+
+
+====================================================
+User Uncertainty
+====================================================
+
+
+
+====================================================
+User Jitter
+====================================================
+
+Clock    Jitter(ns)
+sys_clk  0.100
+

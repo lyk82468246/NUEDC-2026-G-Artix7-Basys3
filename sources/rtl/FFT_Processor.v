@@ -97,9 +97,10 @@ module FFT_Processor #(
     localparam [3:0] ST_CONFIG       = 4'd1;
     localparam [3:0] ST_READ_REQUEST = 4'd2;
     localparam [3:0] ST_PREPARE      = 4'd3;
-    localparam [3:0] ST_SEND         = 4'd4;
-    localparam [3:0] ST_OUTPUT       = 4'd5;
-    localparam [3:0] ST_DONE         = 4'd6;
+    localparam [3:0] ST_WINDOW_MULT  = 4'd4;
+    localparam [3:0] ST_SEND         = 4'd5;
+    localparam [3:0] ST_OUTPUT       = 4'd6;
+    localparam [3:0] ST_DONE         = 4'd7;
 
     reg [3:0] state;
     reg [ADDR_WIDTH-1:0] sample_count;
@@ -113,6 +114,12 @@ module FFT_Processor #(
     wire                                  window_rom_en;
     wire [ADDR_WIDTH-1:0]                 window_rom_addr;
     wire signed [DATA_WIDTH-1:0]          window_rom_data;
+
+    // Capture both synchronous memory outputs before the window multiplier.
+    // This keeps the BRAM/ROM output-to-DSP path out of the 100 MHz critical
+    // path while preserving the one-sample-per-handshake AXI stream rate.
+    reg signed [DATA_WIDTH-1:0]            window_sample_reg;
+    reg signed [DATA_WIDTH-1:0]            window_coeff_reg;
 
     assign window_rom_en   = (state == ST_READ_REQUEST);
     assign window_rom_addr = time_rd_addr;
@@ -133,7 +140,7 @@ module FFT_Processor #(
     wire signed [(2*DATA_WIDTH)-1:0] window_shifted_s;
     wire signed [DATA_WIDTH-1:0]       windowed_sample_s;
 
-    assign window_product_s = $signed(time_rd_data) * $signed(window_rom_data);
+    assign window_product_s = $signed(window_sample_reg) * $signed(window_coeff_reg);
     assign window_shifted_s = window_product_s >>> WINDOW_FRAC_BITS;
 
     // 16 bit saturation is retained even though the selected coefficient range
@@ -291,6 +298,8 @@ module FFT_Processor #(
             fft_s_axis_tdata         <= {FFT_INPUT_TDATA_WIDTH{1'b0}};
             fft_s_axis_tvalid        <= 1'b0;
             fft_s_axis_tlast         <= 1'b0;
+            window_sample_reg        <= {DATA_WIDTH{1'b0}};
+            window_coeff_reg         <= {DATA_WIDTH{1'b0}};
             cordic_s_axis_tdata      <= {CORDIC_INPUT_TDATA_WIDTH{1'b0}};
             cordic_s_axis_tvalid     <= 1'b0;
             freq_frame_done_toggle   <= 1'b0;
@@ -336,9 +345,19 @@ module FFT_Processor #(
                 end
 
                 ST_PREPARE: begin
-                    busy              <= 1'b1;
+                    busy <= 1'b1;
                     // Synchronous BRAM/ROM data are now aligned for the same
-                    // sample index. Load and hold the complete AXI input word.
+                    // sample index. Register them before the DSP multiply.
+                    window_sample_reg <= time_rd_data;
+                    window_coeff_reg  <= window_rom_data;
+                    state             <= ST_WINDOW_MULT;
+                end
+
+                ST_WINDOW_MULT: begin
+                    busy              <= 1'b1;
+                    // The registered sample/coefficient pair is multiplied
+                    // here, then the complete AXI input word is held until
+                    // the FFT accepts it.
                     fft_s_axis_tdata  <= {16'd0, windowed_sample_s};
                     fft_s_axis_tlast  <= (sample_count == LAST_SAMPLE_ADDR);
                     fft_s_axis_tvalid <= 1'b1;
