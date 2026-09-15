@@ -15,6 +15,10 @@
 // 送到 calc_clk，FIR、过零和时域 BRAM 写入均在全局算法时钟域完成，避免
 // 把 DSP/BRAM 绑定到 Artix-7 的 BUFR 区域时钟资源。
 //
+// AFE 在帧完成后保持写端口冻结；HMI 完成该帧的文本/波形发送后通过
+// frame_release 释放捕获器，再允许下一帧启动。这样三个消费者读取的是同一
+// 个完整快照，而不会在慢速 UART 发送期间被下一帧覆盖。
+//
 // 它仍然是没有板级引脚约束的联调 synthesis top，后续只需在更外层加入
 // MMCM、ADC 引脚、UART 引脚和实际 Basys 3 XDC 即可。
 //==============================================================================
@@ -53,6 +57,7 @@ module Capture_Calc_Subsystem (
     wire                    frame_done_toggle;
     wire                    frame_done_pulse;
     wire                    frame_start_pulse;
+    wire                    frame_release;
 
     wire                    adc_sample_valid_calc;
     wire [11:0]             adc_data_calc;
@@ -120,6 +125,7 @@ module Capture_Calc_Subsystem (
         .rst              (rst),
         .adc_data         (adc_data_calc),
         .sample_valid     (adc_sample_valid_calc),
+        .frame_release    (frame_release),
         .bram_wr_en       (bram_wr_en),
         .bram_wr_addr     (bram_wr_addr),
         .bram_wr_data     (bram_wr_data),
@@ -226,6 +232,7 @@ module Capture_Calc_Subsystem (
         .uart_tx           (uart_tx),
         .busy              (hmi_busy),
         .waveform_done     (waveform_done),
+        .frame_release     (frame_release),
         .state_debug       (uart_state)
     );
 

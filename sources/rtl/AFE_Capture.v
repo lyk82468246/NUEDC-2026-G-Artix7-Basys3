@@ -9,6 +9,7 @@
 //   3) 用一个慢速 IIR 估计器去除残余直流分量；
 //   4) 在滤波输出上检测“负 -> 正”过零点；
 //   5) 从过零点开始，将连续 8192 个 16-bit 有符号采样写入时域 BRAM。
+//   6) 帧完成后保持 BRAM 不再被下一帧覆盖，直到消费者明确释放该帧。
 //
 // 时钟域：
 //   本模块所有逻辑均工作在 adc_clk 端口所接入的处理时钟域。最终板级顶层
@@ -46,6 +47,9 @@ module AFE_Capture #(
     input  wire                         rst,                 // 高有效同步复位
     input  wire [ADC_WIDTH-1:0]         adc_data,
     input  wire                         sample_valid,
+    // 与本模块 adc_clk 同步。最后一个消费者完成读取/发送后拉高并保持，
+    // 允许捕获 FSM 离开 HOLD 状态并重新寻找下一次过零；电平握手不会丢脉冲。
+    input  wire                         frame_release,
 
     // 时域 BRAM 写端口。BRAM_TimeDomain 使用 wr_en/wr_addr/wr_data。
     output reg                          bram_wr_en,
@@ -88,6 +92,8 @@ module AFE_Capture #(
     //-------------------------------------------------------------------------
     // FIR Compiler AXI4-Stream interface
     //-------------------------------------------------------------------------
+    reg                               fir_s_axis_tvalid_reg;
+    reg  [FIR_DATA_WIDTH-1:0]         fir_s_axis_tdata_reg;
     wire                              fir_s_axis_tvalid;
     wire                              fir_s_axis_tready;
     wire [FIR_DATA_WIDTH-1:0]         fir_s_axis_tdata;
@@ -98,9 +104,11 @@ module AFE_Capture #(
     wire                              fir_output_fire;
 
     // FIR 工作在 100 MHz，但只在 ADC_Input_CDC 提供有效样本时推进一个
-    // single-rate sample。AXI4-Stream valid 间隙不会改变 FIR 的状态序列。
-    assign fir_s_axis_tvalid = sample_valid && ~rst;
-    assign fir_s_axis_tdata  = adc_fir_input_s;
+    // single-rate sample。用一级输入寄存器将不可回压的 sample_valid 转换
+    // 为遵守 AXI4-Stream 的 valid/data 保持协议：如果 FIR 暂停，输入数据
+    // 会保持到 tready；正常配置下采样间隔约 24 个算法时钟，足以及时排空。
+    assign fir_s_axis_tvalid = fir_s_axis_tvalid_reg;
+    assign fir_s_axis_tdata  = fir_s_axis_tdata_reg;
     assign fir_m_axis_tready = 1'b1;
     assign fir_output_s      = fir_m_axis_tdata;
     assign fir_output_fire   = fir_m_axis_tvalid && fir_m_axis_tready;
@@ -164,6 +172,7 @@ module AFE_Capture #(
     localparam [1:0] ST_WAIT_CROSS = 2'd0;
     localparam [1:0] ST_CAPTURE    = 2'd1;
     localparam [1:0] ST_REARM      = 2'd2;
+    localparam [1:0] ST_HOLD       = 2'd3;
     localparam [ADDR_WIDTH-1:0] LAST_FRAME_ADDR = FRAME_LENGTH - 1;
     localparam [ADDR_WIDTH-1:0] FIRST_AFTER_TRIGGER = {{(ADDR_WIDTH-1){1'b0}},1'b1};
 
@@ -193,6 +202,9 @@ module AFE_Capture #(
             dc_ready           <= (DC_WARMUP_SAMPLES == 0);
             frame_done_pending <= 1'b0;
 
+            fir_s_axis_tvalid_reg <= 1'b0;
+            fir_s_axis_tdata_reg  <= {FIR_DATA_WIDTH{1'b0}};
+
             bram_wr_en         <= 1'b0;
             bram_wr_addr       <= {ADDR_WIDTH{1'b0}};
             bram_wr_data       <= {FIR_DATA_WIDTH{1'b0}};
@@ -205,6 +217,21 @@ module AFE_Capture #(
             bram_wr_en        <= 1'b0;
             frame_done_pulse  <= 1'b0;
             frame_start_pulse <= 1'b0;
+
+            // AXI input register: consume the current item when FIR is ready,
+            // then replace it in the same edge if a new ADC sample arrives.
+            if (fir_s_axis_tvalid_reg && fir_s_axis_tready)
+                fir_s_axis_tvalid_reg <= 1'b0;
+            if (sample_valid) begin
+                if (!fir_s_axis_tvalid_reg || fir_s_axis_tready) begin
+                    fir_s_axis_tdata_reg  <= adc_fir_input_s;
+                    fir_s_axis_tvalid_reg <= 1'b1;
+                end
+                // If the register is full and FIR is not ready, retain the old
+                // item. The standard FIR configuration is expected not to
+                // exercise this condition; it is safer than changing payload
+                // while TVALID is stalled.
+            end
 
             // 上一拍已经请求了最后一个 BRAM 写入；本拍 BRAM 同时提交
             // 该写入，随后才通知 calc_clk 域开始计算。
@@ -258,7 +285,11 @@ module AFE_Capture #(
                                 // 为寄存器输出，完成通知在下一拍产生。
                                 frame_done_pending <= 1'b1;
                                 write_addr_next   <= {ADDR_WIDTH{1'b0}};
-                                state             <= ST_REARM;
+                                // Keep the completed BRAM frame immutable until
+                                // HMI has finished consuming it. This prevents
+                                // the next ADC frame from tearing the time-domain
+                                // statistics/FFT/waveform packet apart.
+                                state             <= ST_HOLD;
                             end
                             else begin
                                 write_addr_next <= write_addr_next + 1'b1;
@@ -270,6 +301,15 @@ module AFE_Capture #(
                             // 先等信号回到零点以下，再重新等待负 -> 正。
                             if (ac_output_s <= zero_threshold_s)
                                 state <= ST_WAIT_CROSS;
+                        end
+
+                        ST_HOLD: begin
+                            // The completed frame remains read-only from the
+                            // consumers' point of view. Continue tracking the
+                            // input/DC estimate, but do not start another write
+                            // frame until the packet owner releases this one.
+                            if (frame_release)
+                                state <= ST_REARM;
                         end
 
                         default: begin

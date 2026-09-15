@@ -48,6 +48,7 @@ module tb_hmi_uart;
     wire       uart_tx;
     wire       hmi_busy;
     wire       waveform_done;
+    wire       frame_release;
     wire [4:0] state_debug;
 
     reg signed [15:0] time_mem [0:FRAME_LENGTH-1];
@@ -103,6 +104,7 @@ module tb_hmi_uart;
         .uart_tx                (uart_tx),
         .busy                   (hmi_busy),
         .waveform_done          (waveform_done),
+        .frame_release          (frame_release),
         .state_debug            (state_debug)
     );
 
@@ -167,6 +169,7 @@ module tb_hmi_uart;
     endtask
 
     integer wave_cursor;
+    integer wave_digit_start;
     integer digit_count;
 
     initial begin
@@ -216,6 +219,8 @@ module tb_hmi_uart;
 
         assert (waveform_seen)
             else $fatal(1, "Timeout: HMI waveform_done was not asserted");
+        assert (frame_release === 1'b1)
+            else $fatal(1, "HMI did not hold frame_release after packet completion");
 
         // waveform_done is raised when the final terminator is accepted by
         // UART_Tx; allow that last byte to finish on the serial pin before
@@ -282,6 +287,7 @@ module tb_hmi_uart;
             check_rx_byte(wave_cursor + 6, "0");
             check_rx_byte(wave_cursor + 7, ",");
             wave_cursor = wave_cursor + 8;
+            wave_digit_start = wave_cursor;
             digit_count = 0;
             while (rx_bytes[wave_cursor] != 8'hff) begin
                 assert ((rx_bytes[wave_cursor] >= "0") &&
@@ -293,6 +299,34 @@ module tb_hmi_uart;
             end
             assert ((digit_count >= 1) && (digit_count <= 3))
                 else $fatal(1, "Invalid waveform Y digit count %0d", digit_count);
+
+            // With FRAME_LENGTH=64, f1_index=4 and WAVE_POINTS=8, the
+            // integer sample addresses are 0,2,4,6,8,10,12,15.  These checks
+            // exercise both the parameterized 7-way address divider and the
+            // signed absolute-value path for the negative samples.
+            if (i == 0) begin
+                assert (digit_count == 3) else $fatal(1, "Y[0] digit count");
+                check_rx_byte(wave_digit_start + 0, "2");
+                check_rx_byte(wave_digit_start + 1, "3");
+                check_rx_byte(wave_digit_start + 2, "0");
+            end
+            else if (i == 1) begin
+                assert (digit_count == 3) else $fatal(1, "Y[1] digit count");
+                check_rx_byte(wave_digit_start + 0, "1");
+                check_rx_byte(wave_digit_start + 1, "7");
+                check_rx_byte(wave_digit_start + 2, "9");
+            end
+            else if (i == 2) begin
+                assert (digit_count == 3) else $fatal(1, "Y[2] digit count");
+                check_rx_byte(wave_digit_start + 0, "1");
+                check_rx_byte(wave_digit_start + 1, "2");
+                check_rx_byte(wave_digit_start + 2, "8");
+            end
+            else if (i == 3) begin
+                assert (digit_count == 2) else $fatal(1, "Y[3] digit count");
+                check_rx_byte(wave_digit_start + 0, "7");
+                check_rx_byte(wave_digit_start + 1, "7");
+            end
             check_rx_byte(wave_cursor,     8'hff);
             check_rx_byte(wave_cursor + 1, 8'hff);
             check_rx_byte(wave_cursor + 2, 8'hff);

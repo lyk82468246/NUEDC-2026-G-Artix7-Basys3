@@ -13,7 +13,9 @@
 //
 // UART 发送器只接受一个字节的 start 脉冲。消息状态机仅在 UART 空闲时
 // 发出下一字节，因此任何一个字节都不会被覆盖。波形部分使用单独的
-// 分时状态机，400 点发送期间不会阻塞采集、FFT 或峰值搜索硬件。
+// 分时状态机，400 点发送期间不会阻塞当前结果的计算；为保证时域
+// BRAM 快照与结果属于同一帧，AFE 在最后一个曲线结束符发送完成前保持
+// HOLD，发送完成后由 frame_release 电平握手重新武装下一帧采集。
 //==============================================================================
 module HMI_UART_Ctrl #(
     parameter integer CLK_FREQ_HZ    = 100_000_000,
@@ -47,6 +49,10 @@ module HMI_UART_Ctrl #(
     output wire                                  uart_tx,
     output reg                                  busy,
     output reg                                  waveform_done,
+    // Level handshake to AFE_Capture. It goes high after the complete HMI
+    // packet has been accepted by UART_Tx and stays high until the next packet
+    // starts, so a slower ADC/FIR clock cannot miss a one-cycle pulse.
+    output reg                                  frame_release,
     // HMI message FSM state for the top-level ILA.
     output wire [4:0]                            state_debug
 );
@@ -63,6 +69,16 @@ module HMI_UART_Ctrl #(
     reg        have_time_result;
     reg        have_peak_result;
 
+    // Active packet snapshot. The *_latched registers above are a one-entry
+    // pending mailbox; these registers remain unchanged from BCD conversion
+    // through the final waveform byte, so a result arriving during a long UART
+    // transfer cannot mix values from two measurements.
+    reg [16:0] vpp_active;
+    reg [15:0] vrms_active;
+    reg [11:0] f1_index_active;
+    reg [31:0] f1_hz_active;
+    reg [31:0] amp_f1_active;
+
     wire [39:0] vpp_bcd;
     wire [39:0] vrms_bcd;
     wire [39:0] f1_bcd;
@@ -77,7 +93,7 @@ module HMI_UART_Ctrl #(
         .clk      (clk),
         .rst      (rst),
         .start    (bcd_start),
-        .binary_in({15'd0, vpp_latched}),
+        .binary_in({15'd0, vpp_active}),
         .bcd_out  (vpp_bcd),
         .busy     (),
         .done     (vpp_bcd_done)
@@ -87,7 +103,7 @@ module HMI_UART_Ctrl #(
         .clk      (clk),
         .rst      (rst),
         .start    (bcd_start),
-        .binary_in({16'd0, vrms_latched}),
+        .binary_in({16'd0, vrms_active}),
         .bcd_out  (vrms_bcd),
         .busy     (),
         .done     (vrms_bcd_done)
@@ -97,7 +113,7 @@ module HMI_UART_Ctrl #(
         .clk      (clk),
         .rst      (rst),
         .start    (bcd_start),
-        .binary_in(f1_hz_latched),
+        .binary_in(f1_hz_active),
         .bcd_out  (f1_bcd),
         .busy     (),
         .done     (f1_bcd_done)
@@ -107,7 +123,7 @@ module HMI_UART_Ctrl #(
         .clk      (clk),
         .rst      (rst),
         .start    (bcd_start),
-        .binary_in(amp_f1_latched),
+        .binary_in(amp_f1_active),
         .bcd_out  (amp_f1_bcd),
         .busy     (),
         .done     (amp_f1_bcd_done)
@@ -358,6 +374,10 @@ module HMI_UART_Ctrl #(
         (FRAME_LENGTH - 1) : (span_total_samples - 1'b1);
 
     localparam integer ADDR_DIV_BITS = 23; // max phase is < 400 * 8192
+    // Keep the divider generic for reduced-size simulation instances as well as
+    // the production WAVE_POINTS=400 configuration.
+    localparam [9:0] ADDR_DIVISOR_VALUE =
+        (WAVE_POINTS > 1) ? (WAVE_POINTS - 1) : 1;
     reg [ADDR_DIV_BITS-1:0] addr_div_num;
     reg [ADDR_DIV_BITS-1:0] addr_div_quot;
     reg [9:0]                addr_div_rem;
@@ -369,9 +389,9 @@ module HMI_UART_Ctrl #(
     wire [ADDR_DIV_BITS-1:0] addr_div_quot_next;
     assign addr_div_rem_shifted = {addr_div_rem[8:0],
                                    addr_div_num[ADDR_DIV_BITS-1-addr_div_count]};
-    assign addr_div_subtract    = (addr_div_rem_shifted >= 10'd399);
+    assign addr_div_subtract    = (addr_div_rem_shifted >= ADDR_DIVISOR_VALUE);
     assign addr_div_rem_next    = addr_div_subtract ?
-                                  (addr_div_rem_shifted - 10'd399) :
+                                  (addr_div_rem_shifted - ADDR_DIVISOR_VALUE) :
                                   addr_div_rem_shifted;
     assign addr_div_quot_next   = addr_div_subtract ?
                                   (addr_div_quot |
@@ -392,7 +412,10 @@ module HMI_UART_Ctrl #(
     wire [16:0] wave_abs_sample;
     wire [24:0] wave_numerator;
     assign wave_abs_sample = wave_sample_reg[15] ?
-                             (~{1'b0, wave_sample_reg} + 17'd1) :
+                             // Sign-extend before two's-complement negate;
+                             // zero-extending a negative sample would turn -1
+                             // into 65537 and saturate the displayed Y value.
+                             (~{1'b1, wave_sample_reg} + 17'd1) :
                              {1'b0, wave_sample_reg};
     assign wave_numerator = wave_abs_sample * 25'd255;
 
@@ -485,6 +508,11 @@ module HMI_UART_Ctrl #(
             display_three_cycles_latched <= 1'b0;
             have_time_result   <= 1'b0;
             have_peak_result   <= 1'b0;
+            vpp_active         <= 17'd0;
+            vrms_active        <= 16'd0;
+            f1_index_active    <= 12'd0;
+            f1_hz_active       <= 32'd0;
+            amp_f1_active      <= 32'd0;
             text_id             <= 2'd0;
             text_byte_index    <= 4'd0;
             text_digit_pos     <= 4'd0;
@@ -516,6 +544,7 @@ module HMI_UART_Ctrl #(
             addr_div_count      <= 5'd0;
             busy                <= 1'b0;
             waveform_done       <= 1'b0;
+            frame_release       <= 1'b0;
         end
         else begin
             waveform_done <= 1'b0;
@@ -546,7 +575,13 @@ module HMI_UART_Ctrl #(
                         // idle-to-conversion boundary.
                         have_time_result <= time_result_valid;
                         have_peak_result <= peak_result_valid;
+                        vpp_active       <= vpp_latched;
+                        vrms_active      <= vrms_latched;
+                        f1_index_active  <= f1_index_latched;
+                        f1_hz_active     <= f1_hz_latched;
+                        amp_f1_active    <= amp_f1_latched;
                         display_three_cycles_latched <= display_three_cycles;
+                        frame_release    <= 1'b0;
                         busy              <= 1'b1;
                         state             <= ST_CONV_START;
                     end
@@ -627,7 +662,7 @@ module HMI_UART_Ctrl #(
                     time_rd_addr     <= {TIME_ADDR_WIDTH{1'b0}};
                     wave_prefix_index <= 4'd0;
 
-                    if (f1_index_latched == 0) begin
+                    if (f1_index_active == 0) begin
                         // No valid peak: display the complete frame.
                         wave_span <= FRAME_LENGTH - 1;
                         state     <= ST_WAVE_READ;
@@ -635,7 +670,7 @@ module HMI_UART_Ctrl #(
                     else begin
                         // Iteratively calculate N_cycle = FRAME_LENGTH / f1.
                         span_div_num   <= FRAME_LENGTH;
-                        span_div_den   <= f1_index_latched;
+                        span_div_den   <= f1_index_active;
                         span_div_quot  <= {SPAN_DIV_BITS{1'b0}};
                         span_div_rem   <= 13'd0;
                         span_div_count <= 4'd0;
@@ -675,7 +710,7 @@ module HMI_UART_Ctrl #(
                 ST_WAVE_PROCESS: begin
                     busy <= 1'b1;
 
-                    if (vpp_latched == 0) begin
+                    if (vpp_active == 0) begin
                         wave_y <= full_scale_y(wave_sample_reg);
                         if (full_scale_y(wave_sample_reg) >= 100)
                             wave_y_length <= 2'd3;
@@ -689,7 +724,7 @@ module HMI_UART_Ctrl #(
                     end
                     else begin
                         div_num   <= wave_numerator;
-                        div_den   <= vpp_latched;
+                        div_den   <= vpp_active;
                         div_quot  <= 25'd0;
                         div_rem   <= 18'd0;
                         div_count <= 5'd0;
@@ -781,13 +816,19 @@ module HMI_UART_Ctrl #(
                         if (wave_term_index == 2'd2) begin
                             if (wave_point_index == WAVE_POINTS-1) begin
                                 waveform_done <= 1'b1;
+                                // The last byte has been accepted by UART_Tx;
+                                // the frame is no longer read by this FSM.
+                                // Keep the level high until the next packet so
+                                // AFE_Capture cannot miss the release event.
+                                frame_release <= 1'b1;
                                 busy          <= 1'b0;
                                 state         <= ST_IDLE;
                             end
                             else begin
                                 wave_point_index <= wave_point_index + 1'b1;
                                 wave_phase_acc   <= wave_phase_acc + wave_span;
-                                // Address = floor((point+1)*wave_span / 399).
+                                // Address = floor((point+1)*wave_span /
+                                // (WAVE_POINTS-1)).
                                 // Calculate it in a 23-cycle restoring divider
                                 // so the 100 MHz critical path stays shallow.
                                 addr_div_num   <= wave_phase_acc + wave_span;

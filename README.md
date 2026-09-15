@@ -4,7 +4,7 @@
 
 本文按照“设计目标—系统原理—实验搭建—验证结果—局限与改进”的结构记录工程。项目名称来自竞赛练习背景，不表示官方赛题确认或指标验收通过。文档核对日期：2026-09-15。
 
-> 当前状态：已有 RTL、IP 脚本、引脚约束、四组自检仿真，以及较早版本的实现报告；尚未实测。最新 RTL 修复之后需要重新实现并生成 bitstream。连续采集的帧一致性、波形负值映射和幅值标定仍有待处理，不能据此宣称已达到 ≤5 mV 误差。
+> 当前状态：修订后的 RTL 已通过四组 XSim 自检，并已于 2026-09-15 使用 Vivado 2025.2 重新完成综合、布局布线、时序分析和 bitstream/ILA 文件生成；实现结果为 WNS=+0.237 ns、WHS=+0.017 ns、0 errors。尚未真实上机，≤5 mV 精度、外部 ADC 时序和串口屏显示仍未验收。
 
 ## 目录
 
@@ -108,7 +108,7 @@ BtnC 按下为高电平。顶层端口虽然叫 `sys_rst_n`，但默认 `BUTTON_
 
 时域数据为 signed 16-bit；Vpp 接口为 unsigned 17-bit，Vrms 为 unsigned 16-bit，平方和为 44-bit。RMS 输入是 AFE 已处理的数据，不是时域 FSM 再次减去了精确帧均值。
 
-三份时域 BRAM 共享写入、各有独立同步读口，分别服务时域计算、FFT 和 HMI。**镜像解决读口争用，不解决帧冻结。** 当前采集完成后会继续采下一帧，没有等待消费者完成；后续写入可能覆盖尚在读取的数据，尤其 UART 波形发送期间。
+三份时域 BRAM 共享写入、各有独立同步读口，分别服务时域计算、FFT 和 HMI。采集完成后 AFE 进入 `ST_HOLD`，三份镜像保持不变；HMI 在文本和 400 点波形命令全部交给 UART 发送器后，将 `frame_release` 保持为电平，AFE 才进入 `ST_REARM` 并寻找下一帧。这样时域计算、FFT 和 HMI 消费的是同一帧快照，不会在慢速 UART 发送期间被覆盖。代价是系统按显示包节拍运行，单包约受 0.42～0.49 秒串口发送时间限制，不是连续实时采集。
 
 ### 2.4 窗函数、FFT 与谱峰
 
@@ -141,7 +141,7 @@ FFT 配置通道发送 `8'h01` 选择正变换，数据/配置均按 `tvalid && 
 
 名义周期样本数为 `N_cycle = floor(8192/max_index)`；一/三周期跨度为 `min(周期数 × N_cycle - 1, 8191)`，400 个点按 `floor(p × span / 399)` 取地址。索引为零时使用整帧范围。100 kHz 对应 bin 200，整数周期只有 40 点；500 kHz 每周期约 8 点，重复取样填满屏幕不会增加真实信息。
 
-每点命令约 12～14 字节，400 点仅串口传输就需约 0.42～0.49 秒，另有文本和计算开销，因此屏幕不可能跟随每个 2 ms ADC 帧刷新。按钮效果在后续显示批次体现。当前忙期间只保留最新更新而不是无限排队；这也带来第 11 节的批次一致性风险。
+每点命令约 12～14 字节，400 点仅串口传输就需约 0.42～0.49 秒，另有文本和计算开销，因此屏幕不可能跟随每个 2 ms ADC 帧刷新。按钮效果在后续显示批次体现。HMI 的待发送结果仍是一个深度为 1 的 mailbox，但一旦开始发送，`*_active` 快照会保持到整包结束；不会把不同测量帧的文本、幅值和波形混在一起。
 
 ## 3. 工程文件与 IP
 
@@ -157,7 +157,9 @@ scripts/
 ├── generate_flattop.py         标准库 Python，生成平顶窗 COE
 ├── setup_fft_uart.tcl          第二阶段：ROM、FFT、Translate 与显示模块
 ├── setup_board_top.tcl         第三阶段：时钟、ILA、XDC、绝对顶层
-├── impl_check_board_top.tcl    全流程到 write_bitstream 并输出报告
+├── impl_check_board_top.tcl    Vivado project-run 全流程到 write_bitstream
+├── impl_check_board_top_direct.tcl  不依赖 cscript/vrs 的直接实现流程
+├── run_impl_check_windows.cmd  Windows 环境映射与直接实现入口
 └── run_behavioral_sim.ps1      四组独立 XSim 自检仿真
 sim/                           SystemVerilog 测试平台
 reports/                       已保存报告，注意时间与版本
@@ -242,9 +244,12 @@ PowerShell 中进入仓库，关闭同工程其他 Vivado 构建，避免并发�
 Set-Location -LiteralPath 'C:\Users\Joe\Documents\Verilog\G_FPGA'
 $vivadoExe = 'C:\AMDDesignTools\2025.2\Vivado\bin\vivado.bat'
 $projectFile = (Resolve-Path -LiteralPath '.\G_FPGA.xpr').Path
+$env:PROCESSOR_ARCHITECTURE = 'AMD64'
 ```
 
 在 Vivado GUI 打开 `G_FPGA.xpr`，Tcl Console 检查：
+
+直接执行 `vivado.exe` 可能绕过安装目录的环境初始化；Windows 命令行建议调用同目录的 `vivado.bat`。本机的 Tcl 文件规范化还会把 `Documents` 路径段折叠掉，因此完整实现采用 `run_impl_check_windows.cmd` 临时映射 `V:` 盘，结束时自动解除映射。若遇到 Tcl Store 权限/旧 manifest 错误，应先退出所有 Vivado，再修复或备份用户 Tcl Store 后重启，不要删除工程源码。
 
 ```tcl
 get_property PART [current_project]
@@ -285,11 +290,11 @@ if ($LASTEXITCODE -ne 0) { throw 'Simulation regression failed' }
 ### 6.4 综合、实现与 bitstream
 
 ```powershell
-& $vivadoExe -mode batch -source .\scripts\impl_check_board_top.tcl -tclargs $projectFile
+& .\scripts\run_impl_check_windows.cmd
 if ($LASTEXITCODE -ne 0) { throw 'Synthesis / implementation failed' }
 ```
 
-脚本重置并重跑 `synth_1` / `impl_1` 生成结果，运行至 `write_bitstream`。输出包括：
+该 Windows 入口使用 `impl_check_board_top_direct.tcl` 在单个 Vivado 进程中执行 `synth_design → opt_design → place_design → phys_opt_design → route_design → write_bitstream`，规避部分 Windows Script Host 上 `runme.bat → cscript/vrs` 的设置加载失败。若使用正常 GUI/命令行环境，也可以直接运行 `impl_check_board_top.tcl` 的 project-run 版本。输出包括：
 
 - `G_FPGA.runs/impl_1/G_FPGA_Top.bit`：下载文件。
 - `G_FPGA.runs/impl_1/G_FPGA_Top.ltx` / `debug_nets.ltx`：ILA 探针文件，以本次生成文件为准。
@@ -320,12 +325,12 @@ JTAG 下载配置在 SRAM 中，断电后不保留，重新上电需再次下载
 | 3 | 输入量程内、围绕模块允许工作点的 100 kHz 正弦 | ADC 不削顶，过零触发后应周期性出现 frame_valid |
 | 4 | ILA 观察稳定结果 | 干净单音的最大峰预期靠近 bin 200，频率文本靠近 100000 Hz |
 | 5 | 检查 JA1 | 空闲高，8N1，115200；可解出四条文本和 add 命令 |
-| 6 | 查看屏幕 | 文本为原始幅值和 Hz；曲线协议有输出，但已知负值映射问题会影响形状 |
+| 6 | 查看屏幕 | 文本为原始幅值和 Hz；曲线应覆盖正、负半周，具体形状仍需实板验证 |
 | 7 | 按 BtnU，等待后续显示批次 | 请求切换 1/3 周期，不应期望立即完成 400 点传输 |
 
 零均值正弦的理论关系 `Vrms ≈ Vpp/(2√2)` 可作同尺度下粗检，但残余 DC、滤波、跨帧读取和截断会影响结果。未确认帧一致性时，不用一次屏显比值进行精度验收。
 
-“完整一/三周期、平滑对称曲线”是修复后的验收目标，**不是当前已证明的现象**。代码没有实现 LED/数码管测量显示，其不变化不代表系统没有工作。无输入或恒定 DC 可能不触发新帧，屏幕保留旧值，而非立即显示零。
+“完整一/三周期、平滑对称曲线”是 RTL 修订后的上机验收目标；仿真已经对负值坐标映射和帧释放握手做了定值检查，但还不是实板证据。代码没有实现 LED/数码管测量显示，其不变化不代表系统没有工作。无输入或恒定 DC 可能不触发新帧，屏幕保留旧值，而非立即显示零。
 
 ## 8. ILA 观察方法
 
@@ -350,34 +355,34 @@ HMI 状态中 0=空闲，1/2=BCD 启动/等待，3～6=文本，7～17=波形准
 
 ### 9.1 已有自检仿真
 
-2026-09-15 的 RTL 修复及回归记录对应提交 `a77c358`。本 README 更新是文档核对，**没有重新运行以下仿真或实现**。
+2026-09-15 的 RTL 修复及回归已重新运行；本节记录的是当前工作区在提交前的实际结果，最终提交号以 `git log -1` 为准。
 
 | 测试 | 已记录结果 | 已覆盖 / 未覆盖 |
 | --- | --- | --- |
 | `tb_time_domain_calc.sv` | 8192 次读；Vpp=16000，mean_square=23992065，Vrms=4898 | 一组确定性向量与完成流程；不包含 AFE DC/FIR |
 | `tb_fft_processor.sv` | 8192 输入、4096 频域写入，无已检测 TLAST 异常 | 地址/计数与基本流转；输入为模运算序列，非精确单音幅值标定；无随机背压完整证明 |
 | `tb_peak_search.sv` | 3991 个扫描点；index=123，f=61500，amp=10000 | 倍率 2 的已知峰；不证明复杂信号基频识别 |
-| `tb_hmi_uart.sv` | 4 条文本、8 条曲线命令，共 176 字节 | BCD 含 0、250、12345、4294967295；检查语法，不验证生产版 400 点坐标数值 |
+| `tb_hmi_uart.sv` | 解码 174 个 UART 字节，4 条文本、8 条曲线命令；`frame_release` 置高 | BCD 含 0、250、12345、4294967295；WAVE_POINTS=8 下检查 Y=230、179、128、77 及负值符号处理 |
 
-HMI 仿真使用加速配置，每 bit 10 个仿真时钟，而非生产配置的 868 拍；帧长和点数也缩短。通过不能证明真实 115200 时序、400 点抽样跨度或负半周映射正确。
+HMI 仿真使用加速配置，每 bit 10 个仿真时钟，而非生产配置的 868 拍；帧长和点数也缩短。通过不能证明真实 115200 时序、400 点抽样跨度或串口屏实际兼容性。
 
-尚未覆盖：AFE/FIR/ADC CDC、顶层 MMCM/复位/消抖、连续多帧覆盖、ADC 到 UART 的完整集成回归、频谱幅值数值参考模型，以及所有握手在任意背压下的稳定性断言。
+尚未覆盖：AFE/FIR/ADC CDC、顶层 MMCM/复位/消抖、ADC 到 UART 的完整集成回归、频谱幅值数值参考模型，以及所有握手在任意背压下的稳定性断言。四组自检分别覆盖当前阶段的计算、FFT、峰值和 HMI 接口；并不替代板级仿真或仪器验收。
 
-### 9.2 历史实现结果
+### 9.2 当前实现结果（2026-09-15）
 
-以下取自 **2026-09-12 板级实现报告**，早于上述 RTL 修复，不能作为当前源码的实现结论：
+以下取自本次修订 RTL 的 Vivado 2025.2 实现报告，器件为 `xc7a35tcpg236-1`，顶层为 `G_FPGA_Top`，设计状态为 Fully Routed：
 
-| 指标 | 历史值 |
+| 指标 | 当前值 |
 | --- | --- |
-| WNS / TNS | +0.230 ns / 0 ns |
-| WHS / THS | +0.021 ns / 0 ns |
-| LUT | 9326 / 20800，44.84% |
-| FF | 14117 / 41600，33.94% |
+| WNS / TNS | +0.237 ns / 0 ns |
+| WHS / THS | +0.017 ns / 0 ns |
+| LUT | 9316 / 20800，44.79% |
+| FF | 14222 / 41600，34.19% |
 | BRAM tiles | 39 / 50，78.00% |
 | DSP | 73 / 90，81.11% |
-| DRC | 无错误；仍有警告，不等于零警告 |
+| DRC | 0 errors，11 warnings（主要为 DSP 输入/输出寄存器、LUT 方程和无负载检查） |
 
-BRAM/DSP 已较紧张，增加 ILA 深度、完整双缓冲或更多计算通道前需重新预算。当前没有实测误差、抗干扰结果或正式验收数据。
+报告：[board_top_timing.rpt](reports/board_top_timing.rpt)、[board_top_utilization.rpt](reports/board_top_utilization.rpt)、[board_top_drc.rpt](reports/board_top_drc.rpt)、[board_top_io.rpt](reports/board_top_io.rpt)。本次生成的本地下载文件为 `G_FPGA.runs/impl_1/G_FPGA_Top.bit` 和同目录 `G_FPGA_Top.ltx`；它们在 `.gitignore` 中，不作为源码提交。当前 SHA-256：bit=`C1629248375896C9319EE9FFC1045AA06900B162A910535C70A5DBF9D52B99F5`，ltx=`26CD213BC9B562290F3E177498803CBE7F7BCED205E4E57ABDAF742A1E43956F`；可用 `Get-FileHash` 重新核对。BRAM/DSP 已较紧张，增加 ILA 深度、完整双缓冲或更多计算通道前需重新预算。当前没有实测误差、抗干扰结果或正式验收数据。
 
 ## 10. 标定与验收实验
 
@@ -415,15 +420,15 @@ BRAM/DSP 已较紧张，增加 ILA 深度、完整双缓冲或更多计算通道
 
 | 项目 | 当前事实与影响 | 后续工作 |
 | --- | --- | --- |
-| 波形负值绝对值 | HMI 对负 16-bit 样本先零扩展到 17-bit 再取反加一；-1 得到 65537 而非 1，非零 Vpp 路径把负半周错误饱和到 Y=255 | 修正符号扩展，添加负满量程、-1、0、正值的 Y 数值断言；本次仅记录，未改 RTL |
-| 时域帧不冻结 | 三份镜像同写，无 ping-pong/消费者确认；下一帧可覆盖读取中的上一帧 | 引入可验证的帧所有权/快照策略，特别是慢速 HMI |
-| HMI 批次不完全隔离 | 忙期间新结果可更新用于波形计算的锁存值 | 分离活动批次和待发送结果，验证文本/波形属同一版本 |
-| AFE 输入流控 | FIR 不 ready 时没有缓存 ADC 样本 | 验证始终可接收的配置条件，或增加缓存/溢出报告 |
+| 波形负值绝对值 | 已修正为先符号扩展到 17-bit 再取绝对值；加速 HMI 仿真检查 `-1`、负值、零和正值坐标，避免负半周整体饱和到 Y=255 | 实板验证坐标方向、屏幕纵轴定义和满量程显示 |
+| 时域帧冻结 | 已增加 AFE `ST_HOLD` 与 HMI `frame_release` 电平握手；UART 波形发送期间三份镜像不再被下一帧覆盖 | 实板长时间运行验证释放、重新触发和异常复位；吞吐仍受约 0.4～0.5 秒/包限制 |
+| HMI 批次隔离 | 已增加 `*_active` 活动包快照；一旦开始转换/发送，文本和波形使用同一组值 | mailbox 仍只有一项，极端高速结果到达时只保留最新待发送项 |
+| AFE 输入流控 | 已增加一项 FIR AXI 输入寄存器，在 `tready=0` 时保持 `tvalid` 与数据稳定 | ADC `sample_valid` 没有 ready/overflow 回报；若 FIR 长时间背压，仍需增加 FIFO 或溢出指示 |
 | DC 残差 | 整数 IIR 无额外小数累加精度，不保证零均值 | 增加精度或明确逐帧去均值定义及测试 |
 | 峰值不等于基频 | 搜索最强分量，区间宽于目标带 | 结合需求加阈值、频带限制、谐波判决、插值 |
-| 波形参数化 | 默认 400 点，地址除法存在固定 399 | 不要只改 WAVE_POINTS 就认为其他点数完全正确 |
+| 波形参数化 | 地址跨度已使用 `WAVE_POINTS-1` 参数；测试用 8 点配置已覆盖整除和坐标结果 | 修改点数后仍应重新仿真并检查串口屏横向像素 |
 | 接口时序 | ADC input_delay 为占位值，跨域例外较宽 | 用真实模块时序重建预算，审查 CDC/未约束路径 |
-| 验证版本 | 保存的 routed 报告/bit 早于最新 RTL 修复 | 重跑回归与实现，绑定报告到提交 |
+| 验证版本 | 当前 routed 报告、bit/ltx 均由 2026-09-15 修订 RTL 重新生成 | 后续任何 RTL/IP/XDC 修改后必须重新回归、实现并同步更新时间/提交号 |
 
 `waveform_done` 表示最后一个字节已交给 UART，不表示最后一个停止位已在引脚发送完成；外部时序判断还应考虑发送器是否空闲。
 
@@ -437,7 +442,7 @@ BRAM/DSP 已较紧张，增加 ILA 深度、完整双缓冲或更多计算通道
 | 频率成倍 | 更强谐波被选为最大峰，不先假定 FFT 错误 |
 | 屏幕无变化 | 电源/共地、TX→RX、115200、控件名和数字 ID、FF 结束符 |
 | 屏幕乱码 | 电平/波特率、8N1、接错板载 USB-UART、线缆干扰 |
-| 曲线负半周平顶 | 先查已知负值映射问题，不直接归因 ADC 削顶 |
+| 曲线负半周平顶 | 先核对最新 bit/ltx、纵轴方向、ADC 编码和削顶；RTL 已修正负值绝对值路径 |
 | 曲线撕裂/跳动 | BRAM 覆盖、HMI 批次参数更新、整数周期抽样误差 |
 | 无信号仍有旧值 | 没有新过零帧；当前无超时清零/无信号 UI 状态 |
 | ILA 找不到/不匹配 | bit/ltx 是否同次构建、硬件刷新、当前顶层是否含 ILA |
@@ -449,4 +454,4 @@ BRAM/DSP 已较紧张，增加 ILA 深度、完整双缓冲或更多计算通道
 - [Basys 3 官方参考手册](https://digilent.com/reference/_media/reference/programmable-logic/basys-3/basys3_rm.pdf)、[官方 Master XDC](https://github.com/Digilent/digilent-xdc/blob/master/Basys-3-Master.xdc)：板上资源、连接器和封装脚。
 - [采集/时域说明](docs/CAPTURE_CALC.md)、[FFT/UART 说明](docs/FFT_UART.md)：分阶段设计资料，最终实现同时核对脚本和 RTL。
 
-修改采样率、FFT 长度、定点格式或屏幕协议时，同时审查 IP、COE、频率换算、周期抽样、XDC 和参考测试值。修改引脚同步更新接线表。报告注明日期与提交，区分“仿真通过”“实现通过”“真实板测通过”和“精度验收通过”。完成工作后提交并推送源码/文档；生成目录、缓存和日志按 `.gitignore` 管理，不把旧 bitstream 的存在当作最新构建成功的证据。
+本次文档对应的实现核对日期为 2026-09-15；当前 bitstream/ltx 的生成时间约为 16:12，WNS/WHS 分别为 +0.237/+0.017 ns。修改采样率、FFT 长度、定点格式或屏幕协议时，同时审查 IP、COE、频率换算、周期抽样、XDC 和参考测试值。修改引脚同步更新接线表。报告注明日期与提交，区分“仿真通过”“实现通过”“真实板测通过”和“精度验收通过”。完成工作后提交并推送源码/文档；生成目录、缓存和日志按 `.gitignore` 管理，不把旧 bitstream 的存在当作最新构建成功的证据。
