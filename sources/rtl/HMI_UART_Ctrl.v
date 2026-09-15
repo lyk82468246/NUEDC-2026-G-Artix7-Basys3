@@ -120,18 +120,6 @@ module HMI_UART_Ctrl #(
     //-------------------------------------------------------------------------
     // Message helper functions
     //-------------------------------------------------------------------------
-    function [39:0] select_bcd;
-        input [1:0] id;
-        begin
-            case (id)
-                2'd0: select_bcd = vpp_bcd;
-                2'd1: select_bcd = vrms_bcd;
-                2'd2: select_bcd = f1_bcd;
-                default: select_bcd = amp_f1_bcd;
-            endcase
-        end
-    endfunction
-
     // pos=0 is the least-significant decimal digit.
     function [3:0] bcd_digit;
         input [39:0] bcd;
@@ -421,8 +409,20 @@ module HMI_UART_Ctrl #(
                              (div_quot | (25'b1 << (24-div_count))) :
                              div_quot;
 
-    wire [39:0] selected_bcd;
-    assign selected_bcd = select_bcd(text_id);
+    // Explicit combinational mux for the active measurement field.  Keeping
+    // this as a plain case statement makes the selection unambiguous in both
+    // Vivado synthesis and XSim when text_id=0 (Vpp); the four BCD converters
+    // finish in parallel and their outputs remain stable for the whole UART
+    // message.
+    reg [39:0] selected_bcd;
+    always @* begin
+        case (text_id)
+            2'd0:    selected_bcd = vpp_bcd;
+            2'd1:    selected_bcd = vrms_bcd;
+            2'd2:    selected_bcd = f1_bcd;
+            default: selected_bcd = amp_f1_bcd;
+        endcase
+    end
 
     assign state_debug = state;
 

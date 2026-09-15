@@ -85,8 +85,10 @@ module Peak_Search #(
         reg [31:0] index_ext;
         begin
             index_ext = index;
-            // 500 = 512 - 12; this avoids a general-purpose divider.
-            index_to_frequency = (index_ext << 9) - (index_ext << 2);
+            // 500 = 512 - 8 - 4; this avoids a general-purpose divider.
+            index_to_frequency = (index_ext << 9) -
+                                 (index_ext << 3) -
+                                 (index_ext << 2);
         end
     endfunction
 
