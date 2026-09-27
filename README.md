@@ -245,11 +245,14 @@ Set-Location -LiteralPath 'C:\Users\Joe\Documents\Verilog\G_FPGA'
 $vivadoExe = 'C:\AMDDesignTools\2025.2\Vivado\bin\vivado.bat'
 $projectFile = (Resolve-Path -LiteralPath '.\G_FPGA.xpr').Path
 $env:PROCESSOR_ARCHITECTURE = 'AMD64'
+$vivadoRoot = 'C:\AMDDesignTools\2025.2\Vivado'
+$env:XILINX_VIVADO = $vivadoRoot
+$env:PATH = "$vivadoRoot\lib\win64.o;$vivadoRoot\bin;$vivadoRoot\bin\unwrapped\win64.o;$env:PATH"
 ```
 
 在 Vivado GUI 打开 `G_FPGA.xpr`，Tcl Console 检查：
 
-直接执行 `vivado.exe` 可能绕过安装目录的环境初始化；Windows 命令行建议调用同目录的 `vivado.bat`。本机的 Tcl 文件规范化还会把 `Documents` 路径段折叠掉，因此完整实现采用 `run_impl_check_windows.cmd` 临时映射 `V:` 盘，结束时自动解除映射。若遇到 Tcl Store 权限/旧 manifest 错误，应先退出所有 Vivado，再修复或备份用户 Tcl Store 后重启，不要删除工程源码。
+直接执行 `vivado.exe` 可能绕过安装目录的环境初始化；Windows 命令行建议调用同目录的 `vivado.bat`。`xv_common.dll` 位于 `Vivado\lib\win64.o`，普通 PowerShell 若未经过 Vivado 环境初始化，需像上面一样把该目录加入 `PATH`；`run_behavioral_sim.ps1` 已自动完成这一步。本机的 Tcl 文件规范化还会把 `Documents` 路径段折叠掉，因此完整实现采用 `run_impl_check_windows.cmd` 临时映射 `V:` 盘，结束时自动解除映射。若遇到 Tcl Store 权限/旧 manifest 错误，应先退出所有 Vivado，再修复或备份用户 Tcl Store 后重启，不要删除工程源码。
 
 ```tcl
 get_property PART [current_project]

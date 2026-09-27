@@ -16,8 +16,21 @@ $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 Set-Location -LiteralPath $projectRoot
 
+$VivadoBin = (Resolve-Path -LiteralPath $VivadoBin).Path
+$vivadoRoot = Split-Path -Parent $VivadoBin
+$vivadoLib = Join-Path $vivadoRoot 'lib\win64.o'
+$vivadoUnwrapped = Join-Path $VivadoBin 'unwrapped\win64.o'
+if (-not (Test-Path -LiteralPath $vivadoLib)) {
+    throw "Vivado runtime library directory not found: $vivadoLib"
+}
+
 $env:PROCESSOR_ARCHITECTURE = 'AMD64'
 $env:XILINX_LOCAL_USER_DATA = 'NO'
+$env:XILINX_VIVADO = $vivadoRoot
+# Vivado's .bat launchers normally add these directories themselves.  A
+# regular PowerShell session does not necessarily have that initialized PATH;
+# add the runtime DLL directory explicitly so xvlog/xelab/xsim are repeatable.
+$env:PATH = "$vivadoLib;$VivadoBin;$vivadoUnwrapped;$env:PATH"
 
 function Invoke-VivadoTool {
     param(
