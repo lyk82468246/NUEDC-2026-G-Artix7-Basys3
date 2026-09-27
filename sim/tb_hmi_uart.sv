@@ -49,6 +49,7 @@ module tb_hmi_uart;
     wire       hmi_busy;
     wire       waveform_done;
     wire       frame_release;
+    wire       measurement_valid;
     wire [4:0] state_debug;
 
     reg signed [15:0] time_mem [0:FRAME_LENGTH-1];
@@ -63,6 +64,7 @@ module tb_hmi_uart;
     integer i;
     integer timeout_cycles;
     reg     waveform_seen;
+    integer measurement_valid_count;
 
     initial clk = 1'b0;
     always #5 clk = ~clk;
@@ -105,8 +107,14 @@ module tb_hmi_uart;
         .busy                   (hmi_busy),
         .waveform_done          (waveform_done),
         .frame_release          (frame_release),
+        .measurement_valid      (measurement_valid),
         .state_debug            (state_debug)
     );
+
+    always @(posedge clk) begin
+        if (!rst && measurement_valid)
+            measurement_valid_count = measurement_valid_count + 1;
+    end
 
     // Synchronous BRAM model for the HMI read port.
     always @(posedge clk) begin
@@ -186,6 +194,7 @@ module tb_hmi_uart;
         time_rd_data        = 16'sd0;
         rx_count            = 0;
         waveform_seen       = 1'b0;
+        measurement_valid_count = 0;
         rst                 = 1'b1;
 
         for (i = 0; i < FRAME_LENGTH; i = i + 1)
@@ -219,6 +228,9 @@ module tb_hmi_uart;
 
         assert (waveform_seen)
             else $fatal(1, "Timeout: HMI waveform_done was not asserted");
+        assert (measurement_valid_count == 1)
+            else $fatal(1, "Expected one measurement_valid pulse, got %0d",
+                        measurement_valid_count);
         assert (frame_release === 1'b1)
             else $fatal(1, "HMI did not hold frame_release after packet completion");
 

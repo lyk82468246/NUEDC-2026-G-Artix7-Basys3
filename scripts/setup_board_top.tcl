@@ -3,7 +3,8 @@
 #------------------------------------------------------------------------------
 # Configure the Step 3 Basys 3 top level:
 #   * Clocking Wizard (MMCM): 100 MHz + legal 12.2881356 MHz intermediate
-#   * ILA: six probes clocked by the 100 MHz algorithm clock
+#   * ILA: six probes clocked by the 100 MHz algorithm clock.  Probe 0 is the
+#     self-consistent measurement-packet event; it is not the raw frame pulse.
 #   * G_FPGA_Top RTL and Basys3_Pinout.xdc
 #
 # The 12.2881356 MHz MMCM output is divided by the Artix-7 BUFR /3 in
@@ -116,7 +117,9 @@ foreach clk_prop {CONFIG.MMCM_DIVCLK_DIVIDE CONFIG.MMCM_CLKFBOUT_MULT_F \
 }
 
 #--------------------------------------------------------------------------
-# ILA: frame pulse, time-domain results, spectrum peak, UART FSM state
+# ILA: measurement-packet event, time-domain results, spectrum peak, UART FSM
+# state. Probe 0 is generated after both time and peak results are snapshotted
+# by HMI_UART_Ctrl, so the value probes describe the same measurement packet.
 #--------------------------------------------------------------------------
 set ila_name ila_system
 set ila_ip [get_ips -quiet $ila_name]

@@ -103,7 +103,7 @@ BtnC 按下为高电平。顶层端口虽然叫 `sys_rst_n`，但默认 `BUTTON_
 1. 默认把 ADC 码减去 2048，再左移 4 位，转换为 signed 16-bit 数据。
 2. FIR 使用 95 taps 低通系数，设计目标为通带 600 kHz、阻带 900 kHz；实际通带增益和阻带衰减仍需测量。
 3. 整数 IIR 估计残余 DC，默认为 `dc += (x-dc) >>> 12`。它不是逐帧精确求均值，整数截断可留下残余偏置。
-4. 等待 4096 个有效滤波样本预热，再检测非正到正的过零，记录连续 8192 点。写入完成后产生 `frame_valid`。
+4. 等待 4096 个有效滤波样本预热，再检测非正到正的过零，记录连续 8192 点。写入完成后产生内部 `frame_valid`；它只表示采样 BRAM 已冻结，不表示 Vpp/FFT 结果已经就绪。
 5. 时域 FSM 遍历 BRAM，计算 `Vpp = max - min`、平方和、`mean_square = sum >> 13`，再由 Square Root CORDIC 求 RMS。
 
 时域数据为 signed 16-bit；Vpp 接口为 unsigned 17-bit，Vrms 为 unsigned 16-bit，平方和为 44-bit。RMS 输入是 AFE 已处理的数据，不是时域 FSM 再次减去了精确帧均值。
@@ -176,7 +176,7 @@ docs/                          分阶段接口与 IP 配置说明
 | FFT | 8192，Radix-4 Burst I/O，Fixed Point，Unscaled，Natural Order，Non-Realtime |
 | Translate CORDIC | Signed Fraction，输入 30-bit，输出 31-bit；粗旋转及增益补偿 |
 | Clocking Wizard | 算法 100 MHz，辅助约 12.2881356 MHz，之后 BUFR /3 |
-| ILA | 100 MHz，6 个 probe，深度 1024 |
+| ILA | 100 MHz，6 个 probe，深度 1024；probe0 为结果包有效事件 |
 | 时域/频域 BRAM | RTL 推断；时域三份 8192 × 16 镜像，频域 4096 × 32 |
 
 详细参数以三个 `setup_*.tcl` 和当前 RTL 为准。[第一阶段说明](docs/CAPTURE_CALC.md)、[第二阶段说明](docs/FFT_UART.md)保留接口/定点设计过程；其中阶段顶层、时钟或旧流程描述不应覆盖本文的最终板级连接。
@@ -338,14 +338,14 @@ ILA 时钟为 100 MHz，深度 1024，连续观察时间约 10.24 µs。
 
 | Probe | 信号 | 位宽 | 解释 |
 | --- | --- | --- | --- |
-| 0 | `frame_valid` | 1 | ADC 帧写完脉冲，不是 FFT 完成 |
+| 0 | `measurement_valid` | 1 | HMI 已装载同一帧的 Vpp/Vrms/峰值，适合作为结果触发 |
 | 1 | `vpp_out[15:0]` | 16 | 顶层接口为 17-bit，此处只取低 16 位 |
 | 2 | `vrms_out` | 16 | 时域 RMS |
 | 3 | `amp_f1_out[30:0]` | 31 | 接口为 32-bit；倍率增大时注意未观察的最高位 |
 | 4 | `max_index_out` | 12 | 乘 500 得当前代码报告频率 |
 | 5 | `uart_state` | 5 | HMI 消息状态，不是 UART bit 状态机 |
 
-先触发 `frame_valid == 1` 验证采集是否活动。此时新帧尚未完成时域/FFT 计算，数值可能仍属上一结果，不能要求同拍更新。
+当前版本应触发 `probe0 == 1`（即 `measurement_valid`），而不是把原始 `frame_valid` 当作结果触发。`frame_valid` 只表示 8192 点采样帧写完；时域和 FFT 计算在其后进行，若在原始帧脉冲上触发，Vpp/Vrms/谱峰可能仍是上一帧。每次 ILA 捕获结束进入 `Idle` 后，必须再次点击 `Run Trigger` 重新武装；改变信号源本身不会自动刷新 ILA 存储器。
 
 HMI 状态中 0=空闲，1/2=BCD 启动/等待，3～6=文本，7～17=波形准备/读取/除法/发送相关状态；17 是读数据寄存阶段。可触发状态 3 观察开始发送文本时的结果。完整枚举见 [HMI_UART_Ctrl.v](sources/rtl/HMI_UART_Ctrl.v)。
 

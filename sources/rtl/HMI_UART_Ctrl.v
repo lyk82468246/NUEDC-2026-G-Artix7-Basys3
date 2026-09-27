@@ -53,6 +53,12 @@ module HMI_UART_Ctrl #(
     // packet has been accepted by UART_Tx and stays high until the next packet
     // starts, so a slower ADC/FIR clock cannot miss a one-cycle pulse.
     output reg                                  frame_release,
+    // One-cycle event generated after the active result snapshot has been
+    // loaded and one clock before BCD conversion starts. Unlike frame_valid,
+    // this event means that the four displayed result registers already belong
+    // to the same completed measurement packet. It is the top-level ILA
+    // trigger.
+    output reg                                  measurement_valid,
     // HMI message FSM state for the top-level ILA.
     output wire [4:0]                            state_debug
 );
@@ -545,9 +551,11 @@ module HMI_UART_Ctrl #(
             busy                <= 1'b0;
             waveform_done       <= 1'b0;
             frame_release       <= 1'b0;
+            measurement_valid   <= 1'b0;
         end
         else begin
             waveform_done <= 1'b0;
+            measurement_valid <= 1'b0;
 
             // Results can arrive while the previous UART message is still being
             // sent. The two flags form a one-entry pending-result mailbox.
@@ -591,6 +599,10 @@ module HMI_UART_Ctrl #(
                     busy  <= 1'b1;
                     // bcd_start is high in this cycle and is sampled by all four
                     // converters at this edge.
+                    // The active snapshot was loaded in the preceding ST_IDLE
+                    // cycle, so this pulse is aligned with the displayed result
+                    // registers rather than with the earlier frame completion.
+                    measurement_valid <= 1'b1;
                     state <= ST_CONV_WAIT;
                 end
 

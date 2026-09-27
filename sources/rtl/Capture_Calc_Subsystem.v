@@ -48,6 +48,7 @@ module Capture_Calc_Subsystem (
     output wire             waveform_done,
     output wire             uart_tx,
     output wire             frame_valid,
+    output wire             measurement_valid,
     output wire [4:0]       uart_state
 );
 
@@ -233,6 +234,7 @@ module Capture_Calc_Subsystem (
         .busy              (hmi_busy),
         .waveform_done     (waveform_done),
         .frame_release     (frame_release),
+        .measurement_valid (measurement_valid),
         .state_debug       (uart_state)
     );
 

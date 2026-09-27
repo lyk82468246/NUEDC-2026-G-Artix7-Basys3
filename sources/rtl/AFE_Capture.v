@@ -241,6 +241,13 @@ module AFE_Capture #(
                 frame_done_pending <= 1'b0;
             end
 
+            // frame_release is a level handshake in the same calc/AFE clock
+            // domain. Consume it independently of FIR output valid so a
+            // temporarily stalled/idle FIR cannot leave the capture FSM in
+            // ST_HOLD forever after the HMI packet has completed.
+            if ((state == ST_HOLD) && frame_release)
+                state <= ST_REARM;
+
             if (fir_output_fire) begin
                 // 直流估计在每个有效 FIR 样本到来时更新。
                 dc_estimate_s <= dc_estimate_next_s;
@@ -308,8 +315,8 @@ module AFE_Capture #(
                             // consumers' point of view. Continue tracking the
                             // input/DC estimate, but do not start another write
                             // frame until the packet owner releases this one.
-                            if (frame_release)
-                                state <= ST_REARM;
+                            // The release transition is handled above so it
+                            // does not depend on fir_output_fire.
                         end
 
                         default: begin
