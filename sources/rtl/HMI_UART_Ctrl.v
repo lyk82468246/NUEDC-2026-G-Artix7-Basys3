@@ -1048,6 +1048,9 @@ module HMI_UART_Ctrl #(
                     addr_div_quot <= addr_div_quot_next;
 
                     if (addr_div_count == ADDR_DIV_BITS-1) begin
+                        // Keep the remainder as the fractional position
+                        // between sample[q] and sample[q+1].
+                        wave_frac <= addr_div_rem_next;
                         if (addr_div_quot_next >= FRAME_LENGTH)
                             time_rd_addr <= FRAME_LENGTH - 1;
                         else
