@@ -96,19 +96,25 @@ t3.txt="<amp>" FF FF FF
 
 数值由四个并行 `BIN2BCD` 实例产生，ASCII 发送时去掉最高位多余的 0，但全零仍保留一个字符 `0`。
 
-波形部分默认 `DISPLAY_CYCLES=1`、400 点。根据 `f1_index` 计算：
+波形部分默认 `DISPLAY_CYCLES=1`、400 点。每个新波形批次先清除曲线通道，再根据 `f1_index` 计算：
 
 ```text
 N_cycle = 8192 / f1_index
 span    = min(N_cycle * DISPLAY_CYCLES - 1, 8191)
-address[p] = floor(p * span / 399)
+q[p]    = floor(p * span / 399)
+r[p]    = (p * span) mod 399
+sample[p] = sample[q[p]] +
+            (sample[q[p]+1] - sample[q[p]]) * r[p] / 399
 ```
 
-每点先读 HMI 专用 BRAM 口，再用一个 25-cycle restoring divider 计算 `abs(sample) * 255 / Vpp`，映射为 0..255 的 Y，最后发送：
+每个显示点读取 `sample[q]` 和相邻的 `sample[q+1]`。插值除法使用 27-cycle restoring divider，避免在 100 MHz 主路径中推断大除法器；插值后的 signed sample 再用 25-cycle restoring divider 计算 `abs(sample) * 255 / Vpp`，映射为 0..255 的 Y。发送顺序为：
 
 ```text
+cle 1,0     FF FF FF
 add 1,0,<Y> FF FF FF
 ```
+
+线性插值只改善串口屏上的连续显示效果，不增加 ADC 的真实采样信息。500 kHz 时每周期约 8 个 ADC 样本，插值后的波形仍是这些样本之间的线性近似。
 
 将 `Capture_Calc_Subsystem` 中的 `DISPLAY_CYCLES` 改为 3 即可请求三周期显示；若三周期超过 8192 点，逻辑会自动截到当前帧范围。
 

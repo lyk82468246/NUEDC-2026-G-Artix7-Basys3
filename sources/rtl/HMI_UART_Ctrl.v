@@ -8,8 +8,10 @@
 // 每当时域计算和谱峰搜索都产生新结果后，本模块：
 //   1) 用四个 BIN2BCD 实例并行转换 Vpp、Vrms、f1、amp_f1；
 //   2) 逐字节发送四条文本控件更新命令；
-//   3) 从 BRAM_TimeDomain 的 HMI 读口抽取 400 个点；
-//   4) 把采样值缩放成 0..255，并发送淘晶驰 add 曲线命令。
+//   3) 在发送新波形前用 cle 清除屏幕上的旧曲线；
+//   4) 从 BRAM_TimeDomain 的 HMI 读口抽取 400 个点，并对相邻采样点
+//      做定点线性插值；
+//   5) 把插值后的采样值缩放成 0..255，并发送淘晶驰 add 曲线命令。
 //
 // UART 发送器只接受一个字节的 start 脉冲。消息状态机仅在 UART 空闲时
 // 发出下一字节，因此任何一个字节都不会被覆盖。波形部分使用单独的
@@ -212,6 +214,24 @@ module HMI_UART_Ctrl #(
         end
     endfunction
 
+    // TJC curve clear command: cle 1,0
+    // The waveform control is fixed at object ID 1, channel 0 in the current
+    // HMI project.  Clearing only channel 0 preserves any other screen data.
+    function [7:0] clear_prefix_byte;
+        input [3:0] index;
+        begin
+            case (index)
+                4'd0: clear_prefix_byte = 8'h63; // c
+                4'd1: clear_prefix_byte = 8'h6c; // l
+                4'd2: clear_prefix_byte = 8'h65; // e
+                4'd3: clear_prefix_byte = 8'h20; // space
+                4'd4: clear_prefix_byte = 8'h31; // 1
+                4'd5: clear_prefix_byte = 8'h2c; // ,
+                default: clear_prefix_byte = 8'h30; // 0
+            endcase
+        end
+    endfunction
+
     function [7:0] wave_digit_ascii;
         input [7:0] y;
         input [1:0] length;
@@ -324,6 +344,14 @@ module HMI_UART_Ctrl #(
     // BRAM output -> signed-absolute-value -> DSP48 input path comfortably
     // below the 100 MHz clock period.
     localparam [4:0] ST_WAVE_CAPTURE   = 5'd17;
+    // One clear command is sent at the beginning of every waveform packet.
+    localparam [4:0] ST_WAVE_CLEAR_PREFIX = 5'd18;
+    localparam [4:0] ST_WAVE_CLEAR_TERM   = 5'd19;
+    // Read the adjacent sample used by the linear interpolator.
+    localparam [4:0] ST_WAVE_READ_NEXT    = 5'd20;
+    localparam [4:0] ST_WAVE_CAPTURE_NEXT = 5'd21;
+    localparam [4:0] ST_WAVE_INTERP_START = 5'd22;
+    localparam [4:0] ST_WAVE_INTERP_DIV   = 5'd23;
 
     reg [4:0] state;
     reg [1:0] text_id;
@@ -339,8 +367,14 @@ module HMI_UART_Ctrl #(
     reg [1:0]  wave_y_index;
     reg [3:0]  wave_prefix_index;
     reg [1:0]  wave_term_index;
+    reg [3:0]  clear_prefix_index;
+    reg [1:0]  clear_term_index;
     reg        wave_sample_negative;
     reg signed [15:0] wave_sample_reg;
+    reg signed [15:0] wave_sample_next_reg;
+    // Remainder of address = floor(p*wave_span/(WAVE_POINTS-1)).  It is the
+    // fractional numerator used by the linear interpolator.
+    reg [9:0]  wave_frac;
 
     // The two waveform address calculations are intentionally iterative.
     // A variable-width divide in the ST_WAVE_PREP combinational cone made
@@ -404,6 +438,45 @@ module HMI_UART_Ctrl #(
                                    ({{(ADDR_DIV_BITS-1){1'b0}},1'b1} <<
                                     (ADDR_DIV_BITS-1-addr_div_count))) :
                                   addr_div_quot;
+
+    //-------------------------------------------------------------------------
+    // Linear interpolation between two adjacent signed ADC samples
+    //-------------------------------------------------------------------------
+    //
+    // sample_interp = sample0 + (sample1-sample0)*remainder/(WAVE_POINTS-1)
+    //
+    // The product is at most 17x10 bits: a signed 16-bit sample difference
+    // can have magnitude 65535, while the address remainder is below the
+    // 10-bit denominator.  The division is deliberately iterative.  It is
+    // performed while UART_Tx is idle for a long time, so this avoids putting
+    // a large variable divider in the 100 MHz datapath.
+    localparam integer INTERP_DIV_BITS = 27;
+    reg [INTERP_DIV_BITS-1:0] interp_div_num;
+    reg [INTERP_DIV_BITS-1:0] interp_div_quot;
+    reg [9:0]                 interp_div_rem;
+    reg [4:0]                 interp_div_count;
+
+    wire signed [16:0] interp_delta =
+        $signed({wave_sample_next_reg[15], wave_sample_next_reg}) -
+        $signed({wave_sample_reg[15],      wave_sample_reg});
+    wire [16:0] interp_delta_abs = interp_delta[16] ?
+        (~interp_delta + 17'd1) : interp_delta;
+    wire [INTERP_DIV_BITS-1:0] interp_product =
+        {{(INTERP_DIV_BITS-17){1'b0}}, interp_delta_abs} *
+        {{(INTERP_DIV_BITS-10){1'b0}}, wave_frac};
+
+    wire [9:0] interp_rem_shifted =
+        {interp_div_rem[8:0],
+         interp_div_num[INTERP_DIV_BITS-1-interp_div_count]};
+    wire       interp_subtract =
+        (interp_rem_shifted >= ADDR_DIVISOR_VALUE);
+    wire [9:0] interp_rem_next = interp_subtract ?
+        (interp_rem_shifted - ADDR_DIVISOR_VALUE) : interp_rem_shifted;
+    wire [INTERP_DIV_BITS-1:0] interp_quot_next = interp_subtract ?
+        (interp_div_quot |
+         ({{(INTERP_DIV_BITS-1){1'b0}},1'b1} <<
+          (INTERP_DIV_BITS-1-interp_div_count))) :
+        interp_div_quot;
 
     assign bcd_start = (state == ST_CONV_START);
 
@@ -475,6 +548,10 @@ module HMI_UART_Ctrl #(
                 uart_data = wave_digit_ascii(wave_y, wave_y_length, wave_y_index);
             ST_WAVE_TERM:
                 uart_data = 8'hff;
+            ST_WAVE_CLEAR_PREFIX:
+                uart_data = clear_prefix_byte(clear_prefix_index);
+            ST_WAVE_CLEAR_TERM:
+                uart_data = 8'hff;
             default:
                 uart_data = 8'h00;
         endcase
@@ -484,7 +561,9 @@ module HMI_UART_Ctrl #(
         ((state == ST_TEXT_PREFIX) || (state == ST_TEXT_DIGITS) ||
          (state == ST_TEXT_CLOSE)  || (state == ST_TEXT_TERM)   ||
          (state == ST_WAVE_PREFIX) || (state == ST_WAVE_DIGITS) ||
-         (state == ST_WAVE_TERM)) && !uart_busy;
+         (state == ST_WAVE_TERM)   ||
+         (state == ST_WAVE_CLEAR_PREFIX) ||
+         (state == ST_WAVE_CLEAR_TERM)) && !uart_busy;
 
     UART_Tx #(
         .CLK_FREQ_HZ(CLK_FREQ_HZ),
@@ -498,7 +577,8 @@ module HMI_UART_Ctrl #(
         .busy (uart_busy)
     );
 
-    assign time_rd_en = (state == ST_WAVE_READ);
+    assign time_rd_en = (state == ST_WAVE_READ) ||
+                        (state == ST_WAVE_READ_NEXT);
 
     //-------------------------------------------------------------------------
     // HMI FSM
@@ -532,8 +612,12 @@ module HMI_UART_Ctrl #(
             wave_y_index        <= 2'd0;
             wave_prefix_index   <= 4'd0;
             wave_term_index     <= 2'd0;
+            clear_prefix_index  <= 4'd0;
+            clear_term_index    <= 2'd0;
             wave_sample_negative<= 1'b0;
             wave_sample_reg     <= 16'sd0;
+            wave_sample_next_reg<= 16'sd0;
+            wave_frac           <= 10'd0;
             div_num             <= 25'd0;
             div_den             <= 17'd0;
             div_quot            <= 25'd0;
@@ -548,6 +632,10 @@ module HMI_UART_Ctrl #(
             addr_div_quot       <= {ADDR_DIV_BITS{1'b0}};
             addr_div_rem        <= 10'd0;
             addr_div_count      <= 5'd0;
+            interp_div_num      <= {INTERP_DIV_BITS{1'b0}};
+            interp_div_quot     <= {INTERP_DIV_BITS{1'b0}};
+            interp_div_rem      <= 10'd0;
+            interp_div_count    <= 5'd0;
             busy                <= 1'b0;
             waveform_done       <= 1'b0;
             frame_release       <= 1'b0;
@@ -673,20 +761,51 @@ module HMI_UART_Ctrl #(
                     wave_point_index <= 9'd0;
                     time_rd_addr     <= {TIME_ADDR_WIDTH{1'b0}};
                     wave_prefix_index <= 4'd0;
+                    clear_prefix_index <= 4'd0;
+                    clear_term_index   <= 2'd0;
+                    wave_frac          <= 10'd0;
 
-                    if (f1_index_active == 0) begin
-                        // No valid peak: display the complete frame.
-                        wave_span <= FRAME_LENGTH - 1;
-                        state     <= ST_WAVE_READ;
+                    // A curve control retains add points until it receives a
+                    // cle command.  Do this before calculating the next
+                    // waveform span, so a new packet always starts cleanly.
+                    state <= ST_WAVE_CLEAR_PREFIX;
+                end
+
+                ST_WAVE_CLEAR_PREFIX: begin
+                    busy <= 1'b1;
+                    if (uart_start) begin
+                        if (clear_prefix_index == 4'd6) begin
+                            clear_term_index <= 2'd0;
+                            state            <= ST_WAVE_CLEAR_TERM;
+                        end
+                        else begin
+                            clear_prefix_index <= clear_prefix_index + 1'b1;
+                        end
                     end
-                    else begin
-                        // Iteratively calculate N_cycle = FRAME_LENGTH / f1.
-                        span_div_num   <= FRAME_LENGTH;
-                        span_div_den   <= f1_index_active;
-                        span_div_quot  <= {SPAN_DIV_BITS{1'b0}};
-                        span_div_rem   <= 13'd0;
-                        span_div_count <= 4'd0;
-                        state          <= ST_WAVE_SPAN_DIV;
+                end
+
+                ST_WAVE_CLEAR_TERM: begin
+                    busy <= 1'b1;
+                    if (uart_start) begin
+                        if (clear_term_index == 2'd2) begin
+                            if (f1_index_active == 0) begin
+                                // No valid peak: display the complete frame.
+                                wave_span <= FRAME_LENGTH - 1;
+                                state     <= ST_WAVE_READ;
+                            end
+                            else begin
+                                // Iteratively calculate N_cycle = FRAME_LENGTH / f1.
+                                span_div_num   <= FRAME_LENGTH;
+                                span_div_den   <= f1_index_active;
+                                span_div_quot  <= {SPAN_DIV_BITS{1'b0}};
+                                span_div_rem   <= 13'd0;
+                                span_div_count <= 4'd0;
+                                state          <= ST_WAVE_SPAN_DIV;
+                            end
+                        end
+                        else begin
+                            clear_term_index <= clear_term_index + 1'b1;
+                        end
                     end
                 end
 
@@ -713,14 +832,81 @@ module HMI_UART_Ctrl #(
                 end
 
                 ST_WAVE_CAPTURE: begin
-                    busy                  <= 1'b1;
-                    wave_sample_reg      <= time_rd_data;
-                    wave_sample_negative <= time_rd_data[15];
-                    state                 <= ST_WAVE_PROCESS;
+                    busy             <= 1'b1;
+                    wave_sample_reg  <= time_rd_data;
+
+                    // Read the next raw sample as well.  At the upper frame
+                    // boundary the address is clamped; the interpolator then
+                    // naturally returns the last sample.
+                    if (time_rd_addr >= FRAME_LENGTH-1)
+                        time_rd_addr <= FRAME_LENGTH-1;
+                    else
+                        time_rd_addr <= time_rd_addr + 1'b1;
+                    state <= ST_WAVE_READ_NEXT;
+                end
+
+                ST_WAVE_READ_NEXT: begin
+                    busy  <= 1'b1;
+                    // time_rd_en is high for this cycle; the synchronous BRAM
+                    // output is captured on the following state edge.
+                    state <= ST_WAVE_CAPTURE_NEXT;
+                end
+
+                ST_WAVE_CAPTURE_NEXT: begin
+                    busy                   <= 1'b1;
+                    wave_sample_next_reg  <= time_rd_data;
+                    state                  <= ST_WAVE_INTERP_START;
+                end
+
+                ST_WAVE_INTERP_START: begin
+                    busy <= 1'b1;
+
+                    // For an integer address (remainder zero), no correction
+                    // is needed.  The constant guard also keeps reduced-size
+                    // simulation configurations with WAVE_POINTS=1 safe.
+                    if ((ADDR_DIVISOR_VALUE <= 1) ||
+                        (wave_frac == 0) ||
+                        (wave_sample_next_reg == wave_sample_reg)) begin
+                        state <= ST_WAVE_PROCESS;
+                    end
+                    else begin
+                        interp_div_num   <= interp_product;
+                        interp_div_quot  <= {INTERP_DIV_BITS{1'b0}};
+                        interp_div_rem   <= 10'd0;
+                        interp_div_count <= 5'd0;
+                        state            <= ST_WAVE_INTERP_DIV;
+                    end
+                end
+
+                ST_WAVE_INTERP_DIV: begin
+                    busy            <= 1'b1;
+                    interp_div_rem  <= interp_rem_next;
+                    interp_div_quot <= interp_quot_next;
+
+                    if (interp_div_count == INTERP_DIV_BITS-1) begin
+                        // The quotient is the magnitude of the correction.
+                        // Sign-extend both operands before adding/subtracting
+                        // so the -32768..32767 endpoint range is preserved.
+                        if (interp_delta[16])
+                            wave_sample_reg <=
+                                $signed({{2{wave_sample_reg[15]}},
+                                         wave_sample_reg}) -
+                                $signed({1'b0, interp_quot_next[16:0]});
+                        else
+                            wave_sample_reg <=
+                                $signed({{2{wave_sample_reg[15]}},
+                                         wave_sample_reg}) +
+                                $signed({1'b0, interp_quot_next[16:0]});
+                        state <= ST_WAVE_PROCESS;
+                    end
+                    else begin
+                        interp_div_count <= interp_div_count + 1'b1;
+                    end
                 end
 
                 ST_WAVE_PROCESS: begin
                     busy <= 1'b1;
+                    wave_sample_negative <= wave_sample_reg[15];
 
                     if (vpp_active == 0) begin
                         wave_y <= full_scale_y(wave_sample_reg);

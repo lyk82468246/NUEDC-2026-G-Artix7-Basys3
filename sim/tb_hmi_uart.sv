@@ -7,7 +7,8 @@
 //   * 直接验证 BIN2BCD 的 Double-Dabble 转换；
 //   * 用一个缩小后的时钟比例验证 UART 8-N-1 波形；
 //   * 检查四条 tX.txt="..." 命令的字节序列和 0xff 结束符；
-//   * 检查 8 个 add 1,0,Y 命令的前缀、十进制 Y 字节和结束符；
+//   * 检查每帧先发送 cle 1,0，再发送 8 个 add 1,0,Y 命令；
+//   * 用整数模型检查线性插值后的十进制 Y 字节和结束符；
 //   * 验证 HMI 的同步时域 BRAM 读取不会越界，并最终产生 waveform_done。
 //
 // HMI 实例的 CLK_FREQ_HZ 使用 1.152 MHz、BAUD_RATE 使用 115200，因此
@@ -179,6 +180,16 @@ module tb_hmi_uart;
     integer wave_cursor;
     integer wave_digit_start;
     integer digit_count;
+    integer wave_y_received;
+    integer wave_num;
+    integer wave_addr;
+    integer wave_rem;
+    integer wave_next_addr;
+    integer wave_delta;
+    integer wave_correction;
+    integer wave_sample_expected;
+    integer wave_abs_expected;
+    integer wave_y_expected;
 
     initial begin
         bcd_start            = 1'b0;
@@ -286,9 +297,22 @@ module tb_hmi_uart;
         check_rx_byte(61, 8'hff); check_rx_byte(62, 8'hff);
         check_rx_byte(63, 8'hff);
 
-        // Waveform portion: exactly WAVE_POINTS commands, each with a valid
-        // add prefix, 1..3 ASCII decimal Y digits, and three terminators.
+        // The waveform packet first clears channel 0, then emits exactly
+        // WAVE_POINTS add commands.  Each command has a valid add prefix,
+        // 1..3 ASCII decimal Y digits, and three terminators.
         wave_cursor = 64;
+        check_rx_byte(wave_cursor + 0, "c");
+        check_rx_byte(wave_cursor + 1, "l");
+        check_rx_byte(wave_cursor + 2, "e");
+        check_rx_byte(wave_cursor + 3, " ");
+        check_rx_byte(wave_cursor + 4, "1");
+        check_rx_byte(wave_cursor + 5, ",");
+        check_rx_byte(wave_cursor + 6, "0");
+        check_rx_byte(wave_cursor + 7, 8'hff);
+        check_rx_byte(wave_cursor + 8, 8'hff);
+        check_rx_byte(wave_cursor + 9, 8'hff);
+        wave_cursor = wave_cursor + 10;
+
         for (i = 0; i < WAVE_POINTS; i = i + 1) begin
             check_rx_byte(wave_cursor + 0, "a");
             check_rx_byte(wave_cursor + 1, "d");
@@ -301,44 +325,52 @@ module tb_hmi_uart;
             wave_cursor = wave_cursor + 8;
             wave_digit_start = wave_cursor;
             digit_count = 0;
+            wave_y_received = 0;
             while (rx_bytes[wave_cursor] != 8'hff) begin
                 assert ((rx_bytes[wave_cursor] >= "0") &&
                         (rx_bytes[wave_cursor] <= "9"))
                     else $fatal(1, "Invalid waveform Y byte 0x%02h",
                                 rx_bytes[wave_cursor]);
                 digit_count = digit_count + 1;
+                wave_y_received = wave_y_received * 10 +
+                                  (rx_bytes[wave_cursor] - "0");
                 wave_cursor = wave_cursor + 1;
             end
             assert ((digit_count >= 1) && (digit_count <= 3))
                 else $fatal(1, "Invalid waveform Y digit count %0d", digit_count);
 
-            // With FRAME_LENGTH=64, f1_index=4 and WAVE_POINTS=8, the
-            // integer sample addresses are 0,2,4,6,8,10,12,15.  These checks
-            // exercise both the parameterized 7-way address divider and the
-            // signed absolute-value path for the negative samples.
-            if (i == 0) begin
-                assert (digit_count == 3) else $fatal(1, "Y[0] digit count");
-                check_rx_byte(wave_digit_start + 0, "2");
-                check_rx_byte(wave_digit_start + 1, "3");
-                check_rx_byte(wave_digit_start + 2, "0");
+            // Reference model for the production algorithm, reduced to the
+            // small simulation frame: address = floor(i*span/7), followed by
+            // signed linear interpolation using the address remainder.
+            wave_num       = i * 15;
+            wave_addr      = wave_num / (WAVE_POINTS - 1);
+            wave_rem       = wave_num % (WAVE_POINTS - 1);
+            wave_next_addr = (wave_addr < FRAME_LENGTH-1) ?
+                             (wave_addr + 1) : wave_addr;
+            wave_delta     = time_mem[wave_next_addr] - time_mem[wave_addr];
+            if (wave_delta < 0)
+                wave_correction = ((-wave_delta) * wave_rem) /
+                                  (WAVE_POINTS - 1);
+            else
+                wave_correction = (wave_delta * wave_rem) /
+                                  (WAVE_POINTS - 1);
+            if (wave_delta < 0)
+                wave_sample_expected = time_mem[wave_addr] - wave_correction;
+            else
+                wave_sample_expected = time_mem[wave_addr] + wave_correction;
+
+            if (wave_sample_expected < 0) begin
+                wave_abs_expected = -wave_sample_expected;
+                wave_y_expected = 128 + (wave_abs_expected * 255) / 1000;
             end
-            else if (i == 1) begin
-                assert (digit_count == 3) else $fatal(1, "Y[1] digit count");
-                check_rx_byte(wave_digit_start + 0, "1");
-                check_rx_byte(wave_digit_start + 1, "7");
-                check_rx_byte(wave_digit_start + 2, "9");
+            else begin
+                wave_abs_expected = wave_sample_expected;
+                wave_y_expected = 128 - (wave_abs_expected * 255) / 1000;
             end
-            else if (i == 2) begin
-                assert (digit_count == 3) else $fatal(1, "Y[2] digit count");
-                check_rx_byte(wave_digit_start + 0, "1");
-                check_rx_byte(wave_digit_start + 1, "2");
-                check_rx_byte(wave_digit_start + 2, "8");
-            end
-            else if (i == 3) begin
-                assert (digit_count == 2) else $fatal(1, "Y[3] digit count");
-                check_rx_byte(wave_digit_start + 0, "7");
-                check_rx_byte(wave_digit_start + 1, "7");
-            end
+            assert (wave_y_received == wave_y_expected)
+                else $fatal(1, "Interpolated Y[%0d] mismatch: got %0d expected %0d",
+                            i, wave_y_received, wave_y_expected);
+
             check_rx_byte(wave_cursor,     8'hff);
             check_rx_byte(wave_cursor + 1, 8'hff);
             check_rx_byte(wave_cursor + 2, 8'hff);
