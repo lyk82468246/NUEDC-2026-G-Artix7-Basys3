@@ -17,3 +17,4 @@ dfx_runtime.txt
 .venv-hds/
 __pycache__/
 test_results/
+.lab_locks/

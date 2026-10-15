@@ -76,6 +76,18 @@ class TestHDS(unittest.TestCase):
             with self.assertRaises(ValueError):
                 validate_plan(changed)
 
+    def test_legacy_cli_rejects_service_only_plan_before_opening_usb(self):
+        with tempfile.TemporaryDirectory() as directory:
+            plan = json.loads(Path(__file__).with_name("sweep_fpga_only.json").read_text())
+            plan["connections_confirmed"] = True
+            path = Path(directory) / "plan.json"
+            path.write_text(json.dumps(plan))
+            with patch.object(hds242s, "HDS242S") as instrument, patch("sys.argv", [
+                    "hds242s.py", "sweep", str(path), "--execute"]):
+                with self.assertRaises(SystemExit):
+                    hds242s.main()
+                instrument.assert_not_called()
+
     def test_ila_radix_and_event(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "ila.csv"
@@ -115,6 +127,9 @@ class TestHDS(unittest.TestCase):
                 return "0"  # Wrong frequency; must abort BEFORE output ON.
             def close(self):
                 pass
+            def emergency_off(self):
+                self.set(":CHANnel OFF")
+                return {"sent": True, "acknowledged": True}
         with tempfile.TemporaryDirectory() as directory:
             plan = json.loads(Path(__file__).with_name("sweep_example.json").read_text())
             plan["connections_confirmed"] = True

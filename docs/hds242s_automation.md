@@ -1,5 +1,7 @@
 # HDS242S + Basys 3 自动化联调
 
+后续常驻接口、状态同步、设备独占、取消/停止、无接线模拟演示，见 [自动化服务与 API](lab_api.md)。该流程支持 `scope_channels: []`，不要求 CH1/CH2 探测点；最小链路为 OUT → 滤波器 → ADC → FPGA，通过 JTAG 读取结果。
+
 ## 当前实际验证状态（2026-10-15）
 
 本机已通过官方 libusb-win32 驱动成功连接 HDS242S，真实固件为 V8.1.0；无需改装 Zadig/WinUSB，也无需安装 NI-VISA。使用 Python 3.12 64-bit、PyUSB 1.3.1 和 `C:/Windows/System32/libusb0.dll`。USB VID/PID 为 5345:1234，Bulk OUT/IN 为 01/81。
@@ -32,7 +34,7 @@
 电脑测试目录 ← 示波器波形/读数 + FPGA结果CSV/JSON ← Vivado Tcl
 ```
 
-CH1 测滤波器输入，CH2 测 ADC 模块模拟输入连接器处。探头地接电路信号地，不接负电源；探头实际倍率和仪器倍率保持一致。建议 DC 耦合，以同时观察偏置与削顶。ADC 内部共模由模块前端处理，不应因发生器设置 0 V 偏置就假定 ADC 芯片引脚也为 0 V。
+若连接器/测试点允许，CH1 可测滤波器输入、CH2 可测 ADC 模块模拟输入连接器处；不方便并联探测时可完全省略。探头地接电路信号地，不接负电源；探头实际倍率和仪器倍率保持一致。建议 DC 耦合，以同时观察偏置与削顶。ADC 内部共模由模块前端处理，不应因发生器设置 0 V 偏置就假定 ADC 芯片引脚也为 0 V。
 
 Basys 3 USB/JTAG 需另接电脑并已下载匹配 bit；现有 ILA 可回读 Vpp_raw、Vrms_raw、amp_raw、peak_bin 和结果事件。当前 ILA 没有原始 ADC/FIR 波形探针，不能通过现有探针下载整帧 ADC 数据；需要时另行修改探针并重新实现。当前脚本不修改 RTL，不下载新 bit。
 

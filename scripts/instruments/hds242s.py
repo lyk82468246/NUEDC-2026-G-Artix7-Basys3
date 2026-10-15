@@ -8,6 +8,7 @@ samples or precision voltage measurements; firmware byte formats need validation
 from __future__ import annotations
 
 import argparse
+from collections import deque
 import csv
 from datetime import datetime
 import json
@@ -16,10 +17,22 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import threading
 import time
+from functools import wraps
+
+from resource_lock import ResourceLock
 
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+def serialized(method):
+    @wraps(method)
+    def wrapped(self, *args, **kwargs):
+        with self._io_lock:
+            return method(self, *args, **kwargs)
+    return wrapped
 
 
 def timestamp():
@@ -50,13 +63,23 @@ def generator_setting_to_si(identity, name, raw):
 
 class HDS242S:
     def __init__(self, timeout_ms=3000):
+        self._io_lock = threading.RLock()
+        self._lease = ResourceLock(ROOT / ".lab_locks/hds242s.lock").acquire()
+        self.device = None
+        try:
+            self._open(timeout_ms)
+        except BaseException:
+            self.close()
+            raise
+
+    def _open(self, timeout_ms):
         import usb.core
         import usb.util
         import usb.backend.libusb0
 
         self.usb = usb
         self.timeout_ms = timeout_ms
-        self.log = []
+        self.log = deque(maxlen=2048)
         if os.name == "nt":
             dll = Path(os.environ.get("SystemRoot", r"C:\Windows")) / "System32/libusb0.dll"
             backend = usb.backend.libusb0.get_backend(find_library=lambda _: str(dll))
@@ -74,8 +97,14 @@ class HDS242S:
         self.broken = False
         usb.util.claim_interface(self.device, 0)
 
+    @serialized
     def close(self):
-        self.usb.util.dispose_resources(self.device)
+        try:
+            if self.device is not None:
+                self.usb.util.dispose_resources(self.device)
+                self.device = None
+        finally:
+            self._lease.release()
 
     def _send(self, command):
         if self.broken:
@@ -84,10 +113,13 @@ class HDS242S:
             raise ValueError("One SCPI command per transaction required.")
         data = (command + "\n").encode("ascii")
         self.log.append({"time": timestamp(), "command": command})
-        count = self.device.write(0x01, data, timeout=self.timeout_ms)
-        if count != len(data):
+        try:
+            count = self.device.write(0x01, data, timeout=self.timeout_ms)
+            if count != len(data):
+                raise IOError("Short USB write")
+        except BaseException:
             self.broken = True
-            raise IOError("Short USB write")
+            raise
 
     def _receive(self, framed):
         deadline = time.monotonic() + self.timeout_ms / 1000
@@ -117,6 +149,7 @@ class HDS242S:
             self.broken = True
             raise
 
+    @serialized
     def query(self, command, framed=False):
         if not command.endswith("?"):
             raise ValueError("Read-only query must end in ?")
@@ -128,6 +161,7 @@ class HDS242S:
         self.log[-1]["response"] = result.hex() if framed else result.decode("ascii")
         return result if framed else result.decode("ascii").strip()
 
+    @serialized
     def set(self, command):
         if "?" in command:
             raise ValueError("Use query for a query")
@@ -142,6 +176,7 @@ class HDS242S:
         self.identity = identity
         return identity
 
+    @serialized
     def generator_settings(self):
         raw = {name: self.query(f":FUNCtion:{name}?")
                for name in ("FREQuency", "AMPLitude", "OFFSet")}
@@ -151,11 +186,32 @@ class HDS242S:
             "offset_v": generator_setting_to_si(self.identity, "OFFSet", raw["OFFSet"]),
         }}
 
+    @serialized
     def output_off(self):
         self.set(":CHANnel OFF")
         if self.query(":CHANnel?").upper() not in ("OFF", "0"):
             raise RuntimeError("OUT did not acknowledge OFF")
 
+    @serialized
+    def emergency_off(self):
+        """Best effort OFF; a poisoned stream stays poisoned, never re-synced by fiat."""
+        was_broken = self.broken
+        result = {"sent": False, "acknowledged": False}
+        try:
+            self.broken = False  # Permit exactly the emergency write.
+            self._send(":CHANnel OFF")
+            result["sent"] = True
+            self.broken = was_broken
+            if not was_broken:
+                result["acknowledged"] = self.query(":CHANnel?").upper() in ("OFF", "0")
+        except Exception as error:
+            result["error"] = str(error)
+            self.broken = True
+        finally:
+            self.broken = self.broken or was_broken
+        return result
+
+    @serialized
     def snapshot(self, channels):
         header_raw = self.query(":DATa:WAVe:SCReen:HEAD?", framed=True)
         header = json.loads(header_raw.decode("utf-8").rstrip("\x00\r\n"))
@@ -207,8 +263,9 @@ def validate_plan(plan):
         raise ValueError("settle_s must be 1..30 seconds")
     if plan.get("load", "OFF") != "OFF":
         raise ValueError("This initial workflow supports high-Z load setting OFF only")
-    if not plan.get("scope_channels") or any(x not in (1, 2) for x in plan["scope_channels"]):
-        raise ValueError("Select scope channels 1 and/or 2")
+    channels = plan.get("scope_channels", [])
+    if not isinstance(channels, list) or any(type(x) is not int or x not in (1, 2) for x in channels) or len(channels) != len(set(channels)):
+        raise ValueError("scope_channels must be a unique list of 1/2; [] disables scope capture")
 
 
 def parse_ila_csv(path):
@@ -250,7 +307,19 @@ def parse_ila_csv(path):
     raise ValueError("No measurement_valid=1 sample in ILA CSV")
 
 
-def capture_ila(vivado, directory, probes):
+def _terminate_process(process):
+    if process.poll() is not None:
+        return
+    if os.name == "nt":
+        # Exact child PID only; also closes Vivado's batch-wrapper descendants.
+        subprocess.run(["taskkill", "/PID", str(process.pid), "/T", "/F"],
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=10)
+    else:
+        process.kill()
+    process.wait(timeout=10)
+
+
+def capture_ila(vivado, directory, probes, cancel=None, timeout_s=90):
     """One fresh result trigger; do not program FPGA or synthesize anything."""
     environment = os.environ.copy()
     vivado_root = Path(vivado).resolve().parents[1]
@@ -258,14 +327,26 @@ def capture_ila(vivado, directory, probes):
     environment["PATH"] = os.pathsep.join((str(vivado_root / "lib/win64.o"),
         str(vivado_root / "bin"), str(vivado_root / "bin/unwrapped/win64.o"),
         environment.get("PATH", "")))
-    completed = subprocess.run([
-        vivado, "-mode", "batch", "-nojournal", "-nolog", "-source",
-        str(ROOT / "scripts/capture_hw_ila.tcl"), "-tclargs",
-        str(directory / "ila.csv"), str(Path(probes).resolve()),
-    ], cwd=directory, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-       text=True, timeout=90, env=environment)
-    (directory / "vivado_capture.txt").write_text(completed.stdout, encoding="utf-8")
-    if completed.returncode or not (directory / "ila.csv").is_file():
+    cancel = cancel or threading.Event()
+    directory = Path(directory)
+    if (directory / "ila.csv").exists():
+        raise FileExistsError("Refusing to reuse an existing ILA capture")
+    with ResourceLock(ROOT / ".lab_locks/fpga_ila.lock"), (directory / "vivado_capture.txt").open("wb") as log:
+        process = subprocess.Popen([
+            vivado, "-mode", "batch", "-nojournal", "-nolog", "-source",
+            str(ROOT / "scripts/capture_hw_ila.tcl"), "-tclargs",
+            str(directory / "ila.csv"), str(Path(probes).resolve()),
+        ], cwd=directory, stdout=log, stderr=subprocess.STDOUT, env=environment)
+        deadline = time.monotonic() + timeout_s
+        try:
+            while process.poll() is None:
+                if cancel.wait(0.1):
+                    raise InterruptedError("ILA capture cancelled")
+                if time.monotonic() >= deadline:
+                    raise TimeoutError("Vivado capture exceeded deadline")
+        finally:
+            _terminate_process(process)
+    if process.returncode or not (directory / "ila.csv").is_file():
         raise RuntimeError(f"ILA capture failed: see {directory / 'vivado_capture.txt'}")
     result = parse_ila_csv(directory / "ila.csv")
     save_json(directory / "fpga.json", result)
@@ -315,6 +396,12 @@ def main():
             return
         if plan.get("connections_confirmed") is not True:
             parser.error("Set connections_confirmed=true after checking wiring and numeric limits")
+        if plan.get("samples_per_point", 1) != 1:
+            parser.error("Multi-sample plans require lab_server.py run_plan; this legacy CLI captures once per point")
+        if plan.get("capture_fpga") is True and not args.vivado:
+            parser.error("Plan requires FPGA capture; supply --vivado and --ltx or use the lab service")
+        if not plan.get("scope_channels") and not args.vivado:
+            parser.error("Select FPGA and/or scope capture before executing a sweep")
         if bool(args.vivado) != bool(args.ltx):
             parser.error("--vivado and --ltx must be supplied together")
         if args.vivado and (not Path(args.vivado).is_file() or not Path(args.ltx).is_file()):
@@ -342,11 +429,12 @@ def main():
             save_json(directory / "plan.json", plan)
             settings = device.generator_settings()  # Refuse unvalidated firmware.
             save_json(directory / "initial_generator.json", settings)
-            header = json.loads(device.query(":DATa:WAVe:SCReen:HEAD?", framed=True))
-            channels = {str(ch["NAME"]).upper(): ch for ch in header["CHANNEL"]}
-            for channel in plan["scope_channels"]:
-                if channels[f"CH{channel}"]["DISPLAY"].upper() != "ON":
-                    raise RuntimeError(f"CH{channel} is OFF; enable and configure scope channels first")
+            if plan.get("scope_channels"):
+                header = json.loads(device.query(":DATa:WAVe:SCReen:HEAD?", framed=True))
+                channels = {str(ch["NAME"]).upper(): ch for ch in header["CHANNEL"]}
+                for channel in plan["scope_channels"]:
+                    if channels[f"CH{channel}"]["DISPLAY"].upper() != "ON":
+                        raise RuntimeError(f"CH{channel} is OFF; enable and configure scope channels first")
             # Startup always disables output before changing waveform or levels.
             sweep_active = True
             device.output_off()
@@ -374,10 +462,11 @@ def main():
                     if device.query(":CHANnel?").upper() not in ("ON", "1"):
                         raise RuntimeError("OUT did not acknowledge ON")
                     time.sleep(float(plan.get("settle_s", 2)))
-                    save_json(point_dir / "scope.json", device.snapshot(plan["scope_channels"]))
+                    if plan.get("scope_channels"):
+                        save_json(point_dir / "scope.json", device.snapshot(plan["scope_channels"]))
                     fpga = capture_ila(args.vivado, point_dir, args.ltx) if args.vivado else None
                     writer.writerow({"point": index, **point, "time": timestamp(),
-                                     "scope": f"point_{index:03d}/scope.json",
+                                     "scope": f"point_{index:03d}/scope.json" if plan.get("scope_channels") else "",
                                      "ila": f"point_{index:03d}/ila.csv" if args.vivado else "",
                                      "fpga_hz": fpga["frequency_hz"] if fpga else "",
                                      "frequency_error_hz": fpga["frequency_hz"] - point["hz"] if fpga else "",
@@ -396,26 +485,25 @@ def main():
         if device:
             if sweep_active:
                 try:
-                    # Even after a query timeout, attempt OFF without reusing
-                    # the desynchronized response stream. No more queries.
-                    stream_was_broken = device.broken
-                    device.broken = False
-                    device.set(":CHANnel OFF")
-                    outcome["output_off_sent"] = True
-                    # Successful USB write alone does not prove physical OFF.
-                    outcome["output_off_acknowledged"] = (not stream_was_broken and
-                        device.query(":CHANnel?").upper() in ("OFF", "0"))
+                    off = device.emergency_off()
+                    outcome["output_off_sent"] = off["sent"]
+                    outcome["output_off_acknowledged"] = off["acknowledged"]
                     if not outcome["output_off_acknowledged"]:
                         raise RuntimeError("OUT OFF not acknowledged")
                 except Exception as error:
-                    outcome["output_off_sent"] = False
+                    outcome["status"] = "failed"
+                    outcome.setdefault("output_off_sent", False)
                     outcome["output_off_error"] = str(error)
                     print("OUTPUT OFF FAILED: disable OUT on instrument manually", file=sys.stderr)
-            save_json(directory / "scpi_log.json", device.log)
-            device.close()
+            try:
+                save_json(directory / "scpi_log.json", list(device.log))
+            finally:
+                device.close()
         outcome["finished"] = timestamp()
         save_json(directory / "session.json", outcome)
         print(f"Results: {directory}", flush=True)
+    if outcome["status"] != "completed":
+        raise RuntimeError("Run did not finish safely; inspect session.json")
 
 
 if __name__ == "__main__":
