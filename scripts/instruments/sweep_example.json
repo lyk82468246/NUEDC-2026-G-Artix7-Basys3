@@ -1,0 +1,17 @@
+{
+  "connections_confirmed": false,
+  "limits": {"max_vpp": 0.1, "min_output_v": -0.05, "max_output_v": 0.05},
+  "load": "OFF",
+  "settle_s": 2,
+  "scope_channels": [1, 2],
+  "points": [
+    {"hz": 10000, "vpp": 0.1, "offset_v": 0},
+    {"hz": 20000, "vpp": 0.1, "offset_v": 0},
+    {"hz": 50000, "vpp": 0.1, "offset_v": 0},
+    {"hz": 100000, "vpp": 0.1, "offset_v": 0},
+    {"hz": 200000, "vpp": 0.1, "offset_v": 0},
+    {"hz": 300000, "vpp": 0.1, "offset_v": 0},
+    {"hz": 400000, "vpp": 0.1, "offset_v": 0},
+    {"hz": 500000, "vpp": 0.1, "offset_v": 0}
+  ]
+}
