@@ -1,4 +1,4 @@
-# 自动化联调服务与接口（2026-10-15）
+# 自动化联调服务与接口（2026-10-16 更新）
 
 该服务为后续电脑控制 HDS242S、读取 FPGA ILA、执行测试计划提供常驻接口。默认模拟模式，不需要接线，也不访问 USB/JTAG。真实仪器通信与固件单位的先前验证见 [HDS242S 指南](hds242s_automation.md)。
 
@@ -72,7 +72,7 @@ flowchart LR
 .\.venv-hds\Scripts\python.exe -m unittest discover -s scripts/instruments -p 'test_*.py' -v
 ```
 
-本轮 31 项测试通过，另完成 6 次模拟采集的 HTTP 集成演示，详见[软件验证记录](lab_software_verification.md)。模拟模式只使用 Python 标准库，可用普通 Python 3.12 执行；真实 USB 模式才需要 PyUSB 和已安装的驱动。
+最新离线回归 36 项测试通过；2026-10-15 另完成 6 次模拟采集的 HTTP 集成演示，详见[软件验证记录](lab_software_verification.md)。2026-10-16 的真实 JTAG 闭环与 RTL 修复见[实板调试记录](hardware_debug_20261016.md)。模拟模式只使用 Python 标准库，可用普通 Python 3.12 执行；真实 USB 模式才需要 PyUSB 和已安装的驱动。
 
 ## 5. 常驻服务与命令行
 
@@ -142,7 +142,7 @@ flowchart LR
 | capture_fpga | `{}`：独立新 ILA 采集，不要求真实 HDS 已连接 |
 | run_plan | `{plan: ...}`：执行计划，结束或中断时尝试关闭输出 |
 
-单点配置与计划限值单位都采用 Hz、Vpp、V。此版本仅允许 SINE、10～500 kHz、零偏置，使用本机已核验的固件单位。LOAD OFF 的面板含义与实际输出幅值仍需首次实测确认，不把控制回读等同于实际电压测量。
+单点配置与计划限值单位都采用 Hz、Vpp、V。此版本仅允许 SINE、10～500 kHz、零偏置，使用本机已核验的固件单位。2026-10-16 已现场确认 LOAD ON 对应高阻、LOAD OFF 对应 50 Ω；计划使用 `load: "HIGHZ"`。实际输出电压尚需参考测量，不把控制回读等同于电压实测。
 
 ## 7. Python 接口与纯 FPGA 读数计划
 

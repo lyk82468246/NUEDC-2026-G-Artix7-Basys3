@@ -1,0 +1,32 @@
+{
+  "session_id": "105e0c37125a499d92f17c52191337bb",
+  "revision": 197,
+  "simulated": false,
+  "link": "disconnected",
+  "phase": "stopped",
+  "output": "off",
+  "generator": null,
+  "observed_at": "2026-10-16T10:33:24.626+08:00",
+  "verified": false,
+  "fpga_status": "ready",
+  "fpga_result": {
+    "vpp_out": 1792,
+    "vrms_out": 625,
+    "amp_f1_out": 780446,
+    "max_index_out": 200,
+    "frequency_hz": 100000
+  },
+  "active_job": null,
+  "last_error": null,
+  "queue_depth": 0,
+  "updated_at": "2026-10-16T10:33:26.239+08:00",
+  "progress": null,
+  "identity": "OWON,HDS242S,22521003,V8.1.0",
+  "output_observed_at": "2026-10-16T10:33:26.236+08:00",
+  "fpga_observed_at": "2026-10-16T10:32:42.596+08:00",
+  "fpga_error": null,
+  "off_confirmation": {
+    "sent": true,
+    "acknowledged": true
+  }
+}

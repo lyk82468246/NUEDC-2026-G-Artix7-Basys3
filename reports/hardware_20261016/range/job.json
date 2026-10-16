@@ -1,0 +1,66 @@
+{
+  "id": "d7c312d293ae4df28013ff299431744b",
+  "action": "run_plan",
+  "params": {
+    "plan": {
+      "connections_confirmed": true,
+      "limits": {
+        "max_vpp": 0.1,
+        "min_output_v": -0.05,
+        "max_output_v": 0.05
+      },
+      "load": "HIGHZ",
+      "settle_s": 2,
+      "scope_channels": [],
+      "capture_fpga": true,
+      "samples_per_point": 1,
+      "points": [
+        {
+          "hz": 10000,
+          "vpp": 0.1,
+          "offset_v": 0
+        },
+        {
+          "hz": 20000,
+          "vpp": 0.1,
+          "offset_v": 0
+        },
+        {
+          "hz": 300000,
+          "vpp": 0.1,
+          "offset_v": 0
+        },
+        {
+          "hz": 400000,
+          "vpp": 0.1,
+          "offset_v": 0
+        },
+        {
+          "hz": 500000,
+          "vpp": 0.1,
+          "offset_v": 0
+        },
+        {
+          "hz": 100000,
+          "vpp": 0.05,
+          "offset_v": 0
+        },
+        {
+          "hz": 100000,
+          "vpp": 0.1,
+          "offset_v": 0
+        }
+      ]
+    }
+  },
+  "status": "completed",
+  "created_at": "2026-10-16T10:27:37.083+08:00",
+  "simulated": false,
+  "started_at": "2026-10-16T10:29:07.364+08:00",
+  "result": {
+    "samples": 7,
+    "directory": "C:\\Users\\Joe\\Documents\\Verilog\\G_FPGA\\test_results\\lab_2026-10-16T10-23-12.448+08-00_d02410\\d7c312d293ae4df28013ff299431744b"
+  },
+  "error": null,
+  "finished_at": "2026-10-16T10:32:42.957+08:00"
+}

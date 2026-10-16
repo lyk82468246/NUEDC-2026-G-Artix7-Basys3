@@ -1,7 +1,7 @@
 Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
 ---------------------------------------------------------------------------------------------------------------------------------------------
 | Tool Version : Vivado v.2025.2 (win64) Build 6299465 Fri Nov 14 19:35:11 GMT 2025
-| Date         : Sun Sep 27 15:20:30 2026
+| Date         : Fri Oct 16 10:12:18 2026
 | Host         : LAPTOP-LI running 64-bit major release  (build 9200)
 | Command      : report_utilization -file V:/reports/board_top_utilization_synth.rpt
 | Design       : G_FPGA_Top
@@ -31,13 +31,13 @@ Table of Contents
 +----------------------------+-------+-------+------------+-----------+-------+
 |          Site Type         |  Used | Fixed | Prohibited | Available | Util% |
 +----------------------------+-------+-------+------------+-----------+-------+
-| Slice LUTs*                | 10107 |     0 |          0 |     20800 | 48.59 |
-|   LUT as Logic             |  8226 |     0 |          0 |     20800 | 39.55 |
+| Slice LUTs*                | 10157 |     0 |          0 |     20800 | 48.83 |
+|   LUT as Logic             |  8276 |     0 |          0 |     20800 | 39.79 |
 |   LUT as Memory            |  1881 |     0 |          0 |      9600 | 19.59 |
 |     LUT as Distributed RAM |     0 |     0 |            |           |       |
 |     LUT as Shift Register  |  1881 |     0 |            |           |       |
-| Slice Registers            | 14721 |     0 |          0 |     41600 | 35.39 |
-|   Register as Flip Flop    | 14721 |     0 |          0 |     41600 | 35.39 |
+| Slice Registers            | 14737 |     0 |          0 |     41600 | 35.43 |
+|   Register as Flip Flop    | 14737 |     0 |          0 |     41600 | 35.43 |
 |   Register as Latch        |     0 |     0 |          0 |     41600 |  0.00 |
 | F7 Muxes                   |   110 |     0 |          0 |     16300 |  0.67 |
 | F8 Muxes                   |     0 |     0 |          0 |      8150 |  0.00 |
@@ -64,7 +64,7 @@ Warning! For any ECO changes, please run place_design if there are unplaced inst
 | 4     |          Yes |           - |          Set |
 | 0     |          Yes |           - |        Reset |
 | 62    |          Yes |         Set |            - |
-| 14655 |          Yes |       Reset |            - |
+| 14671 |          Yes |       Reset |            - |
 +-------+--------------+-------------+--------------+
 
 
@@ -162,16 +162,16 @@ Warning! For any ECO changes, please run place_design if there are unplaced inst
 +------------+-------+---------------------+
 |  Ref Name  |  Used | Functional Category |
 +------------+-------+---------------------+
-| FDRE       | 14655 |        Flop & Latch |
+| FDRE       | 14671 |        Flop & Latch |
 | LUT3       |  3721 |                 LUT |
-| LUT2       |  2766 |                 LUT |
+| LUT2       |  2800 |                 LUT |
 | LUT6       |  1463 |                 LUT |
-| CARRY4     |  1346 |          CarryLogic |
+| CARRY4     |  1359 |          CarryLogic |
 | SRL16E     |  1024 |  Distributed Memory |
 | SRLC32E    |  1003 |  Distributed Memory |
 | LUT4       |   733 |                 LUT |
 | LUT5       |   491 |                 LUT |
-| LUT1       |   386 |                 LUT |
+| LUT1       |   402 |                 LUT |
 | MUXF7      |   110 |               MuxFx |
 | DSP48E1    |    74 |    Block Arithmetic |
 | FDSE       |    62 |        Flop & Latch |

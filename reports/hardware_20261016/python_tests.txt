@@ -1,0 +1,8 @@
+usage: hds242s.py [-h] [--output OUTPUT] {identify,capture,ila,sweep} ...
+hds242s.py: error: Multi-sample plans require lab_server.py run_plan; this legacy CLI captures once per point
+OWON,HDS242S,serial,V8.1.0
+Results: C:\Users\Joe\AppData\Local\Temp\tmpj777ah2x\result
+----------------------------------------------------------------------
+Ran 36 tests in 7.129s
+
+OK

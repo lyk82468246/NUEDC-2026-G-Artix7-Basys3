@@ -4,10 +4,11 @@ import csv
 import json
 from pathlib import Path
 import tempfile
+import threading
 import unittest
 from unittest.mock import patch
 
-from hds242s import HDS242S, generator_setting_to_si, parse_ila_csv, validate_plan
+from hds242s import HDS242S, generator_load, generator_setting_to_si, parse_ila_csv, validate_plan
 import hds242s
 
 
@@ -76,6 +77,32 @@ class TestHDS(unittest.TestCase):
             with self.assertRaises(ValueError):
                 validate_plan(changed)
 
+    def test_actual_highz_load_mapping(self):
+        self.assertEqual(generator_load("ON"), "HIGHZ")
+        self.assertEqual(generator_load("50"), "50OHM")
+        plan = json.loads(Path(__file__).with_name("sweep_example.json").read_text())
+        plan["load"] = "OFF"
+        with self.assertRaises(ValueError):
+            validate_plan(plan)
+
+    def test_configuration_skips_function_reselect_and_checks_off_each_step(self):
+        class Device:
+            _io_lock = threading.RLock()
+            commands = []
+            def output_off(self):
+                self.commands.append("OFF_CHECK")
+            def query(self, command):
+                return "SINE"
+            def set(self, command):
+                self.commands.append(command)
+        device = Device()
+        HDS242S.configure_sine(device, {"hz": 100000, "vpp": .1, "offset_v": 0})
+        self.assertNotIn(":FUNCtion SINE", device.commands)
+        self.assertIn(":FUNCtion:LOAD ON", device.commands)
+        for index, command in enumerate(device.commands):
+            if command.startswith(":"):
+                self.assertEqual(device.commands[index + 1], "OFF_CHECK")
+
     def test_legacy_cli_rejects_service_only_plan_before_opening_usb(self):
         with tempfile.TemporaryDirectory() as directory:
             plan = json.loads(Path(__file__).with_name("sweep_fpga_only.json").read_text())
@@ -116,6 +143,8 @@ class TestHDS(unittest.TestCase):
                 return {"si": {"hz": 1000, "vpp": 1, "offset_v": 0}}
             def output_off(self):
                 self.set(":CHANnel OFF")
+            def configure_sine(self, point):
+                self.output_off()
             def set(self, command):
                 self.commands.append(command)
             def query(self, command, framed=False):

@@ -29,7 +29,7 @@ def main():
             raise RuntimeError("Simulated connect failed")
         plan = {"connections_confirmed": True,
                 "limits": {"max_vpp": .1, "min_output_v": -.05, "max_output_v": .05},
-                "load": "OFF", "settle_s": 1, "scope_channels": [],
+                "load": "HIGHZ", "settle_s": 1, "scope_channels": [],
                 "capture_fpga": True, "samples_per_point": 2,
                 "points": [{"hz": hz, "vpp": .1, "offset_v": 0} for hz in (50000, 100000, 200000)]}
         submitted = client.submit("run_plan", {"plan": plan})

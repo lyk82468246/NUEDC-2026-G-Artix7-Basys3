@@ -250,7 +250,7 @@ class LabController:
             self._jobs[self._active]["_mutated"] = True
         self.backend.configure(point)
         observed = self._sync()
-        if observed["output"] != "off" or observed["waveform"] != "SINE" or observed["load"] not in ("OFF", "0"):
+        if observed["output"] != "off" or observed["waveform"] != "SINE" or observed["load"] != "HIGHZ":
             raise RuntimeError("Generator mode/output readback mismatch")
         for key in point:
             if not math.isclose(point[key], observed[key], rel_tol=1e-4, abs_tol=1e-6):

@@ -22,6 +22,7 @@ import time
 from functools import wraps
 
 from resource_lock import ResourceLock
+from vivado_paths import aliased, workspace_alias
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -59,6 +60,15 @@ def generator_setting_to_si(identity, name, raw):
         return 0.0
     divisors = {"FREQuency": 1e6, "AMPLitude": 1e3}
     return parse_number(raw) / divisors[name]
+
+
+def generator_load(raw):
+    value = raw.strip().upper()
+    if value in ("ON", "HIGHZ", "HIGH Z", "HZ"):
+        return "HIGHZ"
+    if value in ("50", "50OHM", "50Ω"):
+        return "50OHM"
+    return value
 
 
 class HDS242S:
@@ -193,6 +203,21 @@ class HDS242S:
             raise RuntimeError("OUT did not acknowledge OFF")
 
     @serialized
+    def configure_sine(self, point):
+        self.output_off()
+        # An unintended OUT=ON was observed during V8.1.0 configuration.
+        # Avoid function reselect and check OFF after every setting; the exact
+        # offending command has not been isolated experimentally.
+        if self.query(":FUNCtion?").upper() != "SINE":
+            raise RuntimeError("Select SINE on the panel before automated testing")
+        for command in (f":FUNCtion:AMPLitude {float(point['vpp']):.12g}",
+                        ":FUNCtion:LOAD ON",
+                        f":FUNCtion:FREQuency {float(point['hz']):.12g}",
+                        ":FUNCtion:OFFSet 0"):
+            self.set(command)
+            self.output_off()
+
+    @serialized
     def emergency_off(self):
         """Best effort OFF; a poisoned stream stays poisoned, never re-synced by fiat."""
         was_broken = self.broken
@@ -261,8 +286,8 @@ def validate_plan(plan):
     settle = float(plan.get("settle_s", 2))
     if not math.isfinite(settle) or not 1 <= settle <= 30:
         raise ValueError("settle_s must be 1..30 seconds")
-    if plan.get("load", "OFF") != "OFF":
-        raise ValueError("This initial workflow supports high-Z load setting OFF only")
+    if plan.get("load", "HIGHZ") not in ("HIGHZ", "ON"):
+        raise ValueError("Use load=HIGHZ; V8.1.0 LOAD ON is high-Z, OFF selects 50 ohms")
     channels = plan.get("scope_channels", [])
     if not isinstance(channels, list) or any(type(x) is not int or x not in (1, 2) for x in channels) or len(channels) != len(set(channels)):
         raise ValueError("scope_channels must be a unique list of 1/2; [] disables scope capture")
@@ -324,6 +349,8 @@ def capture_ila(vivado, directory, probes, cancel=None, timeout_s=90):
     environment = os.environ.copy()
     vivado_root = Path(vivado).resolve().parents[1]
     environment["XILINX_VIVADO"] = str(vivado_root)
+    environment["PROCESSOR_ARCHITECTURE"] = "AMD64"
+    environment["XILINX_LOCAL_USER_DATA"] = "NO"
     environment["PATH"] = os.pathsep.join((str(vivado_root / "lib/win64.o"),
         str(vivado_root / "bin"), str(vivado_root / "bin/unwrapped/win64.o"),
         environment.get("PATH", "")))
@@ -331,12 +358,12 @@ def capture_ila(vivado, directory, probes, cancel=None, timeout_s=90):
     directory = Path(directory)
     if (directory / "ila.csv").exists():
         raise FileExistsError("Refusing to reuse an existing ILA capture")
-    with ResourceLock(ROOT / ".lab_locks/fpga_ila.lock"), (directory / "vivado_capture.txt").open("wb") as log:
+    with ResourceLock(ROOT / ".lab_locks/fpga_ila.lock"), workspace_alias(ROOT) as alias, (directory / "vivado_capture.txt").open("wb") as log:
         process = subprocess.Popen([
             vivado, "-mode", "batch", "-nojournal", "-nolog", "-source",
-            str(ROOT / "scripts/capture_hw_ila.tcl"), "-tclargs",
-            str(directory / "ila.csv"), str(Path(probes).resolve()),
-        ], cwd=directory, stdout=log, stderr=subprocess.STDOUT, env=environment)
+            aliased(ROOT / "scripts/capture_hw_ila.tcl", ROOT, alias), "-tclargs",
+            aliased(directory / "ila.csv", ROOT, alias), aliased(probes, ROOT, alias),
+        ], cwd=aliased(directory, ROOT, alias), stdout=log, stderr=subprocess.STDOUT, env=environment)
         deadline = time.monotonic() + timeout_s
         try:
             while process.poll() is None:
@@ -438,26 +465,21 @@ def main():
             # Startup always disables output before changing waveform or levels.
             sweep_active = True
             device.output_off()
-            device.set(":FUNCtion SINE")
-            device.set(":FUNCtion:LOAD OFF")
-            device.set(":FUNCtion:OFFSet 0")
             with (directory / "index.csv").open("w", newline="", encoding="utf-8-sig") as stream:
                 writer = csv.DictWriter(stream, fieldnames=("point", "hz", "vpp", "offset_v", "time", "scope", "ila", "fpga_hz", "frequency_error_hz", "vpp_raw", "vrms_raw", "amp_raw"))
                 writer.writeheader()
                 for index, point in enumerate(plan["points"]):
                     point_dir = directory / f"point_{index:03d}"
                     point_dir.mkdir()
-                    device.output_off()
-                    for name, key in (("FREQuency", "hz"), ("AMPLitude", "vpp"), ("OFFSet", "offset_v")):
-                        device.set(f":FUNCtion:{name} {float(point[key]):.12g}")
+                    device.configure_sine(point)
                     for name, key in (("FREQuency", "hz"), ("AMPLitude", "vpp"), ("OFFSet", "offset_v")):
                         observed = generator_setting_to_si(device.identity, name, device.query(f":FUNCtion:{name}?"))
                         if not math.isclose(observed, float(point[key]), rel_tol=1e-4, abs_tol=1e-6):
                             raise RuntimeError(f"Generator readback mismatch: {name}={observed}")
                     if device.query(":FUNCtion?").upper() != "SINE":
                         raise RuntimeError("Generator is not in sine mode")
-                    if device.query(":FUNCtion:LOAD?").upper() not in ("OFF", "0"):
-                        raise RuntimeError("Generator load readback is not high-Z/OFF")
+                    if generator_load(device.query(":FUNCtion:LOAD?")) != "HIGHZ":
+                        raise RuntimeError("Generator load readback is not HIGHZ")
                     device.set(":CHANnel ON")
                     if device.query(":CHANnel?").upper() not in ("ON", "1"):
                         raise RuntimeError("OUT did not acknowledge ON")

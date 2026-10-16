@@ -7,7 +7,7 @@ from pathlib import Path
 import threading
 import time
 
-from hds242s import HDS242S, capture_ila, timestamp
+from hds242s import HDS242S, capture_ila, generator_load, timestamp
 
 
 class FPGACaptureError(RuntimeError):
@@ -18,7 +18,7 @@ class FPGACaptureError(RuntimeError):
 def read_state(device):
     generator = device.generator_settings()["si"]
     generator["waveform"] = device.query(":FUNCtion?").upper()
-    generator["load"] = device.query(":FUNCtion:LOAD?").upper()
+    generator["load"] = generator_load(device.query(":FUNCtion:LOAD?"))
     raw = device.query(":CHANnel?").upper()
     if raw not in ("ON", "OFF", "0", "1"):
         raise ValueError(f"Invalid OUT state: {raw}")
@@ -55,11 +55,7 @@ class RealBackend:
         return read_state(self.device)
 
     def configure(self, point):
-        self.device.output_off()
-        for command in (":FUNCtion SINE", ":FUNCtion:LOAD OFF",
-                        f":FUNCtion:FREQuency {point['hz']:.12g}",
-                        f":FUNCtion:AMPLitude {point['vpp']:.12g}", ":FUNCtion:OFFSet 0"):
-            self.device.set(command)
+        self.device.configure_sine(point)
 
     def set_output(self, enabled):
         self.device.set(":CHANnel ON" if enabled else ":CHANnel OFF")
@@ -101,7 +97,7 @@ class SimBackend:
     def __init__(self, capture_delay=0.04):
         self.connected = False
         self.values = {"hz": 1000.0, "vpp": 1.0, "offset_v": 0.0,
-                       "waveform": "SINE", "load": "ON", "output": "off"}
+                       "waveform": "SINE", "load": "HIGHZ", "output": "off"}
         self.capture_delay = capture_delay
         self._lock = threading.Lock()
         self.next_error = None
@@ -130,7 +126,7 @@ class SimBackend:
 
     def configure(self, point):
         self.configure_count += 1
-        self.panel_change(**point, waveform="SINE", load="OFF", output="off")
+        self.panel_change(**point, waveform="SINE", load="HIGHZ", output="off")
 
     def set_output(self, enabled):
         self.panel_change(output="on" if enabled else "off")

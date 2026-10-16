@@ -1,7 +1,7 @@
 {
   "connections_confirmed": false,
   "limits": {"max_vpp": 0.1, "min_output_v": -0.05, "max_output_v": 0.05},
-  "load": "OFF",
+  "load": "HIGHZ",
   "settle_s": 2,
   "scope_channels": [],
   "capture_fpga": true,

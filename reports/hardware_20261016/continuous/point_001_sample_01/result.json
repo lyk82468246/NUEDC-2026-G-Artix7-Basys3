@@ -1,0 +1,21 @@
+{
+  "simulated": false,
+  "point": 1,
+  "sample": 1,
+  "settings": {
+    "hz": 200000,
+    "vpp": 0.1,
+    "offset_v": 0
+  },
+  "scope": null,
+  "fpga": {
+    "vpp_out": 1782,
+    "vrms_out": 620,
+    "amp_f1_out": 774784,
+    "max_index_out": 400,
+    "frequency_hz": 200000
+  },
+  "frequency_error_hz": 0.0,
+  "time": "2026-10-16T10:26:53.523+08:00",
+  "status": "completed"
+}

@@ -111,7 +111,7 @@ vrms        = sqrt(mean_square)
 1. `frame_done_toggle` 是 ADC 域的状态翻转，不是跨时钟脉冲；`AFE_Capture` 在最后一个 BRAM 写入提交后一拍才翻转它，`Time_Domain_Calc` 内部再用两级同步器检测变化。
 2. BRAM 为同步读，`Time_Domain_Calc` 的 `ST_READ_REQUEST` 和 `ST_PROCESS` 两个状态配合一个读延迟。一次 8192 点遍历需要约 16384 个 `calc_clk` 周期，100 MHz 下约 164 us。
 3. AFE 的 ADC offset-binary 中点默认是 2048，并左移 4 位送 FIR。如果 ADC 模块输出 two's complement，应将 `ADC_OFFSET_BINARY=0`。
-4. `AFE_Capture` 里有慢速 DC 跟踪器；默认时间常数约 1 ms，低于 10 kHz 测量频率，不应显著衰减被测信号。复位后默认等待 4096 个 FIR 有效样本再允许过零触发，避免启动瞬态形成第一帧。若外部 AFE 已完成精确 AC 耦合，可将 `DC_TRACK_SHIFT` 调大、将 `DC_WARMUP_SAMPLES` 置 0，或在后续版本旁路。
+4. `AFE_Capture` 里有慢速 DC 跟踪器；默认时间常数约 1 ms，拐点低于 10 kHz 测量频率，不应显著衰减被测信号。2026-10-16 起状态默认保留 `DC_FRAC_BITS=16` 位小数，避免整数算术右移的方向性误差使小信号触发停滞；更改参数时保持 `DC_FRAC_BITS >= DC_TRACK_SHIFT`。复位后默认等待 4096 个 FIR 有效样本再允许过零触发，避免启动瞬态形成第一帧。若外部 AFE 已完成精确 AC 耦合，可审慎调节时间常数/预热，或在后续版本旁路；不应只为缩短预热而忽略直流瞬态。修复证据及专项仿真见 [实板调试记录](hardware_debug_20261016.md)。
 5. 输出 `vpp_out` 是 17 bit，这是为了保留 `+32767 - (-32768) = 65535` 的完整范围；`vrms_out` 是 16 bit。
 6. 当前模块在 FIR `s_axis_data_tready` 拉低时不会缓存 ADC 样本。FIR 应配置为单速率、连续吞吐；若综合后吞吐率不足，需要在 ADC 与 FIR 之间增加异步 FIFO。
 

@@ -39,6 +39,9 @@ module AFE_Capture #(
     // 直流估计器时间常数约为 2^DC_TRACK_SHIFT 个采样周期。
     // 默认值对应约 1 ms 时间常数、约 160 Hz 的一阶拐点，远低于 10 kHz 测量下限。
     parameter integer DC_TRACK_SHIFT      = 12,
+    // Fractional state prevents arithmetic-shift truncation from pinning a
+    // small-signal estimator at its negative peak. Keep >= DC_TRACK_SHIFT.
+    parameter integer DC_FRAC_BITS        = 16,
     // 上电后给 DC 估计器一个稳定时间，避免把启动瞬态当成过零触发。
     parameter integer DC_WARMUP_SAMPLES   = 4096,
     parameter integer ZERO_THRESHOLD      = 0
@@ -130,20 +133,31 @@ module AFE_Capture #(
     // FIR 输出仍可能含有输入信号的直流偏置。使用慢速一阶 IIR：
     //   dc[n+1] = dc[n] + (x[n] - dc[n]) / 2^DC_TRACK_SHIFT
     //   ac[n]   = x[n] - dc[n]
-    // 用 18 bit 保存估计值和误差，避免中间减法溢出。
-    reg signed [FIR_DATA_WIDTH+1:0] dc_estimate_s;
+    // Preserve fractional corrections in the state. With integer-only state,
+    // every positive error < 4096 truncates to zero, while a negative error
+    // rounds down to -1. A single low outlier can then prevent all future
+    // zero crossings. The default Q*.16 accumulator makes that bias < 1 LSB.
+    localparam integer DC_ACC_WIDTH = FIR_DATA_WIDTH + 2 + DC_FRAC_BITS;
+    reg signed [DC_ACC_WIDTH-1:0] dc_accumulator_s;
+    wire signed [FIR_DATA_WIDTH+1:0] dc_estimate_s;
     wire signed [FIR_DATA_WIDTH+1:0] fir_output_ext_s;
-    wire signed [FIR_DATA_WIDTH+1:0] dc_error_s;
-    wire signed [FIR_DATA_WIDTH+1:0] dc_correction_s;
-    wire signed [FIR_DATA_WIDTH+1:0] dc_estimate_next_s;
+    wire signed [DC_ACC_WIDTH-1:0] fir_output_fixed_s;
+    wire signed [DC_ACC_WIDTH:0] dc_error_fixed_s;
+    wire signed [DC_ACC_WIDTH:0] dc_correction_fixed_s;
+    wire signed [DC_ACC_WIDTH:0] dc_next_fixed_s;
     wire signed [FIR_DATA_WIDTH+1:0] ac_output_ext_s;
     wire signed [FIR_DATA_WIDTH-1:0] ac_output_s;
 
     assign fir_output_ext_s   = $signed({{2{fir_output_s[FIR_DATA_WIDTH-1]}},
                                          fir_output_s});
-    assign dc_error_s         = fir_output_ext_s - dc_estimate_s;
-    assign dc_correction_s    = dc_error_s >>> DC_TRACK_SHIFT;
-    assign dc_estimate_next_s = dc_estimate_s + dc_correction_s;
+    assign fir_output_fixed_s = $signed({{2{fir_output_s[FIR_DATA_WIDTH-1]}},
+                                         fir_output_s, {DC_FRAC_BITS{1'b0}}});
+    assign dc_error_fixed_s = $signed({fir_output_fixed_s[DC_ACC_WIDTH-1], fir_output_fixed_s}) -
+                              $signed({dc_accumulator_s[DC_ACC_WIDTH-1], dc_accumulator_s});
+    assign dc_correction_fixed_s = dc_error_fixed_s >>> DC_TRACK_SHIFT;
+    assign dc_next_fixed_s = $signed({dc_accumulator_s[DC_ACC_WIDTH-1], dc_accumulator_s}) +
+                             dc_correction_fixed_s;
+    assign dc_estimate_s = $signed(dc_accumulator_s) >>> DC_FRAC_BITS;
     assign ac_output_ext_s    = fir_output_ext_s - dc_estimate_s;
 
     // 将直流去除后的结果限制到 16 bit，避免启动瞬态或大偏置造成回绕。
@@ -197,7 +211,7 @@ module AFE_Capture #(
             write_addr_next    <= {ADDR_WIDTH{1'b0}};
             previous_sample_s  <= {FIR_DATA_WIDTH{1'b0}};
             have_previous_sample <= 1'b0;
-            dc_estimate_s      <= {(FIR_DATA_WIDTH+2){1'b0}};
+            dc_accumulator_s   <= {DC_ACC_WIDTH{1'b0}};
             dc_warmup_count    <= 16'd0;
             dc_ready           <= (DC_WARMUP_SAMPLES == 0);
             frame_done_pending <= 1'b0;
@@ -250,7 +264,7 @@ module AFE_Capture #(
 
             if (fir_output_fire) begin
                 // 直流估计在每个有效 FIR 样本到来时更新。
-                dc_estimate_s <= dc_estimate_next_s;
+                dc_accumulator_s <= dc_next_fixed_s[DC_ACC_WIDTH-1:0];
 
                 // 计数的是 FIR 有效样本而不是原始 ADC 时钟，保证 FIR 有停顿时
                 // 不会提前结束 warm-up。
