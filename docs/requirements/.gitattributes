@@ -1,0 +1,2 @@
+# Preserve imported task statements byte-for-byte, including line endings.
+*.md -text
