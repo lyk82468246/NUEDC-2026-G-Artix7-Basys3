@@ -2,9 +2,10 @@
 -- Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
 -- --------------------------------------------------------------------------------
 -- Tool Version: Vivado v.2025.2 (win64) Build 6299465 Fri Nov 14 19:35:11 GMT 2025
--- Date        : Fri Oct 23 13:08:43 2026
+-- Date        : Fri Oct 23 14:06:13 2026
 -- Host        : LAPTOP-LI running 64-bit major release  (build 9200)
--- Command     : write_vhdl -force -mode synth_stub v:/sources/ip/ila_system/ila_system_stub.vhdl
+-- Command     : write_vhdl -force -mode synth_stub
+--               c:/Users/Joe/Documents/Verilog/G_FPGA/sources/ip/ila_system/ila_system_stub.vhdl
 -- Design      : ila_system
 -- Purpose     : Stub declaration of top-level module interface
 -- Device      : xc7a35tcpg236-1
