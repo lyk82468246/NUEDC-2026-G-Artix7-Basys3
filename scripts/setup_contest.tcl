@@ -7,7 +7,7 @@ if {[llength [get_projects -quiet]] == 0} {
     open_project [file normalize [lindex $argv 0]]
 }
 set contest_root [file normalize [get_property DIRECTORY [current_project]]]
-foreach contest_name {Switch_Filter Run_Controller SevenSeg_Scan Board_Status_Display Component_Analyzer} {
+foreach contest_name {Switch_Filter Run_Controller SevenSeg_Scan Board_Status_Display Component_Analyzer Measurement_Debug_Snapshot} {
     set contest_path [file join $contest_root sources rtl ${contest_name}.v]
     if {![file exists $contest_path]} {error "Missing RTL: $contest_path"}
     if {[llength [get_files -quiet $contest_path]] == 0} {

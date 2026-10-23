@@ -352,11 +352,12 @@ def parse_ila_csv(path):
         rows = list(csv.reader(stream))
     if len(rows) < 3:
         raise ValueError("Incomplete ILA CSV")
+    from ila_schema import canonical_name
     names = ("measurement_valid", "vpp_out", "vrms_out", "amp_f1_out", "max_index_out")
     columns = {}
     for name in names:
         matches = [i for i, value in enumerate(rows[0])
-                   if value.split(":")[0].split("/")[-1].split("[")[0] == name]
+                     if canonical_name(value) == name]
         if len(matches) != 1:
             raise ValueError(f"Missing or ambiguous CSV column: {name}")
         columns[name] = matches[0]

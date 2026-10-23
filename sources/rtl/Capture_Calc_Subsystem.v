@@ -79,6 +79,8 @@ module Capture_Calc_Subsystem #(
     wire                    frame_release;
     wire                    hmi_frame_release;
     wire                    tx_idle;
+    wire                    adc_sample_valid_calc;
+    wire [11:0]             adc_data_calc;
     assign frame_release = CONTROLLED_CAPTURE ? controller_release : hmi_frame_release;
     assign capture_start = frame_start_pulse;
     assign packet_finished = hmi_frame_release && !hmi_busy && tx_idle;
@@ -86,8 +88,6 @@ module Capture_Calc_Subsystem #(
     assign acquisition_fault = capture_busy && adc_sample_valid_calc &&
                               ((adc_data_calc==12'd0) || (adc_data_calc==12'hfff));
 
-    wire                    adc_sample_valid_calc;
-    wire [11:0]             adc_data_calc;
     assign diagnostic_adc=adc_data_calc;
 
     // Re-create a calc_clk-domain frame pulse for the top-level ILA.  The

@@ -39,6 +39,7 @@ def fixture(case):
                      rms_mv=math.sqrt(sum((t['vpp']/2)**2 for t in tones)/2)*1000,
                      fundamental_peak_mv=tones[0]['vpp']*500,
                      fundamental_hz=tones[0]['hz'],
+                     component_peak_mv=[t['vpp']*500 for t in tones],
                      bins=[int(t['hz']/500) for t in tones])
     return table,reference
 
@@ -59,10 +60,13 @@ def archive_sessions(directories, output):
         sessions.append({**{k:source.get(k) for k in ('case','status','identity','started','finished',
                         'reference','gains','reference_kind','output_off_confirmed','error')},
                          'source_session':str(path.resolve()),'captures':source['captures']})
+    all_components=bool(sessions) and all(bool(s['captures']) and
+        all(c['analysis'].get('all_component_amplitudes_observed',False) for c in s['captures']) for s in sessions)
     value=dict(sessions=sessions,
-               pass_scope='Vpp_RMS_fundamental_peak_candidate_frequencies_only',
+               pass_scope=('Vpp_RMS_all_component_peaks_candidate_frequencies' if all_components else
+                           'Vpp_RMS_fundamental_peak_candidate_frequencies_only'),
                absolute_input_calibrated=False,
-               all_component_amplitudes_observed=False,
+               all_component_amplitudes_observed=all_components,
                overall_pass=bool(sessions) and all(s['status']=='completed' and
                    s['output_off_confirmed'] and bool(s['captures']) and
                    all(c['analysis']['nominal_consistency_pass'] for c in s['captures']) for s in sessions))
@@ -85,11 +89,25 @@ def evaluate(raw, inspected, reference, gains):
                ('vpp_out','vrms_out','amp_f1_out','max_index_out')) and
            bins==reference['bins'] and raw['frequency_hz']==reference['fundamental_hz'] and
            raw['max_index_out']*500==raw['frequency_hz'])
-    return dict(validity_pass=valid, nominal_consistency_pass=valid and
+    snapshot=inspected.get('component_snapshot')
+    component_measurements=None
+    component_errors=None
+    components_pass=True
+    if snapshot is not None:
+        component_measurements=[scale_uv(x,gains['fft'])/1000 for x in snapshot['magnitudes_raw'][:snapshot['count']]]
+        component_errors=[a-b for a,b in zip(component_measurements,reference['component_peak_mv'])]
+        components_pass=(snapshot['count']==len(reference['bins']) and
+                         snapshot['signal_valid'] and snapshot['mode']==1 and
+                         snapshot['bins'][:snapshot['count']]==reference['bins'] and
+                         all(abs(e)<=5 for e in component_errors))
+    return dict(validity_pass=valid, nominal_consistency_pass=valid and components_pass and
                 all(abs(e)<=5 for e in errors.values()), candidate_bins=bins,
                 reference_mv=measured, errors_mv=errors,
                 absolute_input_calibrated=False, runtime_vio_measurement=False,
-                all_component_amplitudes_observed=False)
+                all_component_amplitudes_observed=snapshot is not None,
+                component_reference_mv=component_measurements,component_errors_mv=component_errors,
+                frame_id=snapshot['frame_id'] if snapshot else None,
+                calibration_epoch=snapshot['calibration_epoch'] if snapshot else None)
 
 
 def run(case, directory, vivado, ltx, captures=2):
@@ -153,6 +171,12 @@ def _run(case, directory, vivado, ltx, captures=2):
                 if not state['output'] or signature(state)!=expected_signature or generator.settings(2)['output']:
                     raise RuntimeError('Generator state changed during capture; frame not accepted')
                 verdict=evaluate(raw,inspected,reference,gains)
+                if report['captures'] and verdict.get('frame_id') is not None:
+                    previous=report['captures'][-1]['analysis']
+                    if verdict['frame_id']==previous.get('frame_id'):
+                        raise RuntimeError('Repeated debug frame ID; frame not accepted')
+                    if verdict['calibration_epoch']!=previous.get('calibration_epoch'):
+                        raise RuntimeError('Calibration epoch changed within trial; do not mix versions')
                 frame=dict(raw=raw,inspection=inspected,analysis=verdict,time=timestamp())
                 atomic_json(subdir/'result.json',frame);report['captures'].append(frame);save()
                 if not verdict['nominal_consistency_pass']:

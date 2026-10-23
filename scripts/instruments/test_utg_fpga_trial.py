@@ -28,6 +28,14 @@ class TestTrial(unittest.TestCase):
                      completed_packet_samples=1,candidate_bins=[200,0,0],last_registers=copy.deepcopy(raw))
         gains=dict(vpp=65536,rms=65536,fft=65536)
         self.assertTrue(trial.evaluate(raw,inspect,ref,gains)['nominal_consistency_pass'])
+        inspect['component_snapshot']=dict(count=1,bins=[200,0,0],magnitudes_raw=[50000,0,0],
+            signal_valid=True,mode=1,frame_id=8,calibration_epoch=3)
+        evaluated=trial.evaluate(raw,inspect,ref,gains)
+        self.assertTrue(evaluated['all_component_amplitudes_observed'])
+        self.assertEqual(evaluated['component_errors_mv'],[0])
+        inspect['component_snapshot']['magnitudes_raw'][0]=60000
+        self.assertFalse(trial.evaluate(raw,inspect,ref,gains)['nominal_consistency_pass'])
+        del inspect['component_snapshot']
         inspect['candidate_bins']=[201,0,0]
         self.assertFalse(trial.evaluate(raw,inspect,ref,gains)['validity_pass'])
         inspect['candidate_bins']=[200,0,0];inspect['diagnostic']['acquisition_fault']=True

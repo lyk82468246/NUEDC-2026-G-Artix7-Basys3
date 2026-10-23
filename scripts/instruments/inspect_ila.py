@@ -7,6 +7,7 @@ import argparse
 import csv
 import json
 from pathlib import Path
+from ila_schema import canonical_name
 
 
 def inspect_capture(path):
@@ -21,8 +22,9 @@ def inspect_capture(path):
             continue
         sample = {}
         for name, radix, value in zip(headers, radices, row):
-            name = name.split('[')[0]
-            base = 16 if 'HEX' in radix.upper() else 2 if 'BINARY' in radix.upper() else 10
+            name = canonical_name(name)
+            if name in sample:raise ValueError('Ambiguous canonical ILA column: '+name)
+            base = 16 if 'HEX' in radix.upper() else 2 if 'BIN' in radix.upper() else 10
             sample[name] = int(value, base)
         samples.append(sample)
     if not samples:
@@ -52,6 +54,30 @@ def inspect_capture(path):
     bins = samples[-1].get('diagnostic_bins')
     if bins is not None:
         result['candidate_bins'] = [(bins >> (12*i)) & 4095 for i in range(3)]
+    fields={'component_count','component_magnitudes','frame_id','calibration_epoch','snapshot_metadata'}
+    if fields & samples[-1].keys():
+        if not fields <= samples[-1].keys():raise ValueError('Partial debug snapshot schema')
+        events=[s for s in samples if s.get('measurement_valid')==1]
+        if len(events)!=1:raise ValueError('Debug snapshot requires exactly one fresh event')
+        s=events[0];count=s['component_count'];meta=s['snapshot_metadata']
+        bins=[(s['diagnostic_bins']>>(12*i))&4095 for i in range(3)]
+        mags=[(s['component_magnitudes']>>(32*i))&0xffffffff for i in range(3)]
+        if not 0<=count<=3 or any(bins[count:]) or any(mags[count:]):
+            raise ValueError('Nonzero unused component slot or invalid count')
+        if not meta&1 and (count or s['max_index_out'] or s['amp_f1_out']):
+            raise ValueError('Invalid signal retains qualified components')
+        if count and (bins[0]!=s['max_index_out'] or mags[0]!=s['amp_f1_out'] or
+                      any(bins[i]>=bins[i+1] for i in range(count-1))):
+            raise ValueError('Fundamental/component ordering mismatch')
+        stable=fields|{'diagnostic_bins','vpp_out','vrms_out','amp_f1_out','max_index_out'}
+        event_index=samples.index(s)
+        if any(any(row[k]!=s[k] for k in stable) for row in samples[event_index:]):
+            raise ValueError('Debug snapshot changed after trigger')
+        result['component_snapshot']=dict(schema=2,frame_id=s['frame_id'],
+            calibration_epoch=s['calibration_epoch'],signal_valid=bool(meta&1),
+            calibration_enabled=bool(meta&2),calibration_present=bool(meta&4),
+            mode=(meta>>3)&3,single=bool(meta&32),three_cycles=bool(meta&64),
+            count=count,bins=bins,magnitudes_raw=mags)
     return result
 
 

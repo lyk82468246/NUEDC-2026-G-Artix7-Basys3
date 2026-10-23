@@ -3,7 +3,7 @@
 #------------------------------------------------------------------------------
 # Configure the Step 3 Basys 3 top level:
 #   * Clocking Wizard (MMCM): 100 MHz + legal 12.2881356 MHz intermediate
-#   * ILA: ten probes clocked by the 100 MHz algorithm clock. Probe 0 is the
+#   * ILA: fifteen probes clocked by the 100 MHz algorithm clock. Probe 0 is the
 #     self-consistent measurement-packet event; it is not the raw frame pulse.
 #   * G_FPGA_Top RTL and Basys3_Pinout.xdc
 #
@@ -125,8 +125,8 @@ foreach clk_prop {CONFIG.MMCM_DIVCLK_DIVIDE CONFIG.MMCM_CLKFBOUT_MULT_F \
 
 #--------------------------------------------------------------------------
 # ILA: measurement-packet event, time-domain results, spectrum peak, UART FSM
-# state. Probe 0 is generated after both time and peak results are snapshotted
-# by HMI_UART_Ctrl, so the value probes describe the same measurement packet.
+# state. Probe 0 is the debug snapshot event one cycle after HMI's qualified
+# measurement_valid, aligning the registered packet and its frame/epoch tags.
 #--------------------------------------------------------------------------
 set ila_name ila_system
 set ila_ip [get_ips -quiet $ila_name]
@@ -142,20 +142,8 @@ if {[llength $ila_ip] == 0} {
     set ila_ip [get_ips $ila_name]
 }
 
-set_property -dict [list \
-    CONFIG.C_NUM_OF_PROBES {10} \
-    CONFIG.C_PROBE0_WIDTH {1} \
-    CONFIG.C_PROBE1_WIDTH {16} \
-    CONFIG.C_PROBE2_WIDTH {16} \
-    CONFIG.C_PROBE3_WIDTH {31} \
-    CONFIG.C_PROBE4_WIDTH {12} \
-    CONFIG.C_PROBE5_WIDTH {5} \
-    CONFIG.C_PROBE6_WIDTH {32} \
-    CONFIG.C_PROBE7_WIDTH {12} \
-    CONFIG.C_PROBE8_WIDTH {36} \
-    CONFIG.C_PROBE9_WIDTH {32} \
-    CONFIG.C_DATA_DEPTH {1024} \
-] $ila_ip
+source [file join $script_dir measurement_debug_ila_config.tcl]
+configure_measurement_debug_ila $ila_ip
 
 foreach {ila_prop ila_value} {
     CONFIG.C_INPUT_PIPE_STAGES 1
@@ -179,7 +167,7 @@ update_compile_order -fileset $source_set
 puts "INFO: Step 3 board top configured."
 puts "INFO:   top       = G_FPGA_Top"
 puts "INFO:   clock IP  = $clk_name (100 MHz + 12.2881356 MHz, wrapper /3 -> ADC clock)"
-puts "INFO:   ILA       = $ila_name (10 probes, 1024 samples; probes 0..5 unchanged)"
+puts "INFO:   ILA       = $ila_name (15 probes, 1024 samples; snapshot schema 2)"
 puts "INFO:   constraints = $xdc_file"
 
 close_project
