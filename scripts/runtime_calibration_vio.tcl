@@ -10,7 +10,7 @@ proc rc::core {} {
 }
 proc rc::probe {core signal} {
     set found {}
-    set pattern [format {(^|/)%s(\[[0-9:]+\])?$} $signal]
+    set pattern [format {(^|[/.])%s(\[[0-9:]+\])?$} $signal]
     foreach p [get_hw_probes -quiet -of_objects $core] {
         if {[regexp $pattern [get_property NAME $p]]} {lappend found $p}
     }
@@ -33,19 +33,23 @@ proc rc_apply {vpp rms fft {enabled 1}} {
     }
     if {$enabled ni {0 1}} {error "enabled must be 0/1"}
     set c [rc::core]
-    refresh_hw_vio -update_output_values 1 $c
+    refresh_hw_vio -update_output_values $c
     set request [rc::probe $c request]
     set old [rc::hexvalue $request OUTPUT_VALUE]
     if {[rc::input $c ack]!=$old} {error "Prior commit pending; do not overwrite staging"}
     set staged {}
     foreach {signal value} [list staged_vpp $vpp staged_rms $rms staged_fft $fft staged_valid $enabled] {
         set p [rc::probe $c $signal]
-        set_property OUTPUT_VALUE [format %x $value] $p
+        # Vivado requires exactly ceil(WIDTH/4) HEX characters (including zeros).
+        set digits [expr {([get_property WIDTH $p]+3)/4}]
+        set_property OUTPUT_VALUE_RADIX HEX $p
+        set_property OUTPUT_VALUE [format %0*x $digits $value] $p
         lappend staged $p
     }
     commit_hw_vio $staged
     # Separate JTAG transaction is essential: staging is stable before request.
     set target [expr {1-$old}]
+    set_property OUTPUT_VALUE_RADIX HEX $request
     set_property OUTPUT_VALUE $target $request
     commit_hw_vio $request
     set until [expr {[clock milliseconds]+2000}]

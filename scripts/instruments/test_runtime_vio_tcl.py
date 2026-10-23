@@ -23,13 +23,25 @@ class TestRuntimeVioTcl(unittest.TestCase):
             proc get_property {property p} {
                 global values
                 if {$property eq "NAME"} {return $p}
+                if {$property eq "WIDTH"} {
+                    if {[file tail $p] in {request ack staged_valid}} {return 1}
+                    return 32
+                }
                 return $values([file tail $p])
             }
             proc set_property {property value p} {
                 global values
+                if {$property eq "OUTPUT_VALUE_RADIX"} {return}
+                set n [file tail $p]
+                set width [expr {$n in {request staged_valid}?1:8}]
+                if {[string length $value]!=$width} {error "Wrong HEX padding"}
                 set values([file tail $p]) $value
             }
-            proc refresh_hw_vio {args} {}
+            proc refresh_hw_vio {args} {
+                if {[lsearch -exact $args -update_output_values]>=0 && [llength $args]!=2} {
+                    error "-update_output_values is a flag, not flag + boolean"
+                }
+            }
             proc commit_hw_vio {probes} {
                 global values commits
                 lappend commits $probes
@@ -69,6 +81,10 @@ class TestRuntimeVioTcl(unittest.TestCase):
             self.assertEqual(int(self.t.eval('dict get [rc_read] valid')), 0)
         self.t.eval('set values(flags) b')
         with self.assertRaises(tkinter.TclError):self.t.eval('rc_read')
+
+    def test_actual_dotted_names(self):
+        self.t.eval('rename get_hw_probes original_get_hw_probes; proc get_hw_probes {args} {return {g_runtime_calibration.epoch g_runtime_calibration.result_epoch}}')
+        self.assertEqual(self.t.eval('rc::probe core epoch'),'g_runtime_calibration.epoch')
 
 
 if __name__ == '__main__':unittest.main()
