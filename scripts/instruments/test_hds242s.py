@@ -24,6 +24,38 @@ class FakeUSB:
 
 
 class TestHDS(unittest.TestCase):
+    def off_device(self, replies):
+        device=HDS242S.__new__(HDS242S)
+        device._io_lock=threading.RLock()
+        device.broken=False
+        device.writes=[]
+        device._send=device.writes.append
+        values=iter(replies)
+        device.query=lambda command: next(values)
+        return device
+
+    def test_off_pending_reply_polled_without_second_write(self):
+        device=self.off_device(['ON','1','OFF'])
+        with patch('hds242s.time.sleep'):
+            result=device.emergency_off()
+        self.assertTrue(result['acknowledged'])
+        self.assertEqual(result['queries'],3)
+        self.assertEqual(device.writes,[':CHANnel OFF'])
+
+    def test_off_invalid_reply_never_confirms(self):
+        device=self.off_device(['UNKNOWN'])
+        result=device.emergency_off()
+        self.assertFalse(result['acknowledged'])
+        self.assertTrue(device.broken)
+        self.assertEqual(device.writes,[':CHANnel OFF'])
+
+    def test_off_persistent_on_is_bounded_and_not_rewritten(self):
+        device=self.off_device(['ON'])
+        with patch('hds242s.time.monotonic',side_effect=[0,1]):
+            result=device.emergency_off()
+        self.assertFalse(result['acknowledged'])
+        self.assertEqual(device.writes,[':CHANnel OFF'])
+
     def receiver(self, chunks):
         instance = HDS242S.__new__(HDS242S)
         instance.device = FakeUSB(chunks)

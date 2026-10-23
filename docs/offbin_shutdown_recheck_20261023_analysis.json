@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "source_plan": "C:\\Users\\Joe\\Documents\\Verilog\\G_FPGA\\test_results\\lab_2026-10-23T21-49-01.906+08-00_07495a\\f4259a8c09a641e49d34cf3c2c602f66",
+  "source_job_status": "completed",
+  "source_job_error": null,
+  "overall_transaction_pass": true,
+  "reference": "generator_HIGHZ_display_setting_only",
+  "absolute_input_calibrated": false,
+  "runtime_vio_measurement": false,
+  "note": "Amplitude values reconstructed from raw, saved provisional profile; not independent accuracy proof",
+  "max_abs_frequency_error_hz": 250,
+  "frequency_validity_pass": true,
+  "nominal_amplitude_consistency_pass": true,
+  "max_abs_nominal_amplitude_error_mv": {
+    "vpp": 0.9759999999999991,
+    "rms": 0.00466094067262901,
+    "fft": 0.015999999999998238
+  },
+  "records": [
+    {
+      "point": 0,
+      "sample": 0,
+      "settings": {
+        "hz": 100250,
+        "vpp": 0.1,
+        "offset_v": 0
+      },
+      "raw": {
+        "vpp_out": 1791,
+        "vrms_out": 626,
+        "amp_f1_out": 781051,
+        "max_index_out": 201,
+        "frequency_hz": 100500
+      },
+      "candidate_bins": [
+        201,
+        0,
+        0
+      ],
+      "signal_valid": true,
+      "error_code": 0,
+      "fresh_event_count": 1,
+      "frequency_error_hz": 250,
+      "postprocessed_reference_mv": {
+        "vpp": 99.024,
+        "rms": 35.36,
+        "fft": 49.984
+      },
+      "nominal_reference_errors_mv": {
+        "vpp": -0.9759999999999991,
+        "rms": 0.00466094067262901,
+        "fft": -0.015999999999998238
+      },
+      "frequency_validity_pass": true,
+      "nominal_amplitude_consistency_pass": true
+    }
+  ]
+}

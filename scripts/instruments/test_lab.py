@@ -34,6 +34,35 @@ def plan():
             "settle_s": 1, "points": [copy.deepcopy(POINT)]}
 
 
+class AtomicJSONTests(unittest.TestCase):
+    def test_transient_windows_replace_only_is_retried(self):
+        with tempfile.TemporaryDirectory() as td:
+            target=Path(td)/'state.json'
+            original=Path.replace
+            calls=[]
+            def replace(path,destination):
+                calls.append(1)
+                if len(calls)<3:
+                    error=PermissionError('temporary Windows handle')
+                    error.winerror=5
+                    raise error
+                return original(path,destination)
+            with patch.object(Path,'replace',replace),patch('lab_controller.time.sleep'):
+                atomic_json(target,{'revision':2})
+            self.assertEqual(len(calls),3)
+            self.assertEqual(json.loads(target.read_text()),{'revision':2})
+
+    def test_persistent_replace_failure_keeps_last_good_file(self):
+        with tempfile.TemporaryDirectory() as td:
+            target=Path(td)/'state.json'
+            atomic_json(target,{'revision':1})
+            error=PermissionError('persistent denial');error.winerror=32
+            with patch.object(Path,'replace',side_effect=error) as replace,patch('lab_controller.time.sleep'):
+                with self.assertRaises(PermissionError):atomic_json(target,{'revision':2})
+            self.assertEqual(replace.call_count,6)
+            self.assertEqual(json.loads(target.read_text()),{'revision':1})
+
+
 class LabTests(unittest.TestCase):
     def setUp(self):
         base = ROOT / "test_results"

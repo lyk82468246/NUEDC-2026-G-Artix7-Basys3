@@ -26,7 +26,18 @@ def atomic_json(path, value):
     path = Path(path)
     temporary = path.with_suffix(path.suffix + ".tmp")
     temporary.write_text(json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False) + "\n", encoding="utf-8")
-    temporary.replace(path)
+    # Windows may temporarily deny replacement while another reader/scanner
+    # holds a handle without delete-sharing. Retry ONLY this local file commit,
+    # never the hardware operation that produced it. Bound total backoff to
+    # 230ms; persistent access errors still propagate, old JSON stays intact.
+    for attempt in range(6):
+        try:
+            temporary.replace(path)
+            break
+        except PermissionError as error:
+            if getattr(error,'winerror',None) not in (5,32,33) or attempt==5:
+                raise
+            time.sleep(min(.01*(2**attempt),.08))
 
 
 def signature(generator):

@@ -242,7 +242,25 @@ class HDS242S:
             result["sent"] = True
             self.broken = was_broken
             if not was_broken:
-                result["acknowledged"] = self.query(":CHANnel?").upper() in ("OFF", "0")
+                # A valid ON reply immediately after OFF can be the instrument's
+                # not-yet-updated state (seen on V8.1.0). Send OFF ONCE, then
+                # poll read-only state with a 0.5s retry window (+ one bounded
+                # USB query already in progress); never retry a write or
+                # interpret invalid/poisoned replies as a successful shutdown.
+                deadline = time.monotonic() + 0.5
+                result['queries'] = 0
+                while True:
+                    observed = self.query(":CHANnel?").upper()
+                    result['queries'] += 1
+                    result['last_observed'] = observed
+                    if observed in ('OFF','0'):
+                        result['acknowledged'] = True
+                        break
+                    if observed not in ('ON','1'):
+                        raise ValueError(f'Invalid OUT state during shutdown: {observed}')
+                    if time.monotonic() >= deadline:
+                        break
+                    time.sleep(0.05)
         except Exception as error:
             result["error"] = str(error)
             self.broken = True

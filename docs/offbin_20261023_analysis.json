@@ -1,0 +1,317 @@
+{
+  "schema": 1,
+  "source_plan": "C:\\Users\\Joe\\Documents\\Verilog\\G_FPGA\\test_results\\lab_2026-10-23T21-40-53.046+08-00_cad1b7\\45727249febc43768876572f4f1a43a7",
+  "source_job_status": "failed",
+  "source_job_error": "ConnectionError: Cannot confirm OUT OFF; check instrument manually",
+  "overall_transaction_pass": false,
+  "reference": "generator_HIGHZ_display_setting_only",
+  "absolute_input_calibrated": false,
+  "runtime_vio_measurement": false,
+  "note": "Amplitude values reconstructed from raw, saved provisional profile; not independent accuracy proof",
+  "max_abs_frequency_error_hz": 250,
+  "frequency_validity_pass": true,
+  "nominal_amplitude_consistency_pass": true,
+  "max_abs_nominal_amplitude_error_mv": {
+    "vpp": 1.8059999999999974,
+    "rms": 0.27833905932737224,
+    "fft": 0.42499999999999716
+  },
+  "records": [
+    {
+      "point": 0,
+      "sample": 0,
+      "settings": {
+        "hz": 10250,
+        "vpp": 0.1,
+        "offset_v": 0
+      },
+      "raw": {
+        "vpp_out": 1793,
+        "vrms_out": 627,
+        "amp_f1_out": 782778,
+        "max_index_out": 21,
+        "frequency_hz": 10500
+      },
+      "candidate_bins": [
+        21,
+        0,
+        0
+      ],
+      "signal_valid": true,
+      "error_code": 0,
+      "fresh_event_count": 1,
+      "frequency_error_hz": 250,
+      "postprocessed_reference_mv": {
+        "vpp": 99.134,
+        "rms": 35.416,
+        "fft": 50.094
+      },
+      "nominal_reference_errors_mv": {
+        "vpp": -0.8659999999999997,
+        "rms": 0.060660940672626396,
+        "fft": 0.0940000000000012
+      },
+      "frequency_validity_pass": true,
+      "nominal_amplitude_consistency_pass": true
+    },
+    {
+      "point": 0,
+      "sample": 1,
+      "settings": {
+        "hz": 10250,
+        "vpp": 0.1,
+        "offset_v": 0
+      },
+      "raw": {
+        "vpp_out": 1793,
+        "vrms_out": 628,
+        "amp_f1_out": 782962,
+        "max_index_out": 21,
+        "frequency_hz": 10500
+      },
+      "candidate_bins": [
+        21,
+        0,
+        0
+      ],
+      "signal_valid": true,
+      "error_code": 0,
+      "fresh_event_count": 1,
+      "frequency_error_hz": 250,
+      "postprocessed_reference_mv": {
+        "vpp": 99.134,
+        "rms": 35.473,
+        "fft": 50.106
+      },
+      "nominal_reference_errors_mv": {
+        "vpp": -0.8659999999999997,
+        "rms": 0.11766094067262856,
+        "fft": 0.10600000000000165
+      },
+      "frequency_validity_pass": true,
+      "nominal_amplitude_consistency_pass": true
+    },
+    {
+      "point": 1,
+      "sample": 0,
+      "settings": {
+        "hz": 100250,
+        "vpp": 0.1,
+        "offset_v": 0
+      },
+      "raw": {
+        "vpp_out": 1795,
+        "vrms_out": 627,
+        "amp_f1_out": 782037,
+        "max_index_out": 200,
+        "frequency_hz": 100000
+      },
+      "candidate_bins": [
+        200,
+        0,
+        0
+      ],
+      "signal_valid": true,
+      "error_code": 0,
+      "fresh_event_count": 1,
+      "frequency_error_hz": -250,
+      "postprocessed_reference_mv": {
+        "vpp": 99.245,
+        "rms": 35.416,
+        "fft": 50.047
+      },
+      "nominal_reference_errors_mv": {
+        "vpp": -0.7549999999999955,
+        "rms": 0.060660940672626396,
+        "fft": 0.046999999999997044
+      },
+      "frequency_validity_pass": true,
+      "nominal_amplitude_consistency_pass": true
+    },
+    {
+      "point": 1,
+      "sample": 1,
+      "settings": {
+        "hz": 100250,
+        "vpp": 0.1,
+        "offset_v": 0
+      },
+      "raw": {
+        "vpp_out": 1798,
+        "vrms_out": 627,
+        "amp_f1_out": 781765,
+        "max_index_out": 201,
+        "frequency_hz": 100500
+      },
+      "candidate_bins": [
+        201,
+        0,
+        0
+      ],
+      "signal_valid": true,
+      "error_code": 0,
+      "fresh_event_count": 1,
+      "frequency_error_hz": 250,
+      "postprocessed_reference_mv": {
+        "vpp": 99.411,
+        "rms": 35.416,
+        "fft": 50.029
+      },
+      "nominal_reference_errors_mv": {
+        "vpp": -0.5889999999999986,
+        "rms": 0.060660940672626396,
+        "fft": 0.029000000000003467
+      },
+      "frequency_validity_pass": true,
+      "nominal_amplitude_consistency_pass": true
+    },
+    {
+      "point": 2,
+      "sample": 0,
+      "settings": {
+        "hz": 100400,
+        "vpp": 0.1,
+        "offset_v": 0
+      },
+      "raw": {
+        "vpp_out": 1797,
+        "vrms_out": 627,
+        "amp_f1_out": 783097,
+        "max_index_out": 201,
+        "frequency_hz": 100500
+      },
+      "candidate_bins": [
+        201,
+        0,
+        0
+      ],
+      "signal_valid": true,
+      "error_code": 0,
+      "fresh_event_count": 1,
+      "frequency_error_hz": 100,
+      "postprocessed_reference_mv": {
+        "vpp": 99.355,
+        "rms": 35.416,
+        "fft": 50.115
+      },
+      "nominal_reference_errors_mv": {
+        "vpp": -0.644999999999996,
+        "rms": 0.060660940672626396,
+        "fft": 0.11500000000000199
+      },
+      "frequency_validity_pass": true,
+      "nominal_amplitude_consistency_pass": true
+    },
+    {
+      "point": 2,
+      "sample": 1,
+      "settings": {
+        "hz": 100400,
+        "vpp": 0.1,
+        "offset_v": 0
+      },
+      "raw": {
+        "vpp_out": 1792,
+        "vrms_out": 627,
+        "amp_f1_out": 783257,
+        "max_index_out": 201,
+        "frequency_hz": 100500
+      },
+      "candidate_bins": [
+        201,
+        0,
+        0
+      ],
+      "signal_valid": true,
+      "error_code": 0,
+      "fresh_event_count": 1,
+      "frequency_error_hz": 100,
+      "postprocessed_reference_mv": {
+        "vpp": 99.079,
+        "rms": 35.416,
+        "fft": 50.125
+      },
+      "nominal_reference_errors_mv": {
+        "vpp": -0.9210000000000065,
+        "rms": 0.060660940672626396,
+        "fft": 0.125
+      },
+      "frequency_validity_pass": true,
+      "nominal_amplitude_consistency_pass": true
+    },
+    {
+      "point": 3,
+      "sample": 0,
+      "settings": {
+        "hz": 199750,
+        "vpp": 0.1,
+        "offset_v": 0
+      },
+      "raw": {
+        "vpp_out": 1776,
+        "vrms_out": 621,
+        "amp_f1_out": 774746,
+        "max_index_out": 399,
+        "frequency_hz": 199500
+      },
+      "candidate_bins": [
+        399,
+        0,
+        0
+      ],
+      "signal_valid": true,
+      "error_code": 0,
+      "fresh_event_count": 1,
+      "frequency_error_hz": -250,
+      "postprocessed_reference_mv": {
+        "vpp": 98.194,
+        "rms": 35.077,
+        "fft": 49.58
+      },
+      "nominal_reference_errors_mv": {
+        "vpp": -1.8059999999999974,
+        "rms": -0.27833905932737224,
+        "fft": -0.4200000000000017
+      },
+      "frequency_validity_pass": true,
+      "nominal_amplitude_consistency_pass": true
+    },
+    {
+      "point": 3,
+      "sample": 1,
+      "settings": {
+        "hz": 199750,
+        "vpp": 0.1,
+        "offset_v": 0
+      },
+      "raw": {
+        "vpp_out": 1779,
+        "vrms_out": 621,
+        "amp_f1_out": 774662,
+        "max_index_out": 400,
+        "frequency_hz": 200000
+      },
+      "candidate_bins": [
+        400,
+        0,
+        0
+      ],
+      "signal_valid": true,
+      "error_code": 0,
+      "fresh_event_count": 1,
+      "frequency_error_hz": 250,
+      "postprocessed_reference_mv": {
+        "vpp": 98.36,
+        "rms": 35.077,
+        "fft": 49.575
+      },
+      "nominal_reference_errors_mv": {
+        "vpp": -1.6400000000000006,
+        "rms": -0.27833905932737224,
+        "fft": -0.42499999999999716
+      },
+      "frequency_validity_pass": true,
+      "nominal_amplitude_consistency_pass": true
+    }
+  ]
+}

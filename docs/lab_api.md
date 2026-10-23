@@ -1,5 +1,7 @@
 # 自动化联调服务与接口（2026-10-23 更新）
 
+非整频点实测后修订：OFF只写一次，若立即回读合法ON/1，在0.5秒窗口内只读重查；窗口外仍可能有一个正在执行的有超时USB事务。未知回复/污染流不确认成功。`off_confirmation`增加queries和last_observed，仅为观测记录，不能将sent=true当作acknowledged=true。本地原子JSON替换遇Windows5/32/33可有界重试，总退避最多230ms；它不会重放仪器操作，永久磁盘错误仍会抛出。
+
 新增 `configure_scope` 任务：参数为 `channel`（整数 1/2）、`probe`（1X/10X）、`coupling`（AC/DC）、`scale`、`timebase`。量程和时基必须通过驱动白名单校验，禁止任意 SCPI 字符串。任务在唯一设备队列内先关闭发生器，再设置通道显示、倍率、耦合、量程、时基、SAMPle 和 8K；回读核对倍率、耦合、量程及时基。不表示已核验所有采集设置或已获得新波形。
 
 最近一次配置记录于 `scope_configuration` 和 `scope_observed_at`，不是持续轮询的实时示波状态；实际采集应以该次结果中的 header 为准。真实同轴连接请用 1X，不能沿用面板 10X 探头倍率。首次配置后可能读到尚未更新的屏幕缓冲，不能仅按 API 返回成功判定新波形有效。
