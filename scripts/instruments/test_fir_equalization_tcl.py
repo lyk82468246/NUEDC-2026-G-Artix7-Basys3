@@ -57,5 +57,16 @@ class TestFIREqualizationTcl(unittest.TestCase):
         self.assertEqual(int(self.t.eval('set writes')),0)
         with self.assertRaises(tkinter.TclError):self.t.eval('fir_eq_select unknown')
 
+    def test_observed_derived_format_allows_rollback(self):
+        self.t.eval('set properties(CONFIG.Coefficient_Fractional_Bits) 16')
+        result=self.t.eval('fir_eq_select baseline')
+        self.assertEqual(int(self.t.call('dict','get',result,'sum_q15')),32768)
+        self.assertEqual(int(self.t.call('dict','get',result,'ip_fractional_bits')),16)
+
+    def test_unknown_fraction_rejected_before_write(self):
+        self.t.eval('set properties(CONFIG.Coefficient_Fractional_Bits) 14')
+        with self.assertRaises(tkinter.TclError):self.t.eval('fir_eq_select experimental')
+        self.assertEqual(int(self.t.eval('set writes')),0)
+
 
 if __name__=='__main__':unittest.main()

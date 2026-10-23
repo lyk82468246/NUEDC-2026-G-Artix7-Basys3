@@ -24,7 +24,6 @@ proc fir_eq_select {mode} {
     # Check every format assumption BEFORE any project mutation.
     foreach {names expected} {
         {CONFIG.Coefficient_Width CONFIG.coefficient_width} 16
-        {CONFIG.Coefficient_Fractional_Bits CONFIG.coefficient_fractional_bits} 15
         {CONFIG.Coefficient_Sign CONFIG.coefficient_sign} Signed
         {CONFIG.BestPrecision CONFIG.bestprecision} false
         {CONFIG.Quantization CONFIG.quantization} Quantize_Only
@@ -45,6 +44,12 @@ proc fir_eq_select {mode} {
             error "FIR format differs: $prop; inspect before using this experiment"
         }
     }
+    # Vivado can derive 16 fractional bits for this small-coefficient vector.
+    # Accept only the observed formats; do not confuse COE Q1.15 grid with the
+    # generated multiplier's binary point. Verify actual response after build.
+    set pfraction [fir_eq::property $ip {CONFIG.Coefficient_Fractional_Bits CONFIG.coefficient_fractional_bits}]
+    set fraction [get_property $pfraction $ip]
+    if {$fraction ni {15 16}} {error "Unsupported FIR coefficient fractional bits: $fraction"}
     if {$mode eq "experimental"} {
         set source [file join $root docs equalization_study_20261023 amplitude_only_95t_q15.coe]
     } else {
@@ -73,8 +78,13 @@ proc fir_eq_select {mode} {
     set pvector [fir_eq::property $ip {CONFIG.CoefficientVector CONFIG.coefficientvector}]
     set_property -dict [list $psource Vector $pvector [join $coefficients ,]] $ip
     generate_target all $ip
-    puts "FIR selection=$mode, 95 signed Q1.15 taps, sum=$sum. Production COE unchanged."
+    set generated_fraction [get_property $pfraction $ip]
+    if {$generated_fraction ni {15 16}} {
+        error "IP regenerated with unexpected fractional bits=$generated_fraction; do not build; inspect/restore explicitly"
+    }
+    puts "FIR selection=$mode, 95 coefficients on Q1.15 grid, sum=$sum. Production COE unchanged."
+    puts "Actual IP coefficient fractional bits=$generated_fraction; inspect accumulator/output scaling, not just COE format."
     puts "Manually inspect IP symmetry, save GUI project, build/route/check timing, generate bit+LTX."
     puts "EXPERIMENTAL MODEL ONLY: no absolute voltage, phase or general C-mode acceptance."
-    return [dict create mode $mode coefficient_count 95 sum_q15 $sum source $source]
+    return [dict create mode $mode coefficient_count 95 sum_q15 $sum source $source ip_fractional_bits $generated_fraction]
 }

@@ -75,4 +75,6 @@ FIR值由`scripts/contest/reference_model.py::fir_response`按仓库COE量化估
 
 主机分析脚本增加`--expected-controls 4`与采集故障检查，将事务/频率通过和幅值设定参考一致性分开标记。55项主机回归及11项参考模型回归通过。本轮无RTL/bit变更。
 
+后续用户已手动应用均衡候选并烧写22:46版本，[新版本四频点实板对照](fir_equalization_hardware_20261023.md)的100mVpp设定参考一致性通过；本文件仍描述旧版，不用新结果覆盖旧原始数据。
+
 后续已完成[95tap整链均衡离线研究](frontend_equalization_20261023.md)：对称候选通过指定模型19组向量，并提供显式选择/基线恢复脚本；尚未对实际Vivado工程应用或生成新bit，不把模型结果改写成本次实板达标。
