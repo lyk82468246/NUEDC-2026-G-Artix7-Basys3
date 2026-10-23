@@ -1,5 +1,7 @@
 # UTG932 / UTG932E 控制脚本
 
+后续已完成[首次接入FPGA的三分量实测](utg_multitone_hardware_20261023.md)：新增固定100mVpp安全包络试验入口 `scripts/instruments/utg_fpga_trial.py`，默认dry-run。普通三音与弱基波/强谐波案例均正确提取50kHz基频；本页原“未开启输出”等描述仅对应最初驱动验证阶段，不覆盖后续硬件试验。固定试验替换助手先前创建的用户槽1，不默认用户的其他槽位可覆盖。
+
 入口为 `scripts/utg932.ps1`；底层为 `scripts/instruments/utg932.py`，同时提供 Python `UTG932` 类。沿用项目的设备独占锁，和 HDS242S 使用不同锁、不同传输层。
 
 ## 本机连接检查（2026-10-23）
