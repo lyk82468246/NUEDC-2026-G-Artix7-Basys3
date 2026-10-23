@@ -1,0 +1,16 @@
+{
+  "connections_confirmed": false,
+  "limits": {"max_vpp": 0.1, "min_output_v": -0.05, "max_output_v": 0.05},
+  "load": "HIGHZ",
+  "settle_s": 2,
+  "scope_channels": [],
+  "capture_fpga": true,
+  "samples_per_point": 2,
+  "points": [
+    {"hz": 10000, "vpp": 0.1, "offset_v": 0},
+    {"hz": 50000, "vpp": 0.1, "offset_v": 0},
+    {"hz": 10250, "vpp": 0.1, "offset_v": 0},
+    {"hz": 100250, "vpp": 0.1, "offset_v": 0},
+    {"hz": 499750, "vpp": 0.1, "offset_v": 0}
+  ]
+}

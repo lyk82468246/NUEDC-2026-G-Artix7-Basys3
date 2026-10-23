@@ -18,7 +18,13 @@ def scale_uv(raw, gain):
     return min(0xffffffff,(raw*gain+32768)>>16)
 
 
-def analyze(plan_dir, profile, include_failed_plan=False, expected_controls=None):
+def analyze(plan_dir, profile, include_failed_plan=False, expected_controls=None,
+            frequency_tolerance_hz=1000):
+    # Keep the historical contest bound by default; characterization can use
+    # an explicit tighter bound without silently changing old reports.
+    if (type(frequency_tolerance_hz) not in (int, float) or
+            not math.isfinite(frequency_tolerance_hz) or frequency_tolerance_hz < 0):
+        raise ValueError('Frequency tolerance must be finite and nonnegative')
     plan_dir=Path(plan_dir)
     plan=json.loads((plan_dir/'plan.json').read_text(encoding='utf-8'))
     job=json.loads((plan_dir/'job.json').read_text(encoding='utf-8'))
@@ -57,7 +63,8 @@ def analyze(plan_dir, profile, include_failed_plan=False, expected_controls=None
                 raise ValueError('Unexpected filtered switch state; do not mix mode records')
             accepted=(d['signal_valid'] and d['error_code']==0 and
                       not d.get('acquisition_fault',False) and
-                      sum(k!=0 for k in i['candidate_bins'])==1 and abs(frequency_error)<=1000)
+                      sum(k!=0 for k in i['candidate_bins'])==1 and
+                      abs(frequency_error)<=frequency_tolerance_hz)
             rows.append({'point':point,'sample':sample,'settings':settings,'raw':f,
                          'candidate_bins':i['candidate_bins'],'signal_valid':d['signal_valid'],
                          'error_code':d['error_code'],'fresh_event_count':i['completed_packet_samples'],
@@ -75,6 +82,7 @@ def analyze(plan_dir, profile, include_failed_plan=False, expected_controls=None
                 all(r['frequency_validity_pass'] and r['nominal_amplitude_consistency_pass'] for r in rows),
             'reference':profile['reference'],'absolute_input_calibrated':False,
             'runtime_vio_measurement':False,
+            'frequency_tolerance_hz':frequency_tolerance_hz,
             'note':'Amplitude values reconstructed from raw, saved provisional profile; not independent accuracy proof',
             'max_abs_frequency_error_hz':max(abs(r['frequency_error_hz']) for r in rows),
             'frequency_validity_pass':all(r['frequency_validity_pass'] for r in rows),
@@ -90,8 +98,11 @@ def main():
     p.add_argument('--output',type=Path,required=True)
     p.add_argument('--include-failed-plan',action='store_true',help='Review all completed sample files, but preserve failed source status and overall_transaction_pass=false')
     p.add_argument('--expected-controls',type=int,choices=range(32),help='Require exact filtered switch bits, e.g. 4 for B/continuous')
+    p.add_argument('--frequency-tolerance-hz',type=float,default=1000,
+                   help='Explicit frequency bound; e.g. 250 for half-bin characterization (default 1000)')
     a=p.parse_args()
-    result=analyze(a.plan,json.loads(a.profile.read_text(encoding='utf-8')),a.include_failed_plan,a.expected_controls)
+    result=analyze(a.plan,json.loads(a.profile.read_text(encoding='utf-8')),a.include_failed_plan,a.expected_controls,
+                   a.frequency_tolerance_hz)
     with a.output.open('x',encoding='utf-8') as stream:json.dump(result,stream,indent=2)
     print(json.dumps({k:v for k,v in result.items() if k!='records'},indent=2))
 

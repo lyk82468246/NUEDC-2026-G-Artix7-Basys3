@@ -17,6 +17,11 @@ class TestSweepScale(unittest.TestCase):
         for raw,gain in [(-1,1),(1,-1),(1.0,1),(True,1),(1,0x100000000)]:
             with self.assertRaises(ValueError):scale_uv(raw,gain)
 
+    def test_invalid_frequency_tolerance_before_filesystem(self):
+        for value in (-1, float('nan'), float('inf'), True, '250'):
+            with self.assertRaises(ValueError):
+                analyze(Path('NONEXISTENT'), {}, frequency_tolerance_hz=value)
+
     def test_plan_integrity_and_reference_labels(self):
         with tempfile.TemporaryDirectory() as td:
             root=Path(td)
@@ -35,6 +40,11 @@ class TestSweepScale(unittest.TestCase):
                 result=analyze(root,profile)
                 self.assertTrue(result['frequency_validity_pass'])
                 self.assertEqual(result['max_abs_frequency_error_hz'],250)
+                self.assertEqual(result['frequency_tolerance_hz'],1000)
+                self.assertTrue(analyze(root,profile,frequency_tolerance_hz=250)['frequency_validity_pass'])
+                tighter=analyze(root,profile,frequency_tolerance_hz=249)
+                self.assertFalse(tighter['frequency_validity_pass'])
+                self.assertFalse(tighter['overall_measurement_consistency_pass'])
                 self.assertFalse(result['runtime_vio_measurement'])
                 self.assertFalse(result['absolute_input_calibrated'])
                 with self.assertRaises(ValueError):analyze(root,profile,expected_controls=4)
