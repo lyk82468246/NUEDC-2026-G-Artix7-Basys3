@@ -4,7 +4,7 @@
 
 本文按照“设计目标—系统原理—实验搭建—验证结果—局限与改进”的结构记录工程。项目名称来自竞赛练习背景，不表示官方赛题确认或指标验收通过。文档核对日期：2026-10-23。
 
-> 最新构建（2026-10-23）：P2控制面板及数码管跨帧保持修复已完成综合/实现和下载，WNS=+0.185 ns、WHS=+0.022 ns，DRC 0 errors / 13 warnings；板测进度及bit/LTX散列见[本轮记录](docs/hardware_debug_20261023.md)。首版6/6三频点新帧采集、修复版3/3固定100kHz新帧采集通过；用户确认OUT开启时显示100.0且周期性横杠已消失，OUT关闭后的噪声误报仍未修复。原有四组行为仿真、新增六组自检、CORDIC标度网表自检和45项Python测试通过。三分量分析/标定目前仅独立验证，尚未接入顶层；≤5 mV精度、外部ADC时序和串口屏显示仍未验收。
+> 最新构建（2026-10-23）：P3三分量分析、谱底及RMS有效性判决已接入顶层，完成综合/实现和下载，WNS=+0.319 ns、WHS=+0.021 ns，DRC 0 errors / 14 warnings。八组RTL自检及47项Python测试通过；新bit三次无信号新帧均输出频率0，用户确认四横杠、LD6灭。但随后100kHz/50mVpp新帧采集超时，板上锁存异常码1，**本版尚未通过实板验收**；信号源已回读确认OFF，保留故障现场继续定位。构建、bit/LTX散列及实测边界见[P3记录](docs/p3_signal_validity_20261023.md)，此前数码管频闪修复见[P2记录](docs/hardware_debug_20261023.md)。物理幅值标定、≤5 mV精度、外部ADC时序和双页面串口屏显示仍未验收。
 
 ## 目录
 
@@ -40,7 +40,7 @@
 | FFT | 8192 点，Radix-4 Burst I/O，定点 Unscaled | 非实时 AXI 流，自然顺序输出 |
 | 频率格点 | 代码按 500 Hz/bin 换算 | 依实际时钟约为 500.0055 Hz/bin |
 | 目标信号范围 | 10 kHz～500 kHz | 对应名义 bin 20～1000 |
-| 当前顶层谱峰扫描 | A bin20～400，B/C bin20～1000，调试bin10～4000 | 含端点；仍选最强峰，独立三分量模块未接入 |
+| 当前RTL谱峰扫描 | A bin20～400，B/C bin20～1000，调试bin10～4000 | P3接入三分量/谱底/RMS判决；构建下载状态见阶段报告 |
 | 串口 | 115200 bps，8N1，只有 TX | 每 bit 868 拍，实际约 115207 bps |
 | 波形显示 | 新顶层暂设240点，1或3周期 | 控件尺寸待确认；独立HMI默认400点；相邻样本线性插值 |
 | 幅值单位 | 当前为内部数字量 | 尚未完成到输入端 mV 的标定 |
@@ -67,7 +67,7 @@ flowchart TD
     WIN --> FFT[8192 点 FFT]
     FFT --> MAG[Translate CORDIC: 幅值]
     MAG --> FREQ[频域 BRAM: 4096 x 32]
-    FREQ --> PEAK[Peak_Search: 最大谱峰]
+    FREQ --> PEAK[Component_Analyzer: 主瓣排除/谱底/三分量/谐波检查]
     CALC --> HMI[HMI_UART_Ctrl / BIN2BCD / UART_Tx]
     PEAK --> HMI
     TIME --> HMI
@@ -96,7 +96,7 @@ G_FPGA_Top
 │   ├── ADC_Input_CDC → AFE_Capture → 时域 BRAM（三份同写镜像）
 │   ├── 时域读口 → Time_Domain_Calc → Vpp / Vrms
 │   ├── FFT 读口 → 平顶窗 ROM/乘法 → FFT → CORDIC → 频域 BRAM
-│   │                                                   └→ Peak_Search
+│   │                                                   └→ Component_Analyzer
 │   └── HMI 读口 + 测量结果 → BCD/命令拼装 → UART_Tx
 └── ila_system：帧完成、测量值、谱峰索引、HMI 状态
 ```
@@ -119,7 +119,7 @@ BtnC 按下为高电平。顶层端口虽然叫 `sys_rst_n`，但默认 `BUTTON_
 
 时域数据为 signed 16-bit；Vpp 接口为 unsigned 17-bit，Vrms 为 unsigned 16-bit，平方和为 44-bit。RMS 输入是 AFE 已处理的数据，不是时域 FSM 再次减去了精确帧均值。
 
-三份时域 BRAM 共享写入、各有独立同步读口，分别服务时域计算、FFT 和 HMI。采集完成后 AFE 进入 `ST_HOLD`，三份镜像保持不变；HMI 在文本和 400 点波形命令全部交给 UART 发送器后，将 `frame_release` 保持为电平，AFE 才进入 `ST_REARM` 并寻找下一帧。这样时域计算、FFT 和 HMI 消费的是同一帧快照，不会在慢速 UART 发送期间被覆盖。代价是系统按显示包节拍运行，单包约受 0.42～0.49 秒串口发送时间限制，不是连续实时采集。
+三份时域BRAM共享写入、各有独立同步读口，分别服务时域计算、FFT和HMI。采集完成后AFE进入`ST_HOLD`，保持同帧快照；受控顶层等HMI完成且UART最后停止位结束才释放。当前240点有效包仅曲线线缆约0.25～0.29秒，另有文本/计算；无效包只发无效文本并清曲线，不绘噪声。按显示包节拍运行，不是连续无间隙ADC帧处理。
 
 ### 2.4 窗函数、FFT 与谱峰
 
@@ -135,7 +135,9 @@ w[n] = 0.21557895 - 0.41663158 cos(θ)
 
 FFT 配置通道发送 `8'h01` 选择正变换，数据/配置均按 `tvalid && tready` 接受。FFT 为 Unscaled，不使用 scaling schedule；输出实虚部各有 30 个有效位，分别装入 32-bit 槽。RTL 将实虚部各右移 1 位后送入 Translate CORDIC，将幅值写入前 4096 个 bin；其余 FFT 输出仍被接收，不能在半帧处停止排空。当前有一级输出缓冲，握手性质仍需更强的随机背压测试。
 
-`Peak_Search` 找的是扫描区间中**幅值最大的频率分量**，不一定是真正基频。例如二次谐波更强时会报告二次谐波。当前没有谐波族判决、前三/四谐波列表或亚 bin 插值。
+受控板级顶层已接入`Component_Analyzer`：最多三轮扫描寻找候选主瓣，以±6bin排除同一主瓣，再扫描剩余背景并求整数均值；候选须超过8倍背景均值，按频率排序后检查近似整数谐波关系。有效基频为最低的可信分量，不再直接把最强谐波当基频。未实现亚bin插值，也不保证检出任意弱基频。旧`Peak_Search`仅保留供非受控子系统和旧自检使用。
+
+当前链路另以`MIN_SIGNAL_RMS=64 raw`拒绝低电平杂散；该值根据本轮OFF约20raw和50mVpp/100kHz约313raw进行初步校核，不是通用mV门限或全频带验收。判决无效时仍产生事务完成事件，频率/索引/谱幅置零，数码管显示`----`、LD6灭；旧屏幕控件t0～t3发送`--`并清曲线，不绘制噪声。完整状态与测试见[P3记录](docs/p3_signal_validity_20261023.md)。
 
 `MAG_SCALE_FACTOR` 默认 1，是整数倍率并带饱和，不是任意小数标定系数。平顶窗相干增益约 0.21555；实际补偿还涉及 FFT、CORDIC 定点格式和前端增益，不可直接将原始幅值标成 mV。
 
@@ -383,13 +385,13 @@ HMI 状态中 0=空闲，1/2=BCD 启动/等待，3～6=文本，7～23=波形准
 
 HMI 仿真使用加速配置，每 bit 10 个仿真时钟，而非生产配置的 868 拍；帧长和点数也缩短。通过不能证明真实 115200 时序、400 点抽样跨度或串口屏实际兼容性。
 
-尚未覆盖：真实 FIR/ADC CDC、顶层 MMCM/复位/消抖、ADC 到 UART 的完整集成回归、频谱幅值数值参考模型，以及所有握手在任意背压下的稳定性断言。五组自检覆盖 AFE 控制、计算、FFT、峰值和 HMI 接口；并不替代板级仿真或仪器验收。AFE 专项运行 `scripts/run_afe_capture_sim.ps1`，其余四组运行 `scripts/run_behavioral_sim.ps1`。
+P3新增参考模型与八组自检见`run_contest_sim.ps1`和[P3记录](docs/p3_signal_validity_20261023.md)，含无效帧协议、背景谱底、显示保持、同步/消抖等检查。仍未覆盖真实FIR/ADC CDC、顶层MMCM/复位、ADC到UART完整集成仿真及任意背压形式证明。原有AFE专项为`run_afe_capture_sim.ps1`，其余四组IP/算法自检为`run_behavioral_sim.ps1`；模块测试不能替代板级或仪器验收。
 
-### 9.2 当前实现结果（2026-10-16）
+### 9.2 历史实现基线（2026-10-16）
 
-以下取自本次修订 RTL 的 Vivado 2025.2 实现报告，器件为 `xc7a35tcpg236-1`，顶层为 `G_FPGA_Top`，设计状态为 Fully Routed：
+以下保留10月16日历史比较值，不是今日RTL的最新签核。器件为`xc7a35tcpg236-1`，顶层为`G_FPGA_Top`。当前构建状态、bit/LTX散列以最新阶段报告为准：
 
-| 指标 | 当前值 |
+| 指标 | 10月16日历史值 |
 | --- | --- |
 | WNS / TNS | +0.082 ns / 0 ns |
 | WHS / THS | +0.022 ns / 0 ns |
@@ -399,7 +401,7 @@ HMI 仿真使用加速配置，每 bit 10 个仿真时钟，而非生产配置�
 | DSP | 74 / 90，82.22% |
 | DRC | 0 errors，13 warnings（DSP 输入/输出寄存器、LUT 方程和无负载检查） |
 
-报告：[board_top_timing.rpt](reports/board_top_timing.rpt)、[board_top_utilization.rpt](reports/board_top_utilization.rpt)、[board_top_drc.rpt](reports/board_top_drc.rpt)、[board_top_io.rpt](reports/board_top_io.rpt)。本次生成的本地下载文件为 `G_FPGA.runs/impl_1/G_FPGA_Top.bit` 和同目录 `G_FPGA_Top.ltx`；它们在 `.gitignore` 中，不作为源码提交。当前 SHA-256：bit=`8CCB45050EB95B07642F00DF1588FEA0C3639378537B3A78C142A3D5DD2127C5`，ltx=`780E91292AEDC2DA7750032CA408AE2CF1DB3CC1F1E4D606DE7EA741B2BB101E`；可用 `Get-FileHash` 重新核对。LTX 与旧版一致是因为探针布局没有变化，并非未重建。BRAM/DSP 已较紧张，增加 ILA 深度、完整双缓冲或更多计算通道前需重新预算。当前没有带独立模拟参考的误差、抗干扰结果或正式验收数据。
+`reports/board_top_*.rpt`随每次重建更新，不能拿最新报告冒充上述历史构建。下载文件为`G_FPGA.runs/impl_1/G_FPGA_Top.bit`及同目录LTX（不提交大型产物）；每版散列和下载记录统一归档于[P2记录](docs/hardware_debug_20261023.md)和[P3记录](docs/p3_signal_validity_20261023.md)，请用`Get-FileHash`核对。探针未改时LTX散列可以不变，不表示bit未更新。没有带独立模拟参考的≤5mV误差或正式抗干扰验收数据。
 
 ### 9.3 实板功能验证（2026-10-16）
 

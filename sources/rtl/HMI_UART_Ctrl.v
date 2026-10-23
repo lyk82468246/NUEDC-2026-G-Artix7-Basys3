@@ -25,7 +25,9 @@ module HMI_UART_Ctrl #(
     parameter integer FRAME_LENGTH   = 8192,
     parameter integer TIME_ADDR_WIDTH= 13,
     parameter integer WAVE_POINTS    = 400,
-    parameter integer DISPLAY_CYCLES = 1
+    parameter integer DISPLAY_CYCLES = 1,
+    parameter integer VALIDATE_SIGNAL = 0,
+    parameter integer MIN_SIGNAL_RMS = 64
 )(
     input  wire                                  clk,
     input  wire                                  rst,
@@ -38,6 +40,8 @@ module HMI_UART_Ctrl #(
     input  wire [11:0]                            f1_index_in,
     input  wire [31:0]                            f1_hz_in,
     input  wire [31:0]                            amp_f1_in,
+    input  wire                                  signal_valid_in,
+    output wire                                  signal_valid_out,
 
     // 0: display one period, 1: display three periods.  The value is
     // latched when a new measurement packet starts.
@@ -87,6 +91,8 @@ module HMI_UART_Ctrl #(
     reg [11:0] f1_index_active;
     reg [31:0] f1_hz_active;
     reg [31:0] amp_f1_active;
+    reg signal_latched,signal_active;
+    assign signal_valid_out=signal_active;
 
     wire [39:0] vpp_bcd;
     wire [39:0] vrms_bcd;
@@ -539,7 +545,8 @@ module HMI_UART_Ctrl #(
             ST_TEXT_PREFIX:
                 uart_data = text_prefix_byte(text_id, text_byte_index);
             ST_TEXT_DIGITS:
-                uart_data = 8'd48 + bcd_digit(selected_bcd, text_digit_pos);
+                uart_data = (VALIDATE_SIGNAL && !signal_active)?8'h2d:
+                            8'd48 + bcd_digit(selected_bcd, text_digit_pos);
             ST_TEXT_CLOSE:
                 uart_data = 8'h22; // closing quote
             ST_TEXT_TERM:
@@ -601,6 +608,7 @@ module HMI_UART_Ctrl #(
             f1_index_active    <= 12'd0;
             f1_hz_active       <= 32'd0;
             amp_f1_active      <= 32'd0;
+            signal_latched<=0;signal_active<=0;
             text_id             <= 2'd0;
             text_byte_index    <= 4'd0;
             text_digit_pos     <= 4'd0;
@@ -655,6 +663,7 @@ module HMI_UART_Ctrl #(
                 have_time_result <= 1'b1;
             end
             if (peak_result_valid) begin
+                signal_latched<=(!VALIDATE_SIGNAL || signal_valid_in);
                 f1_index_latched <= f1_index_in;
                 f1_hz_latched    <= f1_hz_in;
                 amp_f1_latched   <= amp_f1_in;
@@ -678,6 +687,10 @@ module HMI_UART_Ctrl #(
                         f1_index_active  <= f1_index_latched;
                         f1_hz_active     <= f1_hz_latched;
                         amp_f1_active    <= amp_f1_latched;
+                        // Use BOTH pending snapshots, so time/FFT completion
+                        // order cannot apply a previous frame's RMS qualifier.
+                        signal_active<=!VALIDATE_SIGNAL ||
+                            (signal_latched && vrms_latched>=MIN_SIGNAL_RMS);
                         display_three_cycles_latched <= display_three_cycles;
                         frame_release    <= 1'b0;
                         busy              <= 1'b1;
@@ -709,7 +722,8 @@ module HMI_UART_Ctrl #(
                     busy <= 1'b1;
                     if (uart_start) begin
                         if (text_byte_index == 4'd7) begin
-                            text_digit_pos <= first_nonzero_digit(selected_bcd);
+                            text_digit_pos <= (VALIDATE_SIGNAL && !signal_active)?4'd1:
+                                              first_nonzero_digit(selected_bcd);
                             state           <= ST_TEXT_DIGITS;
                         end
                         else begin
@@ -790,7 +804,14 @@ module HMI_UART_Ctrl #(
                     busy <= 1'b1;
                     if (uart_start) begin
                         if (clear_term_index == 2'd2) begin
-                            if (f1_index_active == 0) begin
+                            if (VALIDATE_SIGNAL && !signal_active) begin
+                                // Invalid frames still clear old curves and
+                                // retire normally. Never divide by an invalid
+                                // index, draw noise, or leave AFE HOLD locked.
+                                waveform_done<=1'b1;frame_release<=1'b1;
+                                busy<=1'b0;state<=ST_IDLE;
+                            end
+                            else if (f1_index_active == 0) begin
                                 // No valid peak: display the complete frame.
                                 wave_span <= FRAME_LENGTH - 1;
                                 state     <= ST_WAVE_READ;

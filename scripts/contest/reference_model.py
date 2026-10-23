@@ -85,20 +85,26 @@ def spectrum(raw):
     return mags, sum(q)/32768
 
 
-def components(mags, mode="B", relative_floor=0.005, exclude_bins=6):
-    lo, hi = 20, (400 if mode == "A" else 1000)
-    floor = max(1, max(mags[lo:hi+1])*relative_floor)
+def components(mags, mode="B", relative_floor=1/256, exclude_bins=6,
+               absolute_floor=64, noise_ratio=8):
+    lo, hi = (10,4000) if mode == 'DEBUG' else (20,400 if mode == 'A' else 1000)
+    raw = [round(x) for x in mags]  # BRAM holds unsigned integer magnitudes
+    floor = max(absolute_floor, int(max(raw[lo:hi+1])*relative_floor))
     remaining = set(range(lo, hi+1))
     peaks = []
     for _ in range(3):
         if not remaining:
             break
-        k = max(remaining, key=lambda i: (mags[i], -i))
-        if mags[k] < floor:
+        k = max(remaining, key=lambda i: (raw[i], -i))
+        if raw[k] < floor or raw[k] == 0:
             break
         peaks.append(k)
         remaining.difference_update(range(k-exclude_bins, k+exclude_bins+1))
-    return sorted(peaks)
+    # All three mainlobes excluded, then integer mean as in RTL. This is a
+    # magnitude ratio, not a power-SNR-in-dB estimator or a calibration.
+    background = [raw[k] for k in remaining]
+    mean = sum(background)//len(background) if background else (1<<32)-1
+    return sorted(k for k in peaks if raw[k] > mean*noise_ratio)
 
 
 def fir_response(hz):

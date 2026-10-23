@@ -6,6 +6,16 @@ from reference_model import (N, FS, Tone, waveform, fft, cases, analyse,
 
 
 class ReferenceTests(unittest.TestCase):
+    def test_broadband_noise_has_no_reportable_components(self):
+        mags = [1000+(k*37)%300 for k in range(N//2)]
+        self.assertEqual(components(mags),[])
+
+    def test_background_excludes_strong_lobes_before_weak_peak_gate(self):
+        mags = [1000]*(N//2)
+        mags[20],mags[200],mags[400] = 10000,1000000,500000
+        mags[199],mags[201] = 990000,980000
+        self.assertEqual(components(mags,'A'),[20,200,400])
+
     def test_raw_fft_scale_matches_cordic_fractional_alignment(self):
         # Independent raw-code check; inverse conversion alone would conceal
         # an erroneous factor of two if both formulas shared that mistake.

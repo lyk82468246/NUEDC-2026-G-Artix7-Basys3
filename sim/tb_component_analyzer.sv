@@ -20,7 +20,7 @@ module tb_component_analyzer;
     task tick;begin @(negedge clk);end endtask
     task run_case;begin
         toggle=~toggle;cycles=0;tick();
-        while(!done && cycles<12000) begin tick();cycles=cycles+1;end
+        while(!done && cycles<40000) begin tick();cycles=cycles+1;end
         assert(done) else $fatal(1,"Analyzer timeout");
         tick();
     end endtask
@@ -51,6 +51,26 @@ module tb_component_analyzer;
         // No-signal result must clear all old components atomically.
         for(k=0;k<4096;k=k+1)mem[k]=0;
         run_case();assert(count==0 && bin_list==0 && magnitudes==0 && !consistent) else $fatal(1,"Stale components on silence");
+        // Broadband noise must not become three arbitrary measured tones.
+        for(k=0;k<4096;k=k+1)mem[k]=1000+(k*37)%300;
+        run_case();assert(count==0 && frequency==0) else $fatal(1,"Noise accepted as signal");
+        // Exclude strong mainlobes before calculating background, so an actual
+        // weak fundamental ten times the floor is retained, not suppressed by
+        // the much stronger harmonics' contribution to the mean.
+        for(k=0;k<4096;k=k+1)mem[k]=1000;
+        mem[20]=10000;mem[200]=1000000;mem[199]=990000;mem[201]=980000;mem[400]=500000;
+        mode=0;run_case();
+        assert(count==3 && fundamental==20 && amplitude==10000 && dut.noise_mean_raw==1000)
+            else $fatal(1,"Strong lobes biased background or lost weak fundamental");
+        // Wide accumulator and saturated threshold must not wrap at full scale.
+        for(k=0;k<4096;k=k+1)mem[k]=32'hffffffff;
+        mode=1;run_case();assert(count==0 && dut.noise_mean_raw==32'hffffffff)
+            else $fatal(1,"Noise sum/division/threshold overflow");
+        // Debug's largest harmonic order is 400, not a six-bit counter.
+        for(k=0;k<4096;k=k+1)mem[k]=100;
+        mem[10]=1000000;mem[4000]=500000;mode=3;run_case();
+        assert(count==2 && consistent && fundamental==10 && frequency==5000 && bin_list[23:12]==4000)
+            else $fatal(1,"Debug boundaries or high harmonic order");
         $display("PASS: tb_component_analyzer seven composite FFT fixtures, strong harmonics, off-bin, silence and inconsistent peaks");
         $finish;
     end

@@ -18,10 +18,12 @@ module tb_board_panel;
     reg measurement=0;
     reg [31:0] frequency=100000;
     reg status_fresh=1,status_single=1;
+    reg signal_valid=1;
     reg [1:0] status_mode=2;
     wire [15:0] leds;
-    Board_Status_Display #(.CLK_HZ(1000),.SCAN_CYCLES(8)) status_display(
+    Board_Status_Display #(.CLK_HZ(1000),.SCAN_CYCLES(8),.VALIDATE_SIGNAL(1)) status_display(
         .clk(clk),.rst(rst),.locked(1'b1),.measurement_valid(measurement),.fresh(status_fresh),
+        .signal_valid(signal_valid),
         .capture_busy(1'b0),.algorithm_busy(1'b0),.hmi_busy(1'b0),
         .mode(status_mode),.view(2'd0),.single_mode(status_single),.three_cycles(1'b1),
         .error_code(4'h2),.frequency_hz(frequency),.magnitude_raw(32'd100),
@@ -93,6 +95,14 @@ module tb_board_panel;
         assert(!status_display.u_scan.active_valid) else $fatal(1,"Mode change kept old result");
         status_mode=2;tick();repeat(100) tick();
         assert(!status_display.display_valid) else $fatal(1,"Switch-back revived old mode result");
+        signal_valid=0;status_fresh=1;measurement=1;tick();measurement=0;repeat(100) tick();
+        assert(!status_display.u_scan.active_valid && !leds[6]) else $fatal(1,"Invalid signal displayed as measurement");
+        signal_valid=1;repeat(100) tick();
+        assert(!status_display.display_valid) else $fatal(1,"Qualifier alone revived invalid snapshot");
+        // Recovery includes /100 (32 clocks), up to two BCD conversion
+        // intervals and a whole scan boundary; 100 clocks is not a bound.
+        measurement=1;tick();measurement=0;repeat(200) tick();
+        assert(status_display.u_scan.active_valid && leds[6]) else $fatal(1,"Valid signal did not recover");
         $display("PASS: tb_board_panel switch32, bounce, active-low scan, kHz point, OFLO and invalid");
         $finish;
     end

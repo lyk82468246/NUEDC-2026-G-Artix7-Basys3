@@ -130,6 +130,7 @@ module G_FPGA_Top #(
     wire        frame_valid;
     wire        measurement_valid;
     wire [4:0]  uart_state;
+    wire measurement_signal_valid;
 
     Run_Controller u_run_controller(
         .clk(clk_algo),.rst(rst_algo),.controls_ready(controls_ready),
@@ -144,9 +145,10 @@ module G_FPGA_Top #(
         .frame_id(frame_id),.result_fresh(result_fresh),.error_code(error_code),
         .latency_cycles(latency_cycles),.state_debug(run_state));
 
-    Board_Status_Display u_board_status(
+    Board_Status_Display #(.VALIDATE_SIGNAL(1)) u_board_status(
         .clk(clk_algo),.rst(rst_algo),.locked(mmcm_locked),
         .measurement_valid(measurement_valid),.fresh(result_fresh),
+        .signal_valid(measurement_signal_valid),
         .capture_busy(capture_busy),.algorithm_busy(calc_busy||fft_busy||peak_busy),
         .hmi_busy(hmi_busy),.mode(mode_active),.view(view_active),
         .single_mode(single_active),.three_cycles(display_three_cycles),
@@ -166,6 +168,7 @@ module G_FPGA_Top #(
         .capture_start(capture_start),
         .packet_finished(packet_finished),
         .acquisition_fault(acquisition_fault),
+        .signal_valid_out(measurement_signal_valid),
         .vpp_out             (vpp_out),
         .vrms_out            (vrms_out),
         .mean_square_out     (mean_square_out),

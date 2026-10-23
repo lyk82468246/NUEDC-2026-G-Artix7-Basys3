@@ -5,9 +5,11 @@
 module Board_Status_Display #(
     parameter integer CLK_HZ=100_000_000,
     parameter integer SCAN_CYCLES=25_000,
-    parameter integer DISPLAY_HOLD_CYCLES=2*CLK_HZ
+    parameter integer DISPLAY_HOLD_CYCLES=2*CLK_HZ,
+    parameter integer VALIDATE_SIGNAL=0
 )(
     input wire clk, rst, locked, measurement_valid, fresh,
+    input wire signal_valid,
     input wire capture_busy, algorithm_busy, hmi_busy,
     input wire [1:0] mode, view,
     input wire single_mode, three_cycles,
@@ -63,7 +65,11 @@ module Board_Status_Display #(
             if(measurement_valid) begin
                 pulse_count<=PC;
                 a_snap<=magnitude_raw; p_snap<=vpp_raw; r_snap<=rms_raw;
-                freq_shift<=frequency_hz; freq_quotient<=0; freq_remainder<=0; freq_bits<=32;
+                if(VALIDATE_SIGNAL && !signal_valid) begin
+                    have_snapshot<=0;freq_bits<=0;
+                end else begin
+                    freq_shift<=frequency_hz; freq_quotient<=0; freq_remainder<=0; freq_bits<=32;
+                end
                 display_age<=0; snapshot_mode<=mode;
             end else if(pulse_count!=0) pulse_count<=pulse_count-1'b1;
             if(!measurement_valid && freq_bits!=0) begin
@@ -83,7 +89,8 @@ module Board_Status_Display #(
             default:display_value=a_snap;
         endcase
     end
-    assign led={error_code,three_cycles,single_mode,mode,(|error_code),fresh,
+    assign led={error_code,three_cycles,single_mode,mode,(|error_code),
+                (fresh && (!VALIDATE_SIGNAL || signal_valid)),
                 hmi_busy,algorithm_busy,capture_busy,(pulse_count!=0),heartbeat,locked};
     SevenSeg_Scan #(.SCAN_CYCLES(SCAN_CYCLES)) u_scan(
         .clk(clk),.rst(rst),.value(display_value),.valid(display_valid),

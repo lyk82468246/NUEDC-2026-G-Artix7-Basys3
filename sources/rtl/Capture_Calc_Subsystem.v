@@ -24,7 +24,8 @@
 //==============================================================================
 module Capture_Calc_Subsystem #(
     parameter integer CONTROLLED_CAPTURE=0,
-    parameter integer WAVE_POINTS=400
+    parameter integer WAVE_POINTS=400,
+    parameter integer MIN_SIGNAL_RMS=64
 )(
     input  wire             adc_clk,
     input  wire             calc_clk,
@@ -58,7 +59,12 @@ module Capture_Calc_Subsystem #(
     output wire [4:0]       uart_state,
     output wire             capture_start,
     output wire             packet_finished,
-    output wire             acquisition_fault
+    output wire             acquisition_fault,
+    output wire             signal_valid_out,
+    output wire [1:0]       component_count_out,
+    output wire [35:0]      component_bins_out,
+    output wire [95:0]      component_magnitudes_out,
+    output wire [31:0]      noise_mean_out
 );
 
     wire                    bram_wr_en;
@@ -213,7 +219,35 @@ module Capture_Calc_Subsystem #(
         .rd_data (freq_rd_data)
     );
 
-    Peak_Search #(.RUNTIME_LIMITS(CONTROLLED_CAPTURE)) u_peak_search (
+    wire [11:0] analyzed_index;
+    wire [31:0] analyzed_frequency,analyzed_magnitude;
+    wire spectral_valid;
+    wire [1:0] analyzed_count;
+    wire [35:0] analyzed_bins;
+    wire [95:0] analyzed_magnitudes;
+    // Time statistics complete before the FFT's serial input loading ends in
+    // this architecture. HMI separately snapshots BOTH qualifiers atomically.
+    wire qualified=!CONTROLLED_CAPTURE || (spectral_valid && vrms_out>=MIN_SIGNAL_RMS);
+    assign max_index_out=qualified?analyzed_index:12'd0;
+    assign f1_hz_out=qualified?analyzed_frequency:32'd0;
+    assign amp_f1_out=qualified?analyzed_magnitude:32'd0;
+    assign component_count_out=qualified?analyzed_count:2'd0;
+    assign component_bins_out=qualified?analyzed_bins:36'd0;
+    assign component_magnitudes_out=qualified?analyzed_magnitudes:96'd0;
+
+    generate if(CONTROLLED_CAPTURE) begin:g_components
+        Component_Analyzer u_components(
+            .clk(calc_clk),.rst(rst),.frame_done_toggle(freq_frame_done_toggle),.mode(mode_active),
+            .rd_addr(freq_rd_addr),.rd_en(freq_rd_en),.rd_data(freq_rd_data),
+            .component_count(analyzed_count),.component_bins(analyzed_bins),
+            .component_magnitudes(analyzed_magnitudes),.fundamental_bin(analyzed_index),
+            .fundamental_hz(analyzed_frequency),.fundamental_magnitude(analyzed_magnitude),
+            .harmonics_consistent(spectral_valid),.noise_mean_raw(noise_mean_out),
+            .result_valid(peak_result_valid),.busy(peak_busy));
+    end else begin:g_legacy_peak
+    assign spectral_valid=1'b1;
+    assign analyzed_count=0;assign analyzed_bins=0;assign analyzed_magnitudes=0;assign noise_mean_out=0;
+    Peak_Search u_peak_search (
         .calc_clk          (calc_clk),
         .rst               (rst),
         .frame_done_toggle (freq_frame_done_toggle),
@@ -222,12 +256,13 @@ module Capture_Calc_Subsystem #(
         .freq_rd_addr      (freq_rd_addr),
         .freq_rd_en        (freq_rd_en),
         .freq_rd_data      (freq_rd_data),
-        .max_index         (max_index_out),
-        .f1_hz             (f1_hz_out),
-        .amp_f1            (amp_f1_out),
+        .max_index         (analyzed_index),
+        .f1_hz             (analyzed_frequency),
+        .amp_f1            (analyzed_magnitude),
         .result_valid      (peak_result_valid),
         .busy              (peak_busy)
     );
+    end endgenerate
 
     HMI_UART_Ctrl #(
         .CLK_FREQ_HZ     (100_000_000),
@@ -235,7 +270,9 @@ module Capture_Calc_Subsystem #(
         .FRAME_LENGTH    (8192),
         .TIME_ADDR_WIDTH (13),
         .WAVE_POINTS     (WAVE_POINTS),
-        .DISPLAY_CYCLES  (1)
+        .DISPLAY_CYCLES  (1),
+        .VALIDATE_SIGNAL (CONTROLLED_CAPTURE),
+        .MIN_SIGNAL_RMS  (MIN_SIGNAL_RMS)
     ) u_hmi_uart_ctrl (
         .clk               (calc_clk),
         .rst               (rst),
@@ -243,9 +280,11 @@ module Capture_Calc_Subsystem #(
         .vpp_in            (vpp_out),
         .vrms_in           (vrms_out),
         .peak_result_valid (peak_result_valid),
-        .f1_index_in       (max_index_out),
-        .f1_hz_in          (f1_hz_out),
-        .amp_f1_in         (amp_f1_out),
+        .f1_index_in       (analyzed_index),
+        .f1_hz_in          (analyzed_frequency),
+        .amp_f1_in         (analyzed_magnitude),
+        .signal_valid_in   (spectral_valid),
+        .signal_valid_out  (signal_valid_out),
         .display_three_cycles(display_three_cycles),
         .time_rd_en        (hmi_time_rd_en),
         .time_rd_addr      (hmi_time_rd_addr),
