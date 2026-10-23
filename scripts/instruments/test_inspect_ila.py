@@ -23,7 +23,7 @@ class InspectILATest(unittest.TestCase):
         self.assertEqual(result['adc_window'], {'min': 2048, 'max': 2048})
         self.assertEqual(result['diagnostic']['events_since_frame_start'], {
             'frame_complete': True, 'time_complete': True, 'fft_complete': False,
-            'peak_complete': False, 'packet_complete': False})
+            'peak_complete': False, 'measurement_snapshot': False})
 
 
 if __name__ == '__main__':

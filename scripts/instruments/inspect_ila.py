@@ -45,7 +45,7 @@ def inspect_capture(path):
                                      for i, name in enumerate(names)})
         result['diagnostic']['events_since_frame_start'] = {
             name: bool(status & (1 << (4-i))) for i, name in enumerate(
-                ['frame_complete', 'time_complete', 'fft_complete', 'peak_complete', 'packet_complete'])}
+                ['frame_complete', 'time_complete', 'fft_complete', 'peak_complete', 'measurement_snapshot'])}
     adc = [s['diagnostic_adc'] for s in samples if 'diagnostic_adc' in s]
     if adc:
         result['adc_window'] = {'min': min(adc), 'max': max(adc)}

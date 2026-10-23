@@ -31,7 +31,7 @@
 | 12 | 当前HMI快照的信号有效标志 |
 | 11 / 10 / 9 / 8 / 7 | capture / time_calc / FFT / peak / HMI busy |
 | 6 / 5 | packet_finished / acquisition_fault |
-| 4:0 | 本事务曾出现 frame / time / FFT / peak / measurement 完成事件 |
+| 4:0 | 本事务曾出现 frame / time / FFT / peak / measurement快照事件；最后一位不是UART发送完成 |
 
 事件位在capture_start清零，然后置位保持；控制器处于ARMED重试或FAULT时不自动清除，因此能看到故障前完成到哪一级。复位或重新下载会丢失现场，应先即时抓取。事件位不包含先后顺序，也不是完整事务历史；若需时序，仍应选择相应事件触发并调整触发位置。
 

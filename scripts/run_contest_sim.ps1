@@ -16,6 +16,8 @@ try {
     $contestSources=@('Switch_Filter.v','Run_Controller.v','BIN2BCD.v','SevenSeg_Scan.v','Board_Status_Display.v','Button_Debounce.v','AFE_Capture.v','Component_Analyzer.v','Measurement_Calibrator.v','HMI_UART_Ctrl.v') | ForEach-Object { Join-Path "$contestRoot\sources\rtl" $_ }
     $contestTests=@('tb_run_controller','tb_board_panel','tb_afe_frame_ownership','tb_afe_small_signal','tb_component_analyzer','tb_measurement_calibrator','tb_hmi_signal_valid','tb_hmi_uart')
     $contestTestFiles=$contestTests | ForEach-Object { Join-Path "$contestRoot\sim" "$_.sv" }
+    # Extra top is defined in tb_hmi_signal_valid.sv; no duplicate source file.
+    $contestTests += 'tb_hmi_signal_valid_direct'
     & "$VivadoRoot\bin\xvlog.bat" -sv -work xil_defaultlib @contestSources @contestTestFiles
     if($LASTEXITCODE -ne 0){throw 'Contest compile failed'}
     foreach($contestTest in $contestTests){

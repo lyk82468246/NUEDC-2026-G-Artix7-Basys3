@@ -30,6 +30,15 @@ reset_hw_ila $ila
 set trigger [get_hw_probes -quiet -of_objects $ila -filter {NAME =~ "*measurement_valid*"}]
 if {[llength $trigger] != 1} { error "Missing measurement_valid trigger probe" }
 set_property TRIGGER_COMPARE_VALUE eq1'b1 $trigger
+# Log the actual comparator settings. reset_hw_ila behavior must not be
+# assumed to clear a GUI client's cached conditions; diagnose before changing.
+foreach diagnostic_probe [get_hw_probes -of_objects $ila] {
+    foreach diagnostic_property [list_property $diagnostic_probe] {
+        if {[regexp {^(TRIGGER_COMPARE_VALUE|WIDTH|PORT_WIDTH)$} $diagnostic_property]} {
+            puts "ILA_COMPARE $diagnostic_probe $diagnostic_property=[get_property $diagnostic_property $diagnostic_probe]"
+        }
+    }
+}
 # reset_hw_ila already restores these defaults. Basic-only cores expose some
 # CONTROL properties as read-only; verify instead of redundantly writing them.
 foreach {property expected} {

@@ -21,7 +21,11 @@ module G_FPGA_Top #(
     parameter integer KEY_DEBOUNCE_MS = 20,
     parameter integer SWITCH_STABLE_CYCLES = 2_000_000,
     // PLACEHOLDER: portrait 240x320 HMI. Confirm actual plot width before use.
-    parameter integer WAVE_POINTS = 240
+    parameter integer WAVE_POINTS = 240,
+    // Raw RMS units, not mV. Keep production default until path calibration.
+    // Direct-ADC bench override 16 is supported by measured OFF=3..4 and
+    // 50mVpp/100kHz=28. It does NOT reject the noisy external-filter path.
+    parameter integer MIN_SIGNAL_RMS = 64
 )(
     input  wire       sys_clk,
     input  wire       sys_rst_n,
@@ -171,7 +175,8 @@ module G_FPGA_Top #(
         .error_code(error_code),.frequency_hz(f1_hz_out),.magnitude_raw(amp_f1_out),
         .vpp_raw(vpp_out),.rms_raw(vrms_out),.led(led),.seg(seg),.an(an),.dp(dp));
 
-    Capture_Calc_Subsystem #(.CONTROLLED_CAPTURE(1),.WAVE_POINTS(WAVE_POINTS)) u_capture_calc_subsystem (
+    Capture_Calc_Subsystem #(.CONTROLLED_CAPTURE(1),.WAVE_POINTS(WAVE_POINTS),
+        .MIN_SIGNAL_RMS(MIN_SIGNAL_RMS)) u_capture_calc_subsystem (
         .adc_clk             (clk_adc),
         .calc_clk            (clk_algo),
         .rst                 (rst_subsystem),

@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 // Protocol/ownership regression; legacy tb_hmi_uart separately decodes 8N1.
-module tb_hmi_signal_valid;
+module tb_hmi_signal_valid #(parameter integer MIN_RMS=64);
     reg clk=0;always #5 clk=~clk;
     reg rst=1,tv=0,pv=0,sv=1;
     reg [15:0] rms=200;
@@ -12,7 +12,7 @@ module tb_hmi_signal_valid;
     string expected;
     HMI_UART_Ctrl #(.CLK_FREQ_HZ(1152000),.BAUD_RATE(115200),
         .FRAME_LENGTH(64),.TIME_ADDR_WIDTH(6),.WAVE_POINTS(4),
-        .VALIDATE_SIGNAL(1),.MIN_SIGNAL_RMS(64)) dut(
+        .VALIDATE_SIGNAL(1),.MIN_SIGNAL_RMS(MIN_RMS)) dut(
         .clk(clk),.rst(rst),.time_result_valid(tv),.vpp_in(17'd1000),.vrms_in(rms),
         .peak_result_valid(pv),.f1_index_in(12'd8),.f1_hz_in(32'd4000),.amp_f1_in(32'd10000),
         .signal_valid_in(sv),.signal_valid_out(signal_valid),.display_three_cycles(1'b0),
@@ -34,7 +34,7 @@ module tb_hmi_signal_valid;
             cycles=0;
             while(!packet_valid && cycles<100)begin tick();cycles=cycles+1;end
             assert(packet_valid) else $fatal(1,"No completed-result event");
-            assert(signal_valid==(spectral_ok && rms_value>=64)) else $fatal(1,"Validity used wrong pending frame");
+            assert(signal_valid==(spectral_ok && rms_value>=MIN_RMS)) else $fatal(1,"Validity used wrong pending frame");
             assert(!release_frame) else $fatal(1,"Previous release was not withdrawn");
             cycles=0;
             while(!(release_frame && tx_idle && !busy) && cycles<100000)begin tick();cycles=cycles+1;end
@@ -58,10 +58,20 @@ module tb_hmi_signal_valid;
     initial begin
         repeat(5)tick();rst=0;repeat(5)tick();
         publish(200,1,0);assert(reads>0)else $fatal(1,"Valid packet did not draw");
-        publish(20,1,1);check_invalid(); // coherent low-level spur, not valid input
+        publish(MIN_RMS-1,1,1);check_invalid(); // immediately below threshold
+        publish(4,1,0);check_invalid(); // measured direct-ADC OFF baseline
+        publish(MIN_RMS,1,1);assert(reads>0 && signal_valid)else $fatal(1,"Threshold equality rejected");
+        publish(28,1,0); // measured direct 50mVpp signal
+        if(28<MIN_RMS) check_invalid(); else assert(reads>0 && signal_valid)else $fatal(1,"Direct 50mVpp rejected");
+        publish(57,1,1); // measured direct 100mVpp signal
+        if(57<MIN_RMS) check_invalid(); else assert(reads>0 && signal_valid)else $fatal(1,"Direct 100mVpp rejected");
         publish(200,0,0);check_invalid(); // broadband/inconsistent spectrum
         publish(312,1,1);assert(reads>0 && signal_valid)else $fatal(1,"No recovery after invalid packets");
-        $display("PASS: tb_hmi_signal_valid atomic time/peak ordering, -- text, clear-only invalid, stop-bit release and recovery");$finish;
+        $display("PASS: tb_hmi_signal_valid MIN_RMS=%0d atomic ordering, threshold boundaries, measured direct levels, clear-only invalid, stop-bit release and recovery",MIN_RMS);$finish;
     end
     initial begin #5000000;$fatal(1,"HMI validity watchdog");end
+endmodule
+
+module tb_hmi_signal_valid_direct;
+    tb_hmi_signal_valid #(.MIN_RMS(16)) u_direct();
 endmodule
