@@ -18,6 +18,9 @@ from resource_lock import ResourceLock
 from utg932 import UTG932
 from utg932_waveform import synthesize_multitone
 
+CASES=('sine','harmonic','strong_harmonic','hf_harmonic','hf_phase',
+       'hf_strong_harmonic','offgrid_harmonic')
+
 
 def fixture(case):
     if case == 'sine':
@@ -28,9 +31,15 @@ def fixture(case):
     elif case == 'strong_harmonic':
         tones = [dict(hz=f, vpp=a, phase_deg=p) for f,a,p in
                  ((50000,0.01,0),(150000,0.05,90),(200000,0.04,0))]
+    elif case in ('hf_harmonic','hf_phase','hf_strong_harmonic','offgrid_harmonic'):
+        base=124750 if case=='offgrid_harmonic' else 125000
+        amplitudes=(0.01,0.05,0.04) if case=='hf_strong_harmonic' else (0.06,0.025,0.015)
+        phases=(0,90,0) if case in ('hf_phase','hf_strong_harmonic') else (0,0,0)
+        tones=[dict(hz=base*h,vpp=a,phase_deg=p) for h,a,p in zip((1,3,4),amplitudes,phases)]
     else:
         raise ValueError('Unknown fixed trial')
-    table = synthesize_multitone(dict(points=4000, vpp=0.1, offset_v=0, tones=tones))
+    points=1000 if case.startswith('hf_') or case=='offgrid_harmonic' else 4000
+    table = synthesize_multitone(dict(points=points, vpp=0.1, offset_v=0, tones=tones))
     # Dense continuous-function reference, not just extrema of the 4000-point
     # upload. Does not model generator interpolation, analog phase or loading.
     values = [math.fsum(t['vpp']/2*math.sin(2*math.pi*t['harmonic']*i/65536+
@@ -40,6 +49,10 @@ def fixture(case):
                      fundamental_peak_mv=tones[0]['vpp']*500,
                      fundamental_hz=tones[0]['hz'],
                      component_peak_mv=[t['vpp']*500 for t in tones],
+                     component_hz=[t['hz'] for t in tones],
+                     frequency_tolerance_hz=250 if case=='offgrid_harmonic' else 0,
+                     # Lower grid indices are only descriptive for off-grid
+                     # tones; acceptance uses component_hz and explicit bound.
                      bins=[int(t['hz']/500) for t in tones])
     return table,reference
 
@@ -83,11 +96,17 @@ def evaluate(raw, inspected, reference, gains):
                   fft=reference['fundamental_peak_mv'])
     errors={k:measured[k]-expected[k] for k in measured}
     bins=[x for x in inspected['candidate_bins'] if x]
+    tolerance=reference.get('frequency_tolerance_hz',0)
+    if type(tolerance) not in (int,float) or not math.isfinite(tolerance) or not 0<=tolerance<=250:
+        raise ValueError('Trial frequency tolerance must be 0..250 Hz')
+    expected_hz=reference.get('component_hz',[b*500 for b in reference['bins']])
+    frequency_errors=[b*500-f for b,f in zip(bins,expected_hz)]
+    frequency_match=(len(bins)==len(expected_hz) and all(abs(e)<=tolerance for e in frequency_errors))
     valid=(inspected['completed_packet_samples']==1 and d['controls']==4 and
            d['signal_valid'] and d['error_code']==0 and not d['acquisition_fault'] and
            all(inspected['last_registers'][k]==raw[k] for k in
                ('vpp_out','vrms_out','amp_f1_out','max_index_out')) and
-           bins==reference['bins'] and raw['frequency_hz']==reference['fundamental_hz'] and
+           frequency_match and abs(raw['frequency_hz']-reference['fundamental_hz'])<=tolerance and
            raw['max_index_out']*500==raw['frequency_hz'])
     snapshot=inspected.get('component_snapshot')
     component_measurements=None
@@ -98,7 +117,7 @@ def evaluate(raw, inspected, reference, gains):
         component_errors=[a-b for a,b in zip(component_measurements,reference['component_peak_mv'])]
         components_pass=(snapshot['count']==len(reference['bins']) and
                          snapshot['signal_valid'] and snapshot['mode']==1 and
-                         snapshot['bins'][:snapshot['count']]==reference['bins'] and
+                         snapshot['bins'][:snapshot['count']]==bins and frequency_match and
                          all(abs(e)<=5 for e in component_errors))
     return dict(validity_pass=valid, nominal_consistency_pass=valid and components_pass and
                 all(abs(e)<=5 for e in errors.values()), candidate_bins=bins,
@@ -106,6 +125,7 @@ def evaluate(raw, inspected, reference, gains):
                 absolute_input_calibrated=False, runtime_vio_measurement=False,
                 all_component_amplitudes_observed=snapshot is not None,
                 component_reference_mv=component_measurements,component_errors_mv=component_errors,
+                component_frequency_errors_hz=frequency_errors,frequency_tolerance_hz=tolerance,
                 frame_id=snapshot['frame_id'] if snapshot else None,
                 calibration_epoch=snapshot['calibration_epoch'] if snapshot else None)
 
@@ -198,7 +218,7 @@ def _run(case, directory, vivado, ltx, captures=2):
 
 def main():
     p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument('--case',choices=('sine','harmonic','strong_harmonic'),required=True)
+    p.add_argument('--case',choices=CASES,required=True)
     p.add_argument('--directory',type=Path)
     p.add_argument('--vivado',default='C:/AMDDesignTools/2025.2/Vivado/bin/vivado.bat')
     p.add_argument('--ltx',default=str(ROOT/'G_FPGA.runs/impl_1/G_FPGA_Top.ltx'))

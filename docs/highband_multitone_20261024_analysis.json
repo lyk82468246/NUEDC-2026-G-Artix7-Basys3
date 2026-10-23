@@ -1,0 +1,1224 @@
+{
+  "sessions": [
+    {
+      "case": "hf_harmonic",
+      "status": "completed",
+      "identity": "UNI-T Technologies,UTG900,2819216557,1.09",
+      "started": "2026-10-24T00:43:41.661+08:00",
+      "finished": "2026-10-24T00:44:22.292+08:00",
+      "reference": {
+        "vpp_mv": 68.5205267554787,
+        "rms_mv": 23.58495283014151,
+        "fundamental_peak_mv": 30.0,
+        "fundamental_hz": 125000,
+        "component_peak_mv": [
+          30.0,
+          12.5,
+          7.5
+        ],
+        "component_hz": [
+          125000,
+          375000,
+          500000
+        ],
+        "frequency_tolerance_hz": 0,
+        "bins": [
+          250,
+          750,
+          1000
+        ]
+      },
+      "gains": {
+        "vpp": 3623460,
+        "rms": 3701829,
+        "fft": 4194
+      },
+      "reference_kind": "UTG_HIGHZ_setting_provisional_HDS_gains",
+      "output_off_confirmed": true,
+      "error": null,
+      "source_session": "C:\\Users\\Joe\\Documents\\Verilog\\G_FPGA\\test_results\\hf_hf_harmonic_20261024\\session.json",
+      "captures": [
+        {
+          "raw": {
+            "vpp_out": 1260,
+            "vrms_out": 428,
+            "amp_f1_out": 480914,
+            "max_index_out": 250,
+            "frequency_hz": 125000
+          },
+          "inspection": {
+            "samples": 1024,
+            "completed_packet_samples": 1,
+            "last_registers": {
+              "Sample in Buffer": 1023,
+              "Sample in Window": 1023,
+              "TRIGGER": 0,
+              "measurement_valid": 0,
+              "vpp_out": 1260,
+              "vrms_out": 428,
+              "amp_f1_out": 480914,
+              "max_index_out": 250,
+              "uart_state": 3,
+              "diagnostic_status": 104861855,
+              "diagnostic_adc": 2076,
+              "diagnostic_bins": 16780288250,
+              "diagnostic_noise": 225,
+              "component_magnitudes": 2228348238217307008489106,
+              "component_count": 3,
+              "frame_id": 58818,
+              "calibration_epoch": 1,
+              "snapshot_metadata": 15
+            },
+            "diagnostic": {
+              "error_code": 0,
+              "run_state": 3,
+              "controls": 4,
+              "capture_enable": false,
+              "controller_release": false,
+              "capture_start": false,
+              "frame_valid": false,
+              "time_result_valid": false,
+              "fft_result_valid": false,
+              "peak_result_valid": false,
+              "signal_valid": true,
+              "capture_busy": false,
+              "calc_busy": false,
+              "fft_busy": false,
+              "peak_busy": false,
+              "hmi_busy": true,
+              "packet_finished": false,
+              "acquisition_fault": false,
+              "events_since_frame_start": {
+                "frame_complete": true,
+                "time_complete": true,
+                "fft_complete": true,
+                "peak_complete": true,
+                "measurement_snapshot": true
+              }
+            },
+            "adc_window": {
+              "min": 1950,
+              "max": 2102
+            },
+            "candidate_bins": [
+              250,
+              750,
+              1000
+            ],
+            "component_snapshot": {
+              "schema": 2,
+              "frame_id": 58818,
+              "calibration_epoch": 1,
+              "signal_valid": true,
+              "calibration_enabled": true,
+              "calibration_present": true,
+              "mode": 1,
+              "single": false,
+              "three_cycles": false,
+              "count": 3,
+              "bins": [
+                250,
+                750,
+                1000
+              ],
+              "magnitudes_raw": [
+                480914,
+                199598,
+                120799
+              ]
+            }
+          },
+          "analysis": {
+            "validity_pass": true,
+            "nominal_consistency_pass": true,
+            "candidate_bins": [
+              250,
+              750,
+              1000
+            ],
+            "reference_mv": {
+              "vpp": 69.665,
+              "rms": 24.176,
+              "fft": 30.776
+            },
+            "errors_mv": {
+              "vpp": 1.1444732445213077,
+              "rms": 0.5910471698584878,
+              "fft": 0.7759999999999998
+            },
+            "absolute_input_calibrated": false,
+            "runtime_vio_measurement": false,
+            "all_component_amplitudes_observed": true,
+            "component_reference_mv": [
+              30.776,
+              12.773,
+              7.731
+            ],
+            "component_errors_mv": [
+              0.7759999999999998,
+              0.2729999999999997,
+              0.23099999999999987
+            ],
+            "component_frequency_errors_hz": [
+              0,
+              0,
+              0
+            ],
+            "frequency_tolerance_hz": 0,
+            "frame_id": 58818,
+            "calibration_epoch": 1
+          },
+          "time": "2026-10-24T00:44:04.356+08:00"
+        },
+        {
+          "raw": {
+            "vpp_out": 1265,
+            "vrms_out": 428,
+            "amp_f1_out": 480823,
+            "max_index_out": 250,
+            "frequency_hz": 125000
+          },
+          "inspection": {
+            "samples": 1024,
+            "completed_packet_samples": 1,
+            "last_registers": {
+              "Sample in Buffer": 1023,
+              "Sample in Window": 1023,
+              "TRIGGER": 0,
+              "measurement_valid": 0,
+              "vpp_out": 1265,
+              "vrms_out": 428,
+              "amp_f1_out": 480823,
+              "max_index_out": 250,
+              "uart_state": 3,
+              "diagnostic_status": 104861855,
+              "diagnostic_adc": 2073,
+              "diagnostic_bins": 16780288250,
+              "diagnostic_noise": 224,
+              "component_magnitudes": 2220655945937831391090231,
+              "component_count": 3,
+              "frame_id": 58880,
+              "calibration_epoch": 1,
+              "snapshot_metadata": 15
+            },
+            "diagnostic": {
+              "error_code": 0,
+              "run_state": 3,
+              "controls": 4,
+              "capture_enable": false,
+              "controller_release": false,
+              "capture_start": false,
+              "frame_valid": false,
+              "time_result_valid": false,
+              "fft_result_valid": false,
+              "peak_result_valid": false,
+              "signal_valid": true,
+              "capture_busy": false,
+              "calc_busy": false,
+              "fft_busy": false,
+              "peak_busy": false,
+              "hmi_busy": true,
+              "packet_finished": false,
+              "acquisition_fault": false,
+              "events_since_frame_start": {
+                "frame_complete": true,
+                "time_complete": true,
+                "fft_complete": true,
+                "peak_complete": true,
+                "measurement_snapshot": true
+              }
+            },
+            "adc_window": {
+              "min": 1951,
+              "max": 2101
+            },
+            "candidate_bins": [
+              250,
+              750,
+              1000
+            ],
+            "component_snapshot": {
+              "schema": 2,
+              "frame_id": 58880,
+              "calibration_epoch": 1,
+              "signal_valid": true,
+              "calibration_enabled": true,
+              "calibration_present": true,
+              "mode": 1,
+              "single": false,
+              "three_cycles": false,
+              "count": 3,
+              "bins": [
+                250,
+                750,
+                1000
+              ],
+              "magnitudes_raw": [
+                480823,
+                199426,
+                120382
+              ]
+            }
+          },
+          "analysis": {
+            "validity_pass": true,
+            "nominal_consistency_pass": true,
+            "candidate_bins": [
+              250,
+              750,
+              1000
+            ],
+            "reference_mv": {
+              "vpp": 69.941,
+              "rms": 24.176,
+              "fft": 30.77
+            },
+            "errors_mv": {
+              "vpp": 1.420473244521304,
+              "rms": 0.5910471698584878,
+              "fft": 0.7699999999999996
+            },
+            "absolute_input_calibrated": false,
+            "runtime_vio_measurement": false,
+            "all_component_amplitudes_observed": true,
+            "component_reference_mv": [
+              30.77,
+              12.762,
+              7.704
+            ],
+            "component_errors_mv": [
+              0.7699999999999996,
+              0.26200000000000045,
+              0.20399999999999974
+            ],
+            "component_frequency_errors_hz": [
+              0,
+              0,
+              0
+            ],
+            "frequency_tolerance_hz": 0,
+            "frame_id": 58880,
+            "calibration_epoch": 1
+          },
+          "time": "2026-10-24T00:44:22.066+08:00"
+        }
+      ]
+    },
+    {
+      "case": "hf_phase",
+      "status": "completed",
+      "identity": "UNI-T Technologies,UTG900,2819216557,1.09",
+      "started": "2026-10-24T00:44:22.384+08:00",
+      "finished": "2026-10-24T00:45:01.799+08:00",
+      "reference": {
+        "vpp_mv": 78.76679164450911,
+        "rms_mv": 23.58495283014151,
+        "fundamental_peak_mv": 30.0,
+        "fundamental_hz": 125000,
+        "component_peak_mv": [
+          30.0,
+          12.5,
+          7.5
+        ],
+        "component_hz": [
+          125000,
+          375000,
+          500000
+        ],
+        "frequency_tolerance_hz": 0,
+        "bins": [
+          250,
+          750,
+          1000
+        ]
+      },
+      "gains": {
+        "vpp": 3623460,
+        "rms": 3701829,
+        "fft": 4194
+      },
+      "reference_kind": "UTG_HIGHZ_setting_provisional_HDS_gains",
+      "output_off_confirmed": true,
+      "error": null,
+      "source_session": "C:\\Users\\Joe\\Documents\\Verilog\\G_FPGA\\test_results\\hf_hf_phase_20261024\\session.json",
+      "captures": [
+        {
+          "raw": {
+            "vpp_out": 1448,
+            "vrms_out": 428,
+            "amp_f1_out": 480703,
+            "max_index_out": 250,
+            "frequency_hz": 125000
+          },
+          "inspection": {
+            "samples": 1024,
+            "completed_packet_samples": 1,
+            "last_registers": {
+              "Sample in Buffer": 1023,
+              "Sample in Window": 1023,
+              "TRIGGER": 0,
+              "measurement_valid": 0,
+              "vpp_out": 1448,
+              "vrms_out": 428,
+              "amp_f1_out": 480703,
+              "max_index_out": 250,
+              "uart_state": 3,
+              "diagnostic_status": 104861855,
+              "diagnostic_adc": 2065,
+              "diagnostic_bins": 16780288250,
+              "diagnostic_noise": 225,
+              "component_magnitudes": 2213424822261568607049151,
+              "component_count": 3,
+              "frame_id": 59369,
+              "calibration_epoch": 1,
+              "snapshot_metadata": 15
+            },
+            "diagnostic": {
+              "error_code": 0,
+              "run_state": 3,
+              "controls": 4,
+              "capture_enable": false,
+              "controller_release": false,
+              "capture_start": false,
+              "frame_valid": false,
+              "time_result_valid": false,
+              "fft_result_valid": false,
+              "peak_result_valid": false,
+              "signal_valid": true,
+              "capture_busy": false,
+              "calc_busy": false,
+              "fft_busy": false,
+              "peak_busy": false,
+              "hmi_busy": true,
+              "packet_finished": false,
+              "acquisition_fault": false,
+              "events_since_frame_start": {
+                "frame_complete": true,
+                "time_complete": true,
+                "fft_complete": true,
+                "peak_complete": true,
+                "measurement_snapshot": true
+              }
+            },
+            "adc_window": {
+              "min": 1953,
+              "max": 2129
+            },
+            "candidate_bins": [
+              250,
+              750,
+              1000
+            ],
+            "component_snapshot": {
+              "schema": 2,
+              "frame_id": 59369,
+              "calibration_epoch": 1,
+              "signal_valid": true,
+              "calibration_enabled": true,
+              "calibration_present": true,
+              "mode": 1,
+              "single": false,
+              "three_cycles": false,
+              "count": 3,
+              "bins": [
+                250,
+                750,
+                1000
+              ],
+              "magnitudes_raw": [
+                480703,
+                199573,
+                119990
+              ]
+            }
+          },
+          "analysis": {
+            "validity_pass": true,
+            "nominal_consistency_pass": true,
+            "candidate_bins": [
+              250,
+              750,
+              1000
+            ],
+            "reference_mv": {
+              "vpp": 80.059,
+              "rms": 24.176,
+              "fft": 30.763
+            },
+            "errors_mv": {
+              "vpp": 1.2922083554908852,
+              "rms": 0.5910471698584878,
+              "fft": 0.7630000000000017
+            },
+            "absolute_input_calibrated": false,
+            "runtime_vio_measurement": false,
+            "all_component_amplitudes_observed": true,
+            "component_reference_mv": [
+              30.763,
+              12.772,
+              7.679
+            ],
+            "component_errors_mv": [
+              0.7630000000000017,
+              0.27200000000000024,
+              0.17900000000000027
+            ],
+            "component_frequency_errors_hz": [
+              0,
+              0,
+              0
+            ],
+            "frequency_tolerance_hz": 0,
+            "frame_id": 59369,
+            "calibration_epoch": 1
+          },
+          "time": "2026-10-24T00:44:44.976+08:00"
+        },
+        {
+          "raw": {
+            "vpp_out": 1451,
+            "vrms_out": 428,
+            "amp_f1_out": 480426,
+            "max_index_out": 250,
+            "frequency_hz": 125000
+          },
+          "inspection": {
+            "samples": 1024,
+            "completed_packet_samples": 1,
+            "last_registers": {
+              "Sample in Buffer": 1023,
+              "Sample in Window": 1023,
+              "TRIGGER": 0,
+              "measurement_valid": 0,
+              "vpp_out": 1451,
+              "vrms_out": 428,
+              "amp_f1_out": 480426,
+              "max_index_out": 250,
+              "uart_state": 3,
+              "diagnostic_status": 104861855,
+              "diagnostic_adc": 2071,
+              "diagnostic_bins": 16780288250,
+              "diagnostic_noise": 217,
+              "component_magnitudes": 2226411330090134441252010,
+              "component_count": 3,
+              "frame_id": 59426,
+              "calibration_epoch": 1,
+              "snapshot_metadata": 15
+            },
+            "diagnostic": {
+              "error_code": 0,
+              "run_state": 3,
+              "controls": 4,
+              "capture_enable": false,
+              "controller_release": false,
+              "capture_start": false,
+              "frame_valid": false,
+              "time_result_valid": false,
+              "fft_result_valid": false,
+              "peak_result_valid": false,
+              "signal_valid": true,
+              "capture_busy": false,
+              "calc_busy": false,
+              "fft_busy": false,
+              "peak_busy": false,
+              "hmi_busy": true,
+              "packet_finished": false,
+              "acquisition_fault": false,
+              "events_since_frame_start": {
+                "frame_complete": true,
+                "time_complete": true,
+                "fft_complete": true,
+                "peak_complete": true,
+                "measurement_snapshot": true
+              }
+            },
+            "adc_window": {
+              "min": 1953,
+              "max": 2130
+            },
+            "candidate_bins": [
+              250,
+              750,
+              1000
+            ],
+            "component_snapshot": {
+              "schema": 2,
+              "frame_id": 59426,
+              "calibration_epoch": 1,
+              "signal_valid": true,
+              "calibration_enabled": true,
+              "calibration_present": true,
+              "mode": 1,
+              "single": false,
+              "three_cycles": false,
+              "count": 3,
+              "bins": [
+                250,
+                750,
+                1000
+              ],
+              "magnitudes_raw": [
+                480426,
+                199730,
+                120694
+              ]
+            }
+          },
+          "analysis": {
+            "validity_pass": true,
+            "nominal_consistency_pass": true,
+            "candidate_bins": [
+              250,
+              750,
+              1000
+            ],
+            "reference_mv": {
+              "vpp": 80.225,
+              "rms": 24.176,
+              "fft": 30.745
+            },
+            "errors_mv": {
+              "vpp": 1.458208355490882,
+              "rms": 0.5910471698584878,
+              "fft": 0.745000000000001
+            },
+            "absolute_input_calibrated": false,
+            "runtime_vio_measurement": false,
+            "all_component_amplitudes_observed": true,
+            "component_reference_mv": [
+              30.745,
+              12.782,
+              7.724
+            ],
+            "component_errors_mv": [
+              0.745000000000001,
+              0.28200000000000003,
+              0.2240000000000002
+            ],
+            "component_frequency_errors_hz": [
+              0,
+              0,
+              0
+            ],
+            "frequency_tolerance_hz": 0,
+            "frame_id": 59426,
+            "calibration_epoch": 1
+          },
+          "time": "2026-10-24T00:45:01.574+08:00"
+        }
+      ]
+    },
+    {
+      "case": "hf_strong_harmonic",
+      "status": "completed",
+      "identity": "UNI-T Technologies,UTG900,2819216557,1.09",
+      "started": "2026-10-24T00:45:01.881+08:00",
+      "finished": "2026-10-24T00:45:43.343+08:00",
+      "reference": {
+        "vpp_mv": 87.75461839006527,
+        "rms_mv": 22.912878474779202,
+        "fundamental_peak_mv": 5.0,
+        "fundamental_hz": 125000,
+        "component_peak_mv": [
+          5.0,
+          25.0,
+          20.0
+        ],
+        "component_hz": [
+          125000,
+          375000,
+          500000
+        ],
+        "frequency_tolerance_hz": 0,
+        "bins": [
+          250,
+          750,
+          1000
+        ]
+      },
+      "gains": {
+        "vpp": 3623460,
+        "rms": 3701829,
+        "fft": 4194
+      },
+      "reference_kind": "UTG_HIGHZ_setting_provisional_HDS_gains",
+      "output_off_confirmed": true,
+      "error": null,
+      "source_session": "C:\\Users\\Joe\\Documents\\Verilog\\G_FPGA\\test_results\\hf_hf_strong_harmonic_20261024\\session.json",
+      "captures": [
+        {
+          "raw": {
+            "vpp_out": 1610,
+            "vrms_out": 415,
+            "amp_f1_out": 80302,
+            "max_index_out": 250,
+            "frequency_hz": 125000
+          },
+          "inspection": {
+            "samples": 1024,
+            "completed_packet_samples": 1,
+            "last_registers": {
+              "Sample in Buffer": 1023,
+              "Sample in Window": 1023,
+              "TRIGGER": 0,
+              "measurement_valid": 0,
+              "vpp_out": 1610,
+              "vrms_out": 415,
+              "amp_f1_out": 80302,
+              "max_index_out": 250,
+              "uart_state": 3,
+              "diagnostic_status": 104861855,
+              "diagnostic_adc": 2054,
+              "diagnostic_bins": 16780288250,
+              "diagnostic_noise": 231,
+              "component_magnitudes": 5908418341547889345509806,
+              "component_count": 3,
+              "frame_id": 59903,
+              "calibration_epoch": 1,
+              "snapshot_metadata": 15
+            },
+            "diagnostic": {
+              "error_code": 0,
+              "run_state": 3,
+              "controls": 4,
+              "capture_enable": false,
+              "controller_release": false,
+              "capture_start": false,
+              "frame_valid": false,
+              "time_result_valid": false,
+              "fft_result_valid": false,
+              "peak_result_valid": false,
+              "signal_valid": true,
+              "capture_busy": false,
+              "calc_busy": false,
+              "fft_busy": false,
+              "peak_busy": false,
+              "hmi_busy": true,
+              "packet_finished": false,
+              "acquisition_fault": false,
+              "events_since_frame_start": {
+                "frame_complete": true,
+                "time_complete": true,
+                "fft_complete": true,
+                "peak_complete": true,
+                "measurement_snapshot": true
+              }
+            },
+            "adc_window": {
+              "min": 1942,
+              "max": 2130
+            },
+            "candidate_bins": [
+              250,
+              750,
+              1000
+            ],
+            "component_snapshot": {
+              "schema": 2,
+              "frame_id": 59903,
+              "calibration_epoch": 1,
+              "signal_valid": true,
+              "calibration_enabled": true,
+              "calibration_present": true,
+              "mode": 1,
+              "single": false,
+              "three_cycles": false,
+              "count": 3,
+              "bins": [
+                250,
+                750,
+                1000
+              ],
+              "magnitudes_raw": [
+                80302,
+                399308,
+                320296
+              ]
+            }
+          },
+          "analysis": {
+            "validity_pass": true,
+            "nominal_consistency_pass": true,
+            "candidate_bins": [
+              250,
+              750,
+              1000
+            ],
+            "reference_mv": {
+              "vpp": 89.016,
+              "rms": 23.441,
+              "fft": 5.139
+            },
+            "errors_mv": {
+              "vpp": 1.2613816099347304,
+              "rms": 0.5281215252207971,
+              "fft": 0.13900000000000023
+            },
+            "absolute_input_calibrated": false,
+            "runtime_vio_measurement": false,
+            "all_component_amplitudes_observed": true,
+            "component_reference_mv": [
+              5.139,
+              25.554,
+              20.497
+            ],
+            "component_errors_mv": [
+              0.13900000000000023,
+              0.5539999999999985,
+              0.4969999999999999
+            ],
+            "component_frequency_errors_hz": [
+              0,
+              0,
+              0
+            ],
+            "frequency_tolerance_hz": 0,
+            "frame_id": 59903,
+            "calibration_epoch": 1
+          },
+          "time": "2026-10-24T00:45:23.910+08:00"
+        },
+        {
+          "raw": {
+            "vpp_out": 1606,
+            "vrms_out": 415,
+            "amp_f1_out": 80335,
+            "max_index_out": 250,
+            "frequency_hz": 125000
+          },
+          "inspection": {
+            "samples": 1024,
+            "completed_packet_samples": 1,
+            "last_registers": {
+              "Sample in Buffer": 1023,
+              "Sample in Window": 1023,
+              "TRIGGER": 0,
+              "measurement_valid": 0,
+              "vpp_out": 1606,
+              "vrms_out": 415,
+              "amp_f1_out": 80335,
+              "max_index_out": 250,
+              "uart_state": 3,
+              "diagnostic_status": 104861855,
+              "diagnostic_adc": 2053,
+              "diagnostic_bins": 16780288250,
+              "diagnostic_noise": 233,
+              "component_magnitudes": 5911646521759877983975887,
+              "component_count": 3,
+              "frame_id": 59968,
+              "calibration_epoch": 1,
+              "snapshot_metadata": 15
+            },
+            "diagnostic": {
+              "error_code": 0,
+              "run_state": 3,
+              "controls": 4,
+              "capture_enable": false,
+              "controller_release": false,
+              "capture_start": false,
+              "frame_valid": false,
+              "time_result_valid": false,
+              "fft_result_valid": false,
+              "peak_result_valid": false,
+              "signal_valid": true,
+              "capture_busy": false,
+              "calc_busy": false,
+              "fft_busy": false,
+              "peak_busy": false,
+              "hmi_busy": true,
+              "packet_finished": false,
+              "acquisition_fault": false,
+              "events_since_frame_start": {
+                "frame_complete": true,
+                "time_complete": true,
+                "fft_complete": true,
+                "peak_complete": true,
+                "measurement_snapshot": true
+              }
+            },
+            "adc_window": {
+              "min": 1942,
+              "max": 2130
+            },
+            "candidate_bins": [
+              250,
+              750,
+              1000
+            ],
+            "component_snapshot": {
+              "schema": 2,
+              "frame_id": 59968,
+              "calibration_epoch": 1,
+              "signal_valid": true,
+              "calibration_enabled": true,
+              "calibration_present": true,
+              "mode": 1,
+              "single": false,
+              "three_cycles": false,
+              "count": 3,
+              "bins": [
+                250,
+                750,
+                1000
+              ],
+              "magnitudes_raw": [
+                80335,
+                399096,
+                320471
+              ]
+            }
+          },
+          "analysis": {
+            "validity_pass": true,
+            "nominal_consistency_pass": true,
+            "candidate_bins": [
+              250,
+              750,
+              1000
+            ],
+            "reference_mv": {
+              "vpp": 88.795,
+              "rms": 23.441,
+              "fft": 5.141
+            },
+            "errors_mv": {
+              "vpp": 1.0403816099347267,
+              "rms": 0.5281215252207971,
+              "fft": 0.14100000000000001
+            },
+            "absolute_input_calibrated": false,
+            "runtime_vio_measurement": false,
+            "all_component_amplitudes_observed": true,
+            "component_reference_mv": [
+              5.141,
+              25.54,
+              20.509
+            ],
+            "component_errors_mv": [
+              0.14100000000000001,
+              0.5399999999999991,
+              0.5090000000000003
+            ],
+            "component_frequency_errors_hz": [
+              0,
+              0,
+              0
+            ],
+            "frequency_tolerance_hz": 0,
+            "frame_id": 59968,
+            "calibration_epoch": 1
+          },
+          "time": "2026-10-24T00:45:43.119+08:00"
+        }
+      ]
+    },
+    {
+      "case": "offgrid_harmonic",
+      "status": "completed",
+      "identity": "UNI-T Technologies,UTG900,2819216557,1.09",
+      "started": "2026-10-24T00:45:43.429+08:00",
+      "finished": "2026-10-24T00:46:24.429+08:00",
+      "reference": {
+        "vpp_mv": 68.5205267554787,
+        "rms_mv": 23.58495283014151,
+        "fundamental_peak_mv": 30.0,
+        "fundamental_hz": 124750,
+        "component_peak_mv": [
+          30.0,
+          12.5,
+          7.5
+        ],
+        "component_hz": [
+          124750,
+          374250,
+          499000
+        ],
+        "frequency_tolerance_hz": 250,
+        "bins": [
+          249,
+          748,
+          998
+        ]
+      },
+      "gains": {
+        "vpp": 3623460,
+        "rms": 3701829,
+        "fft": 4194
+      },
+      "reference_kind": "UTG_HIGHZ_setting_provisional_HDS_gains",
+      "output_off_confirmed": true,
+      "error": null,
+      "source_session": "C:\\Users\\Joe\\Documents\\Verilog\\G_FPGA\\test_results\\hf_offgrid_harmonic_20261024\\session.json",
+      "captures": [
+        {
+          "raw": {
+            "vpp_out": 1261,
+            "vrms_out": 428,
+            "amp_f1_out": 480386,
+            "max_index_out": 249,
+            "frequency_hz": 124500
+          },
+          "inspection": {
+            "samples": 1024,
+            "completed_packet_samples": 1,
+            "last_registers": {
+              "Sample in Buffer": 1023,
+              "Sample in Window": 1023,
+              "TRIGGER": 0,
+              "measurement_valid": 0,
+              "vpp_out": 1261,
+              "vrms_out": 428,
+              "amp_f1_out": 480386,
+              "max_index_out": 249,
+              "uart_state": 3,
+              "diagnostic_status": 104861855,
+              "diagnostic_adc": 2095,
+              "diagnostic_bins": 16746729721,
+              "diagnostic_noise": 228,
+              "component_magnitudes": 2221873431046782120842370,
+              "component_count": 3,
+              "frame_id": 60452,
+              "calibration_epoch": 1,
+              "snapshot_metadata": 15
+            },
+            "diagnostic": {
+              "error_code": 0,
+              "run_state": 3,
+              "controls": 4,
+              "capture_enable": false,
+              "controller_release": false,
+              "capture_start": false,
+              "frame_valid": false,
+              "time_result_valid": false,
+              "fft_result_valid": false,
+              "peak_result_valid": false,
+              "signal_valid": true,
+              "capture_busy": false,
+              "calc_busy": false,
+              "fft_busy": false,
+              "peak_busy": false,
+              "hmi_busy": true,
+              "packet_finished": false,
+              "acquisition_fault": false,
+              "events_since_frame_start": {
+                "frame_complete": true,
+                "time_complete": true,
+                "fft_complete": true,
+                "peak_complete": true,
+                "measurement_snapshot": true
+              }
+            },
+            "adc_window": {
+              "min": 1949,
+              "max": 2102
+            },
+            "candidate_bins": [
+              249,
+              749,
+              998
+            ],
+            "component_snapshot": {
+              "schema": 2,
+              "frame_id": 60452,
+              "calibration_epoch": 1,
+              "signal_valid": true,
+              "calibration_enabled": true,
+              "calibration_present": true,
+              "mode": 1,
+              "single": false,
+              "three_cycles": false,
+              "count": 3,
+              "bins": [
+                249,
+                749,
+                998
+              ],
+              "magnitudes_raw": [
+                480386,
+                199446,
+                120448
+              ]
+            }
+          },
+          "analysis": {
+            "validity_pass": true,
+            "nominal_consistency_pass": true,
+            "candidate_bins": [
+              249,
+              749,
+              998
+            ],
+            "reference_mv": {
+              "vpp": 69.72,
+              "rms": 24.176,
+              "fft": 30.742
+            },
+            "errors_mv": {
+              "vpp": 1.1994732445213003,
+              "rms": 0.5910471698584878,
+              "fft": 0.7420000000000009
+            },
+            "absolute_input_calibrated": false,
+            "runtime_vio_measurement": false,
+            "all_component_amplitudes_observed": true,
+            "component_reference_mv": [
+              30.742,
+              12.764,
+              7.708
+            ],
+            "component_errors_mv": [
+              0.7420000000000009,
+              0.26399999999999935,
+              0.20800000000000018
+            ],
+            "component_frequency_errors_hz": [
+              -250,
+              250,
+              0
+            ],
+            "frequency_tolerance_hz": 250,
+            "frame_id": 60452,
+            "calibration_epoch": 1
+          },
+          "time": "2026-10-24T00:46:06.660+08:00"
+        },
+        {
+          "raw": {
+            "vpp_out": 1265,
+            "vrms_out": 428,
+            "amp_f1_out": 480410,
+            "max_index_out": 249,
+            "frequency_hz": 124500
+          },
+          "inspection": {
+            "samples": 1024,
+            "completed_packet_samples": 1,
+            "last_registers": {
+              "Sample in Buffer": 1023,
+              "Sample in Window": 1023,
+              "TRIGGER": 0,
+              "measurement_valid": 0,
+              "vpp_out": 1265,
+              "vrms_out": 428,
+              "amp_f1_out": 480410,
+              "max_index_out": 249,
+              "uart_state": 3,
+              "diagnostic_status": 104861855,
+              "diagnostic_adc": 2086,
+              "diagnostic_bins": 16746725625,
+              "diagnostic_noise": 222,
+              "component_magnitudes": 2216154940382940022396058,
+              "component_count": 3,
+              "frame_id": 60513,
+              "calibration_epoch": 1,
+              "snapshot_metadata": 15
+            },
+            "diagnostic": {
+              "error_code": 0,
+              "run_state": 3,
+              "controls": 4,
+              "capture_enable": false,
+              "controller_release": false,
+              "capture_start": false,
+              "frame_valid": false,
+              "time_result_valid": false,
+              "fft_result_valid": false,
+              "peak_result_valid": false,
+              "signal_valid": true,
+              "capture_busy": false,
+              "calc_busy": false,
+              "fft_busy": false,
+              "peak_busy": false,
+              "hmi_busy": true,
+              "packet_finished": false,
+              "acquisition_fault": false,
+              "events_since_frame_start": {
+                "frame_complete": true,
+                "time_complete": true,
+                "fft_complete": true,
+                "peak_complete": true,
+                "measurement_snapshot": true
+              }
+            },
+            "adc_window": {
+              "min": 1950,
+              "max": 2101
+            },
+            "candidate_bins": [
+              249,
+              748,
+              998
+            ],
+            "component_snapshot": {
+              "schema": 2,
+              "frame_id": 60513,
+              "calibration_epoch": 1,
+              "signal_valid": true,
+              "calibration_enabled": true,
+              "calibration_present": true,
+              "mode": 1,
+              "single": false,
+              "three_cycles": false,
+              "count": 3,
+              "bins": [
+                249,
+                748,
+                998
+              ],
+              "magnitudes_raw": [
+                480410,
+                199215,
+                120138
+              ]
+            }
+          },
+          "analysis": {
+            "validity_pass": true,
+            "nominal_consistency_pass": true,
+            "candidate_bins": [
+              249,
+              748,
+              998
+            ],
+            "reference_mv": {
+              "vpp": 69.941,
+              "rms": 24.176,
+              "fft": 30.744
+            },
+            "errors_mv": {
+              "vpp": 1.420473244521304,
+              "rms": 0.5910471698584878,
+              "fft": 0.7439999999999998
+            },
+            "absolute_input_calibrated": false,
+            "runtime_vio_measurement": false,
+            "all_component_amplitudes_observed": true,
+            "component_reference_mv": [
+              30.744,
+              12.749,
+              7.688
+            ],
+            "component_errors_mv": [
+              0.7439999999999998,
+              0.24900000000000055,
+              0.18799999999999972
+            ],
+            "component_frequency_errors_hz": [
+              -250,
+              -250,
+              0
+            ],
+            "frequency_tolerance_hz": 250,
+            "frame_id": 60513,
+            "calibration_epoch": 1
+          },
+          "time": "2026-10-24T00:46:24.204+08:00"
+        }
+      ]
+    }
+  ],
+  "pass_scope": "Vpp_RMS_all_component_peaks_candidate_frequencies",
+  "absolute_input_calibrated": false,
+  "all_component_amplitudes_observed": true,
+  "overall_pass": true
+}

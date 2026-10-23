@@ -12,7 +12,7 @@ import utg_fpga_trial as trial
 
 class TestTrial(unittest.TestCase):
     def test_fixture_envelope_and_weak_fundamental(self):
-        for case in ('sine','harmonic','strong_harmonic'):
+        for case in trial.CASES:
             table,ref=trial.fixture(case)
             self.assertEqual(table['vpp'],0.1)
             self.assertLessEqual(sum(t['vpp'] for t in table['tones']),0.1+1e-12)
@@ -20,6 +20,32 @@ class TestTrial(unittest.TestCase):
         table,ref=trial.fixture('strong_harmonic')
         self.assertEqual(ref['fundamental_hz'],50000)
         self.assertLess(table['tones'][0]['vpp'],table['tones'][1]['vpp'])
+
+    def test_high_frequency_and_controlled_phase_fixtures(self):
+        a,ra=trial.fixture('hf_harmonic');b,rb=trial.fixture('hf_phase')
+        self.assertEqual([t['hz'] for t in a['tones']],[125000,375000,500000])
+        self.assertEqual([t['vpp'] for t in a['tones']],[t['vpp'] for t in b['tones']])
+        self.assertEqual(ra['rms_mv'],rb['rms_mv'])
+        self.assertGreater(abs(ra['vpp_mv']-rb['vpp_mv']),1)
+        table,ref=trial.fixture('offgrid_harmonic')
+        self.assertEqual(ref['component_hz'],[124750,374250,499000])
+        self.assertEqual(ref['frequency_tolerance_hz'],250)
+        self.assertEqual(len(table['samples']),1000)
+
+    def test_half_bin_bound_not_silently_widened(self):
+        _,ref=trial.fixture('offgrid_harmonic')
+        raw=dict(vpp_out=round(ref['vpp_mv']*1000),vrms_out=round(ref['rms_mv']*1000),
+                 amp_f1_out=30000,max_index_out=250,frequency_hz=125000)
+        inspected=dict(diagnostic=dict(controls=4,signal_valid=True,error_code=0,acquisition_fault=False),
+            completed_packet_samples=1,last_registers=copy.deepcopy(raw),candidate_bins=[250,749,998])
+        gains=dict(vpp=65536,rms=65536,fft=65536)
+        good=trial.evaluate(raw,inspected,ref,gains)
+        self.assertTrue(good['nominal_consistency_pass'])
+        self.assertEqual(good['component_frequency_errors_hz'],[250,250,0])
+        inspected['candidate_bins']=[250,750,998]
+        self.assertFalse(trial.evaluate(raw,inspected,ref,gains)['validity_pass'])
+        for bad in (-1,251,float('nan'),True):
+            with self.assertRaises(ValueError):trial.evaluate(raw,inspected,{**ref,'frequency_tolerance_hz':bad},gains)
 
     def test_evaluate_bins_faults_and_amplitudes(self):
         _,ref=trial.fixture('sine')
