@@ -1,0 +1,117 @@
+{
+  "schema": 1,
+  "reference": "generator_HIGHZ_display_setting_only",
+  "absolute_input_calibrated": false,
+  "frequency_hz": 100000,
+  "units": "reference microvolts; gain=unsigned Q16.16 microvolts/raw",
+  "notes": [
+    "50ohm filter input can halve HIGHZ setting; no automatic correction",
+    "RMS reference derives from sine formula, not independent measurement",
+    "FFT reference is sine peak, not Vpp",
+    "Fit residuals are in-sample consistency, NOT accuracy certification",
+    "Historical rail flag is sticky; no full-frame clipping certification"
+  ],
+  "fits": {
+    "vpp": {
+      "gain_q16": 3623460,
+      "gain_uv_per_raw": 55.28960500083672,
+      "affine_intercept_uv_diagnostic_only": -1160.4692487038362,
+      "max_fit_residual_uv": 479.41558837890625,
+      "rms_fit_residual_uv": 347.03805600522344
+    },
+    "rms": {
+      "gain_q16": 3701829,
+      "gain_uv_per_raw": 56.48543510239045,
+      "affine_intercept_uv_diagnostic_only": 5.958311581930805,
+      "max_fit_residual_uv": 8.119940406115347,
+      "rms_fit_residual_uv": 5.528232795596184
+    },
+    "fft": {
+      "gain_q16": 4194,
+      "gain_uv_per_raw": 0.06400039626189204,
+      "affine_intercept_uv_diagnostic_only": -23.220091973931023,
+      "max_fit_residual_uv": 12.903289794921875,
+      "rms_fit_residual_uv": 9.893856544514545
+    }
+  },
+  "records": [
+    {
+      "source": "C:\\Users\\Joe\\Documents\\Verilog\\G_FPGA\\test_results\\lab_2026-10-23T15-42-00.184+08-00_5455dc\\c05261c332734165af8068f50aad608e\\point_000_sample_00\\result.json",
+      "generator_setting_vpp_uv": 50000.0,
+      "reference_rms_uv": 17677.669529663686,
+      "reference_peak_uv": 25000.0,
+      "raw": {
+        "vpp_out": 913,
+        "vrms_out": 313,
+        "amp_f1_out": 390850,
+        "max_index_out": 200,
+        "frequency_hz": 100000
+      }
+    },
+    {
+      "source": "C:\\Users\\Joe\\Documents\\Verilog\\G_FPGA\\test_results\\lab_2026-10-23T15-42-00.184+08-00_5455dc\\c05261c332734165af8068f50aad608e\\point_000_sample_01\\result.json",
+      "generator_setting_vpp_uv": 50000.0,
+      "reference_rms_uv": 17677.669529663686,
+      "reference_peak_uv": 25000.0,
+      "raw": {
+        "vpp_out": 909,
+        "vrms_out": 313,
+        "amp_f1_out": 390549,
+        "max_index_out": 200,
+        "frequency_hz": 100000
+      }
+    },
+    {
+      "source": "C:\\Users\\Joe\\Documents\\Verilog\\G_FPGA\\test_results\\lab_2026-10-23T15-42-00.184+08-00_5455dc\\db017df283cc4fb1acb47d3acd78e782\\point_000_sample_00\\result.json",
+      "generator_setting_vpp_uv": 70000.0,
+      "reference_rms_uv": 24748.737341529162,
+      "reference_peak_uv": 35000.0,
+      "raw": {
+        "vpp_out": 1274,
+        "vrms_out": 438,
+        "amp_f1_out": 547021,
+        "max_index_out": 200,
+        "frequency_hz": 100000
+      }
+    },
+    {
+      "source": "C:\\Users\\Joe\\Documents\\Verilog\\G_FPGA\\test_results\\lab_2026-10-23T15-42-00.184+08-00_5455dc\\db017df283cc4fb1acb47d3acd78e782\\point_000_sample_01\\result.json",
+      "generator_setting_vpp_uv": 70000.0,
+      "reference_rms_uv": 24748.737341529162,
+      "reference_peak_uv": 35000.0,
+      "raw": {
+        "vpp_out": 1266,
+        "vrms_out": 438,
+        "amp_f1_out": 546994,
+        "max_index_out": 200,
+        "frequency_hz": 100000
+      }
+    },
+    {
+      "source": "C:\\Users\\Joe\\Documents\\Verilog\\G_FPGA\\test_results\\lab_2026-10-23T15-42-00.184+08-00_5455dc\\db017df283cc4fb1acb47d3acd78e782\\point_001_sample_00\\result.json",
+      "generator_setting_vpp_uv": 100000.0,
+      "reference_rms_uv": 35355.33905932737,
+      "reference_peak_uv": 50000.0,
+      "raw": {
+        "vpp_out": 1803,
+        "vrms_out": 626,
+        "amp_f1_out": 781105,
+        "max_index_out": 200,
+        "frequency_hz": 100000
+      }
+    },
+    {
+      "source": "C:\\Users\\Joe\\Documents\\Verilog\\G_FPGA\\test_results\\lab_2026-10-23T15-42-00.184+08-00_5455dc\\db017df283cc4fb1acb47d3acd78e782\\point_001_sample_01\\result.json",
+      "generator_setting_vpp_uv": 100000.0,
+      "reference_rms_uv": 35355.33905932737,
+      "reference_peak_uv": 50000.0,
+      "raw": {
+        "vpp_out": 1802,
+        "vrms_out": 626,
+        "amp_f1_out": 781118,
+        "max_index_out": 200,
+        "frequency_hz": 100000
+      }
+    }
+  ]
+}
