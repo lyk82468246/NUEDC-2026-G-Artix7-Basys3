@@ -17,11 +17,13 @@ module tb_board_panel;
         .valid(valid),.decimal_points(points),.seg(seg),.an(an),.dp(dp));
     reg measurement=0;
     reg [31:0] frequency=100000;
+    reg status_fresh=1,status_single=1;
+    reg [1:0] status_mode=2;
     wire [15:0] leds;
     Board_Status_Display #(.CLK_HZ(1000),.SCAN_CYCLES(8)) status_display(
-        .clk(clk),.rst(rst),.locked(1'b1),.measurement_valid(measurement),.fresh(1'b1),
+        .clk(clk),.rst(rst),.locked(1'b1),.measurement_valid(measurement),.fresh(status_fresh),
         .capture_busy(1'b0),.algorithm_busy(1'b0),.hmi_busy(1'b0),
-        .mode(2'd2),.view(2'd0),.single_mode(1'b1),.three_cycles(1'b1),
+        .mode(status_mode),.view(2'd0),.single_mode(status_single),.three_cycles(1'b1),
         .error_code(4'h2),.frequency_hz(frequency),.magnitude_raw(32'd100),
         .vpp_raw(17'd200),.rms_raw(16'd70),.led(leds),.seg(),.an(),.dp());
     task tick; begin @(negedge clk); end endtask
@@ -70,6 +72,27 @@ module tb_board_panel;
         assert(status_display.f_display==2000) else $fatal(1,"Divider restart used stale frame");
         assert(leds[15:8]==8'h2e && leds[7] && leds[6] && leds[0])
             else $fatal(1,"Status LED bit mapping");
+        status_single=0;status_fresh=0;
+        repeat(200) tick();
+        assert(status_display.u_scan.active_valid && !leds[6])
+            else $fatal(1,"Next-frame freshness drop blanked held digits");
+        for(i=0;i<6;i=i+1) begin
+            frequency=100000;measurement=1;tick();measurement=0;
+            repeat(100) begin
+                tick();assert(status_display.u_scan.active_valid)
+                    else $fatal(1,"Refresh introduced periodic invalid scan");
+            end
+        end
+        repeat(2200) tick();
+        assert(!status_display.display_valid && !status_display.u_scan.active_valid)
+            else $fatal(1,"Continuous held value did not expire");
+        status_single=1;measurement=1;tick();measurement=0;repeat(2200) tick();
+        assert(status_display.display_valid && status_display.u_scan.active_valid)
+            else $fatal(1,"Explicit single-shot HOLD expired");
+        status_mode=1;tick();repeat(100) tick();
+        assert(!status_display.u_scan.active_valid) else $fatal(1,"Mode change kept old result");
+        status_mode=2;tick();repeat(100) tick();
+        assert(!status_display.display_valid) else $fatal(1,"Switch-back revived old mode result");
         $display("PASS: tb_board_panel switch32, bounce, active-low scan, kHz point, OFLO and invalid");
         $finish;
     end
