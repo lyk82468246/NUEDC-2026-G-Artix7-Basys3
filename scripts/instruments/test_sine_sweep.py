@@ -37,6 +37,12 @@ class TestSweepScale(unittest.TestCase):
                 self.assertEqual(result['max_abs_frequency_error_hz'],250)
                 self.assertFalse(result['runtime_vio_measurement'])
                 self.assertFalse(result['absolute_input_calibrated'])
+                with self.assertRaises(ValueError):analyze(root,profile,expected_controls=4)
+                inspected['diagnostic']['controls']=4
+                self.assertTrue(analyze(root,profile,expected_controls=4)['frequency_validity_pass'])
+                inspected['diagnostic']['acquisition_fault']=True
+                self.assertFalse(analyze(root,profile,expected_controls=4)['frequency_validity_pass'])
+                inspected['diagnostic']['acquisition_fault']=False
                 inspected['completed_packet_samples']=0
                 with self.assertRaises(ValueError):analyze(root,profile)
                 inspected['completed_packet_samples']=1

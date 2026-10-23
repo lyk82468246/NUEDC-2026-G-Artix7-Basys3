@@ -18,7 +18,7 @@ def scale_uv(raw, gain):
     return min(0xffffffff,(raw*gain+32768)>>16)
 
 
-def analyze(plan_dir, profile, include_failed_plan=False):
+def analyze(plan_dir, profile, include_failed_plan=False, expected_controls=None):
     plan_dir=Path(plan_dir)
     plan=json.loads((plan_dir/'plan.json').read_text(encoding='utf-8'))
     job=json.loads((plan_dir/'job.json').read_text(encoding='utf-8'))
@@ -53,11 +53,15 @@ def analyze(plan_dir, profile, include_failed_plan=False):
             errors={k:measured[k]-expected[k] for k in measured}
             frequency_error=f['frequency_hz']-settings['hz']
             d=i['diagnostic']
+            if expected_controls is not None and d.get('controls')!=expected_controls:
+                raise ValueError('Unexpected filtered switch state; do not mix mode records')
             accepted=(d['signal_valid'] and d['error_code']==0 and
+                      not d.get('acquisition_fault',False) and
                       sum(k!=0 for k in i['candidate_bins'])==1 and abs(frequency_error)<=1000)
             rows.append({'point':point,'sample':sample,'settings':settings,'raw':f,
                          'candidate_bins':i['candidate_bins'],'signal_valid':d['signal_valid'],
                          'error_code':d['error_code'],'fresh_event_count':i['completed_packet_samples'],
+                         'controls':d.get('controls'),'acquisition_fault':d.get('acquisition_fault',False),
                          'frequency_error_hz':frequency_error,
                          'postprocessed_reference_mv':measured,
                          'nominal_reference_errors_mv':errors,
@@ -67,6 +71,8 @@ def analyze(plan_dir, profile, include_failed_plan=False):
     return {'schema':1,'source_plan':str(plan_dir.resolve()),
             'source_job_status':job['status'],'source_job_error':job.get('error'),
             'overall_transaction_pass':job['status']=='completed' and all(r['frequency_validity_pass'] for r in rows),
+            'overall_measurement_consistency_pass':job['status']=='completed' and
+                all(r['frequency_validity_pass'] and r['nominal_amplitude_consistency_pass'] for r in rows),
             'reference':profile['reference'],'absolute_input_calibrated':False,
             'runtime_vio_measurement':False,
             'note':'Amplitude values reconstructed from raw, saved provisional profile; not independent accuracy proof',
@@ -83,8 +89,9 @@ def main():
     p.add_argument('--profile',type=Path,default=Path('docs/calibration_generator_nominal_20261023/calibration.json'))
     p.add_argument('--output',type=Path,required=True)
     p.add_argument('--include-failed-plan',action='store_true',help='Review all completed sample files, but preserve failed source status and overall_transaction_pass=false')
+    p.add_argument('--expected-controls',type=int,choices=range(32),help='Require exact filtered switch bits, e.g. 4 for B/continuous')
     a=p.parse_args()
-    result=analyze(a.plan,json.loads(a.profile.read_text(encoding='utf-8')),a.include_failed_plan)
+    result=analyze(a.plan,json.loads(a.profile.read_text(encoding='utf-8')),a.include_failed_plan,a.expected_controls)
     with a.output.open('x',encoding='utf-8') as stream:json.dump(result,stream,indent=2)
     print(json.dumps({k:v for k,v in result.items() if k!='records'},indent=2))
 
