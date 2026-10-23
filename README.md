@@ -8,7 +8,9 @@
 
 ## 目录
 
-最新待构建改动（2026-10-24）：[三分量幅值快照与手动构建说明](docs/measurement_debug_snapshot_20261024.md)。已增加同帧96bit三分量幅值、count、frame_id、校准epoch和有效元数据，ILA改为15探针；板上和IP产物仍是旧版，尚未构建/烧写。请先在GUI运行`setup_measurement_debug.tcl`，不要直接点击旧ILA配置下的综合；必须生成新bit及匹配LTX。
+最新实板结果：[15探针完整三分量幅值](docs/component_amplitudes_hardware_20261024.md)。用户已烧写00:33新版本，WNS+0.128ns/WHS+0.019ns，BRAM47/50；三个案例共六帧的全部分量幅值已读通，同帧编号和epoch一致。两组三音的最大分量峰值设定参考偏差0.534mV，OFF时全部槽位清零；仍非绝对输入电压或全赛题验收。
+
+此前改动/复现指南（2026-10-24）：[三分量幅值快照与手动构建说明](docs/measurement_debug_snapshot_20261024.md)。已增加同帧96bit三分量幅值、count、frame_id、校准epoch和有效元数据，ILA为15探针；最新构建/烧写状态以上述实板记录为准，当前无需重复构建。其他电脑复现时仍须先配置ILA并生成匹配bit/LTX。
 
 最新多音进展：[UTG932首次三分量实测](docs/utg_multitone_hardware_20261023.md)。UTG CH1接滤波器，单音、50/150/200kHz普通三音和弱基波/强谐波各两帧通过已观测指标；最强分量在150kHz时仍正确选50kHz基频。原标定系数未重拟合，三音最大Vpp设定数学参考偏差约0.924mV。仅观测基波幅值，未验收各谐波幅值、绝对输入电压或完整A/B/C题；无新bit。
 
