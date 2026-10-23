@@ -20,12 +20,15 @@ module Peak_Search #(
     parameter integer SEARCH_START     = 10,
     parameter integer SEARCH_END       = 4000,
     parameter integer PEAK_THRESHOLD   = 0,
-    parameter integer MAG_SCALE_FACTOR = 1
+    parameter integer MAG_SCALE_FACTOR = 1,
+    parameter integer RUNTIME_LIMITS = 0
 )(
     input  wire                         calc_clk,
     input  wire                         rst,
 
     input  wire                         frame_done_toggle,
+    input  wire [FREQ_ADDR_WIDTH-1:0]  search_start_in,
+    input  wire [FREQ_ADDR_WIDTH-1:0]  search_end_in,
 
     output reg  [FREQ_ADDR_WIDTH-1:0]  freq_rd_addr,
     output wire                         freq_rd_en,
@@ -108,6 +111,9 @@ module Peak_Search #(
     reg [1:0] state;
     reg [FREQ_ADDR_WIDTH-1:0] scan_addr;
     reg [31:0] max_magnitude;
+    reg [FREQ_ADDR_WIDTH-1:0] end_active;
+    wire [FREQ_ADDR_WIDTH-1:0] start_requested = RUNTIME_LIMITS ? search_start_in : SEARCH_START_ADDR;
+    wire [FREQ_ADDR_WIDTH-1:0] end_requested = RUNTIME_LIMITS ? search_end_in : SEARCH_END_ADDR;
 
     wire candidate_is_larger;
     assign candidate_is_larger =
@@ -119,6 +125,7 @@ module Peak_Search #(
     always @(posedge calc_clk) begin
         if (rst) begin
             state          <= ST_IDLE;
+            end_active     <= SEARCH_END_ADDR;
             scan_addr      <= {FREQ_ADDR_WIDTH{1'b0}};
             freq_rd_addr   <= {FREQ_ADDR_WIDTH{1'b0}};
             max_magnitude  <= 32'd0;
@@ -136,8 +143,9 @@ module Peak_Search #(
                     busy <= 1'b0;
                     if (new_frame_event) begin
                         busy         <= 1'b1;
-                        scan_addr    <= SEARCH_START_ADDR;
-                        freq_rd_addr <= SEARCH_START_ADDR;
+                        scan_addr    <= start_requested;
+                        freq_rd_addr <= start_requested;
+                        end_active   <= end_requested;
                         max_magnitude <= 32'd0;
                         max_index      <= {FREQ_ADDR_WIDTH{1'b0}};
                         state          <= ST_READ_REQUEST;
@@ -159,7 +167,7 @@ module Peak_Search #(
                         max_index     <= scan_addr;
                     end
 
-                    if (scan_addr == SEARCH_END_ADDR) begin
+                    if (scan_addr == end_active) begin
                         // Include the last sample in the reported result even
                         // though max_magnitude is updated by nonblocking logic.
                         if (candidate_is_larger) begin

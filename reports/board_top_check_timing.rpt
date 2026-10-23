@@ -1,7 +1,7 @@
 Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
 ---------------------------------------------------------------------------------------------------------------------------------------------
 | Tool Version : Vivado v.2025.2 (win64) Build 6299465 Fri Nov 14 19:35:11 GMT 2025
-| Date         : Fri Oct 16 10:24:06 2026
+| Date         : Fri Oct 23 10:17:05 2026
 | Host         : LAPTOP-LI running 64-bit major release  (build 9200)
 | Command      : check_timing -verbose -file V:/reports/board_top_check_timing.rpt
 | Design       : G_FPGA_Top
@@ -19,8 +19,8 @@ Table of Contents
 2. checking constant_clock (0)
 3. checking pulse_width_clock (0)
 4. checking unconstrained_internal_endpoints (0)
-5. checking no_input_delay (2)
-6. checking no_output_delay (2)
+5. checking no_input_delay (10)
+6. checking no_output_delay (27)
 7. checking multiple_clock (0)
 8. checking generated_clocks (0)
 9. checking loops (0)
@@ -50,21 +50,54 @@ Table of Contents
  There are 0 pins that are not constrained for maximum delay due to constant clock.
 
 
-5. checking no_input_delay (2)
-------------------------------
- There are 2 input ports with no input delay specified. (HIGH)
+5. checking no_input_delay (10)
+-------------------------------
+ There are 10 input ports with no input delay specified. (HIGH)
 
 key_cycle
+key_down
+key_left
+key_right
+sw[0]
+sw[15]
+sw[1]
+sw[2]
+sw[3]
 sys_rst_n
 
  There are 0 input ports with no input delay but user has a false path constraint.
 
 
-6. checking no_output_delay (2)
--------------------------------
- There are 2 ports with no output delay specified. (HIGH)
+6. checking no_output_delay (27)
+--------------------------------
+ There are 27 ports with no output delay specified. (HIGH)
 
 adc_clk_out
+an[0]
+an[1]
+an[2]
+an[3]
+dp
+led[10]
+led[11]
+led[12]
+led[13]
+led[1]
+led[2]
+led[3]
+led[4]
+led[5]
+led[6]
+led[7]
+led[8]
+led[9]
+seg[0]
+seg[1]
+seg[2]
+seg[3]
+seg[4]
+seg[5]
+seg[6]
 uart_tx
 
  There are 0 ports with no output delay but user has a false path constraint

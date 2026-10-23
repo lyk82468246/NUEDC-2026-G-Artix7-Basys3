@@ -49,6 +49,7 @@ module HMI_UART_Ctrl #(
     input  wire signed [15:0]                    time_rd_data,
 
     output wire                                  uart_tx,
+    output wire                                  tx_idle,
     output reg                                  busy,
     output reg                                  waveform_done,
     // Level handshake to AFE_Capture. It goes high after the complete HMI
@@ -531,6 +532,7 @@ module HMI_UART_Ctrl #(
     reg  [7:0] uart_data;
     wire       uart_start;
     wire       uart_busy;
+    assign tx_idle = !uart_busy;
 
     always @* begin
         case (state)

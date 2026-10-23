@@ -96,6 +96,11 @@ report_timing_summary -file [file join $report_dir board_top_timing.rpt]
 report_io -file [file join $report_dir board_top_io.rpt]
 report_drc -file [file join $report_dir board_top_drc.rpt]
 report_clocks -file [file join $report_dir board_top_clocks.rpt]
+report_route_status -file [file join $report_dir board_top_route_status.rpt]
+report_bus_skew -file [file join $report_dir board_top_bus_skew.rpt]
+check_timing -verbose -file [file join $report_dir board_top_check_timing.rpt]
+report_cdc -details -file [file join $report_dir board_top_cdc.rpt]
+report_methodology -file [file join $report_dir board_top_methodology.rpt]
 
 set setup_paths [get_timing_paths -delay_type max -max_paths 1 -quiet]
 set hold_paths  [get_timing_paths -delay_type min -max_paths 1 -quiet]
@@ -117,6 +122,9 @@ puts "INFO: probes    = $ltx_file"
 
 if {$wns eq "NA" || $wns <= 0.0} {
     error "时序不满足：要求 WNS > 0 ns，实际 WNS = $wns ns。"
+}
+if {$whs eq "NA" || $whs < 0.0} {
+    error "Hold timing failed: WHS must be >= 0 ns, got $whs ns."
 }
 
 puts "INFO: direct synthesis, implementation, timing, bitstream and ILA generation passed."

@@ -2,13 +2,13 @@
 
 纯 FPGA 周期信号采集、时域测量、频谱分析与显示实验工程。目标平台为 Basys 3（Artix-7 `xc7a35tcpg236-1`），外接 AD9226 12-bit 并行 ADC 和淘晶驰协议 UART 屏，不使用 MCU。
 
-本文按照“设计目标—系统原理—实验搭建—验证结果—局限与改进”的结构记录工程。项目名称来自竞赛练习背景，不表示官方赛题确认或指标验收通过。文档核对日期：2026-10-16。
+本文按照“设计目标—系统原理—实验搭建—验证结果—局限与改进”的结构记录工程。项目名称来自竞赛练习背景，不表示官方赛题确认或指标验收通过。文档核对日期：2026-10-23。
 
-> 当前状态：2026-10-16 实板联调发现并修复 AFE 整数去直流状态导致的小信号触发停滞；五组 XSim 自检及 36 项 Python 测试通过。Vivado 2025.2 已重新完成综合、实现及 bit/LTX 生成，WNS=+0.082 ns、WHS=+0.022 ns、DRC 0 errors / 13 warnings。实板验证范围见调试记录；≤5 mV 精度、外部 ADC 时序和串口屏显示仍未验收。
+> 最新构建（2026-10-23）：P2控制面板已完成综合/实现，WNS=+0.142 ns、WHS=+0.015 ns，DRC 0 errors / 13 warnings；板测进度及bit/LTX散列见[本轮记录](docs/hardware_debug_20261023.md)。原有四组行为仿真、新增六组自检、CORDIC标度网表自检和45项Python测试通过。三分量分析/标定目前仅独立验证，尚未接入顶层；≤5 mV精度、外部ADC时序和串口屏显示仍未验收。10月16日实板数据属于历史基线，不外推为本轮结果。
 
 ## 目录
 
-题目依据：[用户提供的 2026 年 G 题原文](docs/requirements/2026年G题.md)（原样归档）；逐项实施与验收方案见 [G 题执行计划](docs/contest_execution_plan.md)。计划**已批准，等待用户开始指令，尚未实施**。本项目明确忽略“单路 +5 V 供电”和“屏幕≥6 英寸”两项要求；其余测量/显示/两秒时限仍按计划验收，不能由现有单音板测推定全部通过。已确认模式优先级为 SW3(C)>SW2(B)>SW1(A)>SW0(调试)，SW15 选择连续/单次，LD[9:8] 编码为 A=`00`、B=`01`、C=`10`、调试=`11`；这些是后续实现约定，并非当前 bit 已有功能。
+题目依据：[用户提供的 2026 年 G 题原文](docs/requirements/2026年G题.md)（原样归档）；逐项实施与验收方案见 [G 题执行计划](docs/contest_execution_plan.md)。计划**已批准并于 2026-10-23 开始实施**。P2 控制面板已接入 RTL，完整构建/下载状态以最新阶段记录为准；原有 10 月 16 日 bit 不包含面板功能。操作与测试说明见 [板载控制面板](docs/board_panel.md)。本项目明确忽略“单路 +5 V 供电”和“屏幕≥6 英寸”两项要求；其余测量/显示/两秒时限仍按计划验收，不能由现有单音板测推定全部通过。
 
 自动化联调见 [HDS242S 指南](docs/hds242s_automation.md) 和 [2026-10-16 实板调试记录](docs/hardware_debug_20261016.md)。已接通信号源→滤波器→ADC→FPGA→JTAG 链路，记录实板发现的去直流量化问题、修复及验证边界。手动记录见[实机测试记录表](docs/hardware_test_record.md)。
 
@@ -40,9 +40,9 @@
 | FFT | 8192 点，Radix-4 Burst I/O，定点 Unscaled | 非实时 AXI 流，自然顺序输出 |
 | 频率格点 | 代码按 500 Hz/bin 换算 | 依实际时钟约为 500.0055 Hz/bin |
 | 目标信号范围 | 10 kHz～500 kHz | 对应名义 bin 20～1000 |
-| 当前谱峰扫描 | bin 10～4000，含端点 | 约 5 kHz～2 MHz，并非只搜目标频带 |
+| 当前顶层谱峰扫描 | A bin20～400，B/C bin20～1000，调试bin10～4000 | 含端点；仍选最强峰，独立三分量模块未接入 |
 | 串口 | 115200 bps，8N1，只有 TX | 每 bit 868 拍，实际约 115207 bps |
-| 波形显示 | 400 点，1 或 3 个周期 | BtnU 切换；相邻 BRAM 样本线性插值 |
+| 波形显示 | 新顶层暂设240点，1或3周期 | 控件尺寸待确认；独立HMI默认400点；相邻样本线性插值 |
 | 幅值单位 | 当前为内部数字量 | 尚未完成到输入端 mV 的标定 |
 
 实际采样时钟比名义值高约 11 ppm，不是严格的 4.096000 MHz。当前频率公式仍固定为 `index × 500`。平顶窗改善幅值的离栅格误差，但不能自动提高 500 Hz 格点的频率分辨率。
@@ -71,7 +71,11 @@ flowchart TD
     CALC --> HMI[HMI_UART_Ctrl / BIN2BCD / UART_Tx]
     PEAK --> HMI
     TIME --> HMI
-    BTN[BtnU: 20 ms 消抖 / 1或3周期] --> HMI
+    BTN[SW/BtnU/D/L/R: 同步消抖] --> RUN[Run_Controller: 帧许可/模式/周期快照]
+    RUN --> AFE
+    RUN --> HMI
+    CALC --> PANEL[同帧快照/数码管/LED]
+    PEAK --> PANEL
     HMI --> SCREEN[JA1 UART TX → 串口屏 RX]
     CALC -.-> ILA[ILA: 时钟 100 MHz]
     PEAK -.-> ILA
@@ -86,7 +90,8 @@ G_FPGA_Top
 ├── MMCM_Top ── 100 MHz 算法时钟
 │             └─ MMCM 辅助时钟 → BUFR /3 → ADC 时钟 → ODDR → JB1
 ├── Reset_Synchronizer ×2：各时钟域复位释放同步
-├── Button_Debounce：BtnU → 1/3 周期选择
+├── Button_Debounce ×4 + Switch_Filter → Run_Controller（事务边界提交选项）
+├── Board_Status_Display → SevenSeg_Scan / LED（未标定数据明确为raw）
 ├── Capture_Calc_Subsystem
 │   ├── ADC_Input_CDC → AFE_Capture → 时域 BRAM（三份同写镜像）
 │   ├── 时域读口 → Time_Domain_Calc → Vpp / Vrms

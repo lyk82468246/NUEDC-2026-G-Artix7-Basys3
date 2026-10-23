@@ -22,13 +22,19 @@
 // 它仍然是没有板级引脚约束的联调 synthesis top，后续只需在更外层加入
 // MMCM、ADC 引脚、UART 引脚和实际 Basys 3 XDC 即可。
 //==============================================================================
-module Capture_Calc_Subsystem (
+module Capture_Calc_Subsystem #(
+    parameter integer CONTROLLED_CAPTURE=0,
+    parameter integer WAVE_POINTS=400
+)(
     input  wire             adc_clk,
     input  wire             calc_clk,
     input  wire             rst,
     input  wire             rst_adc,
     input  wire [11:0]      adc_data,
     input  wire             display_three_cycles,
+    input  wire             capture_enable,
+    input  wire             controller_release,
+    input  wire [1:0]       mode_active,
 
     output wire [16:0]      vpp_out,
     output wire [15:0]      vrms_out,
@@ -49,7 +55,10 @@ module Capture_Calc_Subsystem (
     output wire             uart_tx,
     output wire             frame_valid,
     output wire             measurement_valid,
-    output wire [4:0]       uart_state
+    output wire [4:0]       uart_state,
+    output wire             capture_start,
+    output wire             packet_finished,
+    output wire             acquisition_fault
 );
 
     wire                    bram_wr_en;
@@ -59,6 +68,14 @@ module Capture_Calc_Subsystem (
     wire                    frame_done_pulse;
     wire                    frame_start_pulse;
     wire                    frame_release;
+    wire                    hmi_frame_release;
+    wire                    tx_idle;
+    assign frame_release = CONTROLLED_CAPTURE ? controller_release : hmi_frame_release;
+    assign capture_start = frame_start_pulse;
+    assign packet_finished = hmi_frame_release && !hmi_busy && tx_idle;
+    // Diagnostic rail hit during capture, not a calibrated overload detector.
+    assign acquisition_fault = capture_busy && adc_sample_valid_calc &&
+                              ((adc_data_calc==12'd0) || (adc_data_calc==12'hfff));
 
     wire                    adc_sample_valid_calc;
     wire [11:0]             adc_data_calc;
@@ -121,12 +138,13 @@ module Capture_Calc_Subsystem (
 
     // All FIR/DSP and frame-write logic is clocked by calc_clk.  The sample
     // valid pulse preserves the original ADC sample cadence.
-    AFE_Capture u_afe_capture (
+    AFE_Capture #(.CONTROLLED_CAPTURE(CONTROLLED_CAPTURE)) u_afe_capture (
         .adc_clk          (calc_clk),
         .rst              (rst),
         .adc_data         (adc_data_calc),
         .sample_valid     (adc_sample_valid_calc),
         .frame_release    (frame_release),
+        .capture_enable   (capture_enable),
         .bram_wr_en       (bram_wr_en),
         .bram_wr_addr     (bram_wr_addr),
         .bram_wr_data     (bram_wr_data),
@@ -195,10 +213,12 @@ module Capture_Calc_Subsystem (
         .rd_data (freq_rd_data)
     );
 
-    Peak_Search u_peak_search (
+    Peak_Search #(.RUNTIME_LIMITS(CONTROLLED_CAPTURE)) u_peak_search (
         .calc_clk          (calc_clk),
         .rst               (rst),
         .frame_done_toggle (freq_frame_done_toggle),
+        .search_start_in   ((mode_active==3)?12'd10:12'd20),
+        .search_end_in     ((mode_active==0)?12'd400:((mode_active==3)?12'd4000:12'd1000)),
         .freq_rd_addr      (freq_rd_addr),
         .freq_rd_en        (freq_rd_en),
         .freq_rd_data      (freq_rd_data),
@@ -214,7 +234,7 @@ module Capture_Calc_Subsystem (
         .BAUD_RATE       (115_200),
         .FRAME_LENGTH    (8192),
         .TIME_ADDR_WIDTH (13),
-        .WAVE_POINTS     (400),
+        .WAVE_POINTS     (WAVE_POINTS),
         .DISPLAY_CYCLES  (1)
     ) u_hmi_uart_ctrl (
         .clk               (calc_clk),
@@ -231,9 +251,10 @@ module Capture_Calc_Subsystem (
         .time_rd_addr      (hmi_time_rd_addr),
         .time_rd_data      (hmi_time_rd_data),
         .uart_tx           (uart_tx),
+        .tx_idle           (tx_idle),
         .busy              (hmi_busy),
         .waveform_done     (waveform_done),
-        .frame_release     (frame_release),
+        .frame_release     (hmi_frame_release),
         .measurement_valid (measurement_valid),
         .state_debug       (uart_state)
     );

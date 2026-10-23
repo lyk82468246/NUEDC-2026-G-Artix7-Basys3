@@ -17,14 +17,24 @@
 //   uart_tx       : UART display TX on JA1/J1
 //==============================================================================
 module G_FPGA_Top #(
-    parameter integer BUTTON_ACTIVE_HIGH = 1
+    parameter integer BUTTON_ACTIVE_HIGH = 1,
+    parameter integer KEY_DEBOUNCE_MS = 20,
+    parameter integer SWITCH_STABLE_CYCLES = 2_000_000,
+    // PLACEHOLDER: portrait 240x320 HMI. Confirm actual plot width before use.
+    parameter integer WAVE_POINTS = 240
 )(
     input  wire       sys_clk,
     input  wire       sys_rst_n,
     input  wire       key_cycle,
+    input  wire       key_down, key_left, key_right,
+    input  wire [15:0] sw,
     input  wire [11:0] adc_data_in,
     output wire       adc_clk_out,
-    output wire       uart_tx
+    output wire       uart_tx,
+    output wire [15:0] led,
+    output wire [6:0] seg,
+    output wire [3:0] an,
+    output wire       dp
 );
 
     wire clk_algo;
@@ -80,27 +90,26 @@ module G_FPGA_Top #(
         .S (1'b0)
     );
 
-    wire key_cycle_state;
-    wire key_cycle_pulse;
-
-    Button_Debounce #(
-        .CLK_FREQ_HZ(100_000_000),
-        .DEBOUNCE_MS(20)
-    ) u_button_debounce_cycle (
-        .clk         (clk_algo),
-        .rst         (rst_algo),
-        .button_in   (key_cycle),
-        .button_state(key_cycle_state),
-        .button_pulse(key_cycle_pulse)
-    );
-
-    reg display_three_cycles;
-    always @(posedge clk_algo) begin
-        if (rst_algo)
-            display_three_cycles <= 1'b0;
-        else if (key_cycle_pulse)
-            display_three_cycles <= ~display_three_cycles;
-    end
+    wire [3:0] button_in={key_right,key_left,key_down,key_cycle};
+    wire [3:0] button_pulse;
+    genvar button_index;
+    generate for(button_index=0;button_index<4;button_index=button_index+1) begin:g_keys
+        Button_Debounce #(.CLK_FREQ_HZ(100_000_000),.DEBOUNCE_MS(KEY_DEBOUNCE_MS)) u_key(
+            .clk(clk_algo),.rst(rst_algo),.button_in(button_in[button_index]),
+            .button_state(),.button_pulse(button_pulse[button_index]));
+    end endgenerate
+    wire [4:0] controls;
+    wire controls_ready;
+    Switch_Filter #(.WIDTH(5),.STABLE_CYCLES(SWITCH_STABLE_CYCLES)) u_switches(
+        .clk(clk_algo),.rst(rst_algo),.async_in({sw[15],sw[3:0]}),
+        .stable_out(controls),.ready(controls_ready));
+    wire display_three_cycles;
+    wire [1:0] mode_active, view_active;
+    wire single_active, capture_enable, controller_release;
+    wire capture_start, packet_finished, acquisition_fault, result_fresh;
+    wire [31:0] frame_id, latency_cycles;
+    wire [3:0] error_code;
+    wire [2:0] run_state;
 
     // Results and debug signals from the complete measurement subsystem.
     wire [16:0] vpp_out;
@@ -122,13 +131,41 @@ module G_FPGA_Top #(
     wire        measurement_valid;
     wire [4:0]  uart_state;
 
-    Capture_Calc_Subsystem u_capture_calc_subsystem (
+    Run_Controller u_run_controller(
+        .clk(clk_algo),.rst(rst_algo),.controls_ready(controls_ready),
+        .mode_switches(controls[3:0]),.single_request(controls[4]),
+        .start_pulse(button_pulse[1]),.cycle_pulse(button_pulse[0]),
+        .left_pulse(button_pulse[2]),.right_pulse(button_pulse[3]),
+        .frame_start(capture_start),.measurement_valid(measurement_valid),
+        .packet_finished(packet_finished),.acquisition_fault(acquisition_fault),
+        .capture_enable(capture_enable),.frame_release(controller_release),
+        .mode_active(mode_active),.single_active(single_active),
+        .three_cycles_active(display_three_cycles),.view_active(view_active),
+        .frame_id(frame_id),.result_fresh(result_fresh),.error_code(error_code),
+        .latency_cycles(latency_cycles),.state_debug(run_state));
+
+    Board_Status_Display u_board_status(
+        .clk(clk_algo),.rst(rst_algo),.locked(mmcm_locked),
+        .measurement_valid(measurement_valid),.fresh(result_fresh),
+        .capture_busy(capture_busy),.algorithm_busy(calc_busy||fft_busy||peak_busy),
+        .hmi_busy(hmi_busy),.mode(mode_active),.view(view_active),
+        .single_mode(single_active),.three_cycles(display_three_cycles),
+        .error_code(error_code),.frequency_hz(f1_hz_out),.magnitude_raw(amp_f1_out),
+        .vpp_raw(vpp_out),.rms_raw(vrms_out),.led(led),.seg(seg),.an(an),.dp(dp));
+
+    Capture_Calc_Subsystem #(.CONTROLLED_CAPTURE(1),.WAVE_POINTS(WAVE_POINTS)) u_capture_calc_subsystem (
         .adc_clk             (clk_adc),
         .calc_clk            (clk_algo),
         .rst                 (rst_subsystem),
         .rst_adc             (rst_adc),
         .adc_data            (adc_data_in),
         .display_three_cycles(display_three_cycles),
+        .capture_enable(capture_enable),
+        .controller_release(controller_release),
+        .mode_active(mode_active),
+        .capture_start(capture_start),
+        .packet_finished(packet_finished),
+        .acquisition_fault(acquisition_fault),
         .vpp_out             (vpp_out),
         .vrms_out            (vrms_out),
         .mean_square_out     (mean_square_out),

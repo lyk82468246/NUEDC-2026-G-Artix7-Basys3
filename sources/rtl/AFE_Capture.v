@@ -44,7 +44,10 @@ module AFE_Capture #(
     parameter integer DC_FRAC_BITS        = 16,
     // 上电后给 DC 估计器一个稳定时间，避免把启动瞬态当成过零触发。
     parameter integer DC_WARMUP_SAMPLES   = 4096,
-    parameter integer ZERO_THRESHOLD      = 0
+    parameter integer ZERO_THRESHOLD      = 0,
+    // Legacy standalone tests may omit capture_enable. Board top enables
+    // explicit transaction ownership without gating ADC/FIR clocks.
+    parameter integer CONTROLLED_CAPTURE  = 0
 )(
     input  wire                         adc_clk,
     input  wire                         rst,                 // 高有效同步复位
@@ -53,6 +56,7 @@ module AFE_Capture #(
     // 与本模块 adc_clk 同步。最后一个消费者完成读取/发送后拉高并保持，
     // 允许捕获 FSM 离开 HOLD 状态并重新寻找下一次过零；电平握手不会丢脉冲。
     input  wire                         frame_release,
+    input  wire                         capture_enable,
 
     // 时域 BRAM 写端口。BRAM_TimeDomain 使用 wr_en/wr_addr/wr_data。
     output reg                          bram_wr_en,
@@ -200,6 +204,7 @@ module AFE_Capture #(
     // BRAM 端口，真正写入发生在下一个 adc_clk 沿。因此帧完成 toggle
     // 延后一拍，确保 calc_clk 域永远不会在最后一个写入提交前开始读取。
     reg                             frame_done_pending;
+    reg                             release_seen_low;
     wire signed [FIR_DATA_WIDTH-1:0] zero_threshold_s;
 
     assign zero_threshold_s = ZERO_THRESHOLD;
@@ -215,6 +220,7 @@ module AFE_Capture #(
             dc_warmup_count    <= 16'd0;
             dc_ready           <= (DC_WARMUP_SAMPLES == 0);
             frame_done_pending <= 1'b0;
+            release_seen_low   <= 1'b0;
 
             fir_s_axis_tvalid_reg <= 1'b0;
             fir_s_axis_tdata_reg  <= {FIR_DATA_WIDTH{1'b0}};
@@ -259,7 +265,11 @@ module AFE_Capture #(
             // domain. Consume it independently of FIR output valid so a
             // temporarily stalled/idle FIR cannot leave the capture FSM in
             // ST_HOLD forever after the HMI packet has completed.
-            if ((state == ST_HOLD) && frame_release)
+            // The previous packet may leave release high until the NEXT HMI
+            // packet starts (after FFT). Require a new low/high handshake for
+            // every frame, otherwise the next frame could overwrite its owner.
+            if (!frame_release) release_seen_low <= 1'b1;
+            if ((state == ST_HOLD) && release_seen_low && frame_release)
                 state <= ST_REARM;
 
             if (fir_output_fire) begin
@@ -283,7 +293,7 @@ module AFE_Capture #(
                     case (state)
                         ST_WAIT_CROSS: begin
                             // 负(含零) -> 正，当前样本作为 frame[0] 写入。
-                            if (dc_ready &&
+                            if (dc_ready && (!CONTROLLED_CAPTURE || capture_enable) &&
                                 (previous_sample_s <= zero_threshold_s) &&
                                 (ac_output_s       >  zero_threshold_s)) begin
                                 bram_wr_en       <= 1'b1;
@@ -291,6 +301,7 @@ module AFE_Capture #(
                                 bram_wr_data     <= ac_output_s;
                                 write_addr_next  <= FIRST_AFTER_TRIGGER;
                                 frame_start_pulse <= 1'b1;
+                                release_seen_low <= !frame_release;
                                 state            <= ST_CAPTURE;
                             end
                         end
