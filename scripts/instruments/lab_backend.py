@@ -68,6 +68,9 @@ class RealBackend:
     def scope(self, channels):
         return self.device.snapshot(channels)
 
+    def configure_scope(self, config):
+        return self.device.configure_scope(config)
+
     def fpga(self, directory, cancel):
         if not self.vivado or not self.ltx:
             raise RuntimeError("Configure --vivado and --ltx for hardware FPGA capture")
@@ -140,6 +143,9 @@ class SimBackend:
         return {"simulated": True, "time": timestamp(), "settings": state,
                 "channels": {str(ch): {"vpp_v": state["vpp"], "frequency_hz": state["hz"]}
                              for ch in channels}}
+
+    def configure_scope(self, config):
+        return {'simulated': True, 'requested': dict(config)}
 
     def fpga(self, directory, cancel):
         self.active_capture.set()

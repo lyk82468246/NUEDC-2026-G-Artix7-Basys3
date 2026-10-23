@@ -15,7 +15,7 @@ import threading
 import time
 import uuid
 
-from hds242s import timestamp, validate_plan
+from hds242s import timestamp, validate_plan, validate_scope_config
 
 
 class Busy(RuntimeError):
@@ -35,7 +35,7 @@ def signature(generator):
 
 class LabController:
     ACTIONS = ("connect", "disconnect", "sync", "configure_generator", "set_output",
-               "output_off", "capture_scope", "capture_fpga", "run_plan")
+               "output_off", "configure_scope", "capture_scope", "capture_fpga", "run_plan")
 
     def __init__(self, backend, directory, poll_s=2.0, queue_limit=8, history_limit=128):
         if not 0.05 <= poll_s <= 30:
@@ -371,6 +371,18 @@ class LabController:
             return self._configure(params["point"], params["limits"])
         if action == "set_output":
             return self._output(params["enabled"], params.get("connections_confirmed"))
+        if action == "configure_scope":
+            config = validate_scope_config(params)
+            if not self._connected:
+                raise ConnectionError("Instrument not connected")
+            # Same single-owner queue; scope writes cannot race a running plan.
+            # Do not change the acquisition setup while generator output is ON.
+            self._off()
+            result = self.backend.configure_scope(config)
+            atomic_json(directory / 'scope_config.json', result)
+            self._publish('scope_configured', scope_configuration=result,
+                          scope_observed_at=timestamp())
+            return result
         if action == "capture_scope":
             if not self._connected:
                 raise ConnectionError("Instrument not connected")

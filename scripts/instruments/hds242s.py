@@ -71,6 +71,20 @@ def generator_load(raw):
     return value
 
 
+def validate_scope_config(config):
+    """Narrow whitelist from OWON HDS200 SCPI protocol; no raw SCPI endpoint."""
+    allowed = {'channel', 'probe', 'coupling', 'scale', 'timebase'}
+    if set(config) != allowed or type(config['channel']) is not int or config['channel'] not in (1, 2):
+        raise ValueError('Expected channel/probe/coupling/scale/timebase scope configuration')
+    if config['probe'] not in ('1X', '10X') or config['coupling'] not in ('AC', 'DC'):
+        raise ValueError('Unsupported scope probe or coupling')
+    scales = ('100mV', '200mV', '500mV', '1.00V', '2.00V')
+    times = ('100ns', '200ns', '500ns', '1.0us', '2.0us', '5.0us', '10us', '20us')
+    if config['scale'] not in scales or config['timebase'] not in times:
+        raise ValueError('Unsupported scope scale or timebase')
+    return dict(config)
+
+
 class HDS242S:
     def __init__(self, timeout_ms=3000):
         self._io_lock = threading.RLock()
@@ -235,6 +249,27 @@ class HDS242S:
         finally:
             self.broken = self.broken or was_broken
         return result
+
+    @serialized
+    def configure_scope(self, config):
+        config = validate_scope_config(config)
+        channel = config['channel']
+        for command in (
+            f":CH{channel}:DISPlay ON", f":CH{channel}:PROBe {config['probe']}",
+            f":CH{channel}:COUPling {config['coupling']}",
+            f":CH{channel}:SCALe {config['scale']}",
+            f":HORIzontal:SCALe {config['timebase']}",
+            ':ACQuire:MODe SAMPle', ':ACQuire:DEPMem 8K',
+        ):
+            self.set(command)
+        header = self.snapshot([])['header']
+        observed = next((c for c in header['CHANNEL'] if c['NAME'] == f'CH{channel}'), None)
+        if observed is None or any(observed[k] != config[v] for k, v in
+                                  [('PROBE', 'probe'), ('COUPLING', 'coupling'), ('SCALE', 'scale')]):
+            raise RuntimeError(f'Scope channel readback mismatch: {header}')
+        if header['TIMEBASE']['SCALE'] != config['timebase']:
+            raise RuntimeError(f'Scope timebase readback mismatch: {header}')
+        return {'requested': config, 'header': header}
 
     @serialized
     def snapshot(self, channels):

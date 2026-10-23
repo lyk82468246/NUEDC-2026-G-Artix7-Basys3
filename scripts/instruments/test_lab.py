@@ -76,6 +76,17 @@ class LabTests(unittest.TestCase):
         self.assertTrue(state["stale"])
         self.assertFalse(self.backend.connected)
 
+    def test_scope_configuration_runs_in_owner_queue_and_forces_off(self):
+        self.connect_configure()
+        self.backend.panel_change(output='on')
+        config = {'channel': 1, 'probe': '1X', 'coupling': 'DC',
+                  'scale': '100mV', 'timebase': '2.0us'}
+        result = self.run_job('configure_scope', config)
+        self.assertEqual(result['status'], 'completed')
+        self.assertEqual(self.backend.state()['output'], 'off')
+        self.assertEqual(self.controller.status()['scope_configuration']['requested'], config)
+        self.assertTrue((self.directory/'session'/result['id']/'scope_config.json').is_file())
+
     def test_panel_change_invalidates_verified_config(self):
         self.connect_configure()
         self.assertTrue(self.controller.status()["verified"])
