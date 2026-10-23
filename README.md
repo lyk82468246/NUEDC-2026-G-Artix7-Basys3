@@ -4,7 +4,7 @@
 
 本文按照“设计目标—系统原理—实验搭建—验证结果—局限与改进”的结构记录工程。项目名称来自竞赛练习背景，不表示官方赛题确认或指标验收通过。文档核对日期：2026-10-23。
 
-> 最新构建（2026-10-23）：P3三分量分析、谱底及RMS有效性判决已接入顶层，完成综合/实现和下载，WNS=+0.319 ns、WHS=+0.021 ns，DRC 0 errors / 14 warnings。八组RTL自检及47项Python测试通过；新bit三次无信号新帧均输出频率0，用户确认四横杠、LD6灭。但随后100kHz/50mVpp新帧采集超时，板上锁存异常码1，**本版尚未通过实板验收**；信号源已回读确认OFF，保留故障现场继续定位。构建、bit/LTX散列及实测边界见[P3记录](docs/p3_signal_validity_20261023.md)，此前数码管频闪修复见[P2记录](docs/hardware_debug_20261023.md)。物理幅值标定、≤5 mV精度、外部ADC时序和双页面串口屏显示仍未验收。
+> 当前交接（2026-10-23）：今后综合、实现、生成bit和烧写由用户手动执行，助手通知后等待反馈。当前已补回`Component_Analyzer.v`工程注册，需在已打开的GUI中同步后重跑综合，见[手动构建说明](docs/manual_vivado_workflow.md)。此前诊断脚本构建曾通过WNS+0.097ns/WHS+0.026ns、DRC 0 errors / 14 warnings，但不等于当前GUI运行成功；本次检查时常规impl_1目录已无bit/LTX。用户确认先前ADC曾掉电、现已恢复，停止针对该次超时的RTL排查。八组RTL自检及48项Python测试通过；P3实板、物理幅值标定、≤5mV精度、外部ADC时序及双页面屏幕仍未验收。历史证据见[P3记录](docs/p3_signal_validity_20261023.md)和[ILA诊断说明](docs/ila_diagnostics.md)。
 
 ## 目录
 
@@ -189,7 +189,7 @@ docs/                          分阶段接口与 IP 配置说明
 | FFT | 8192，Radix-4 Burst I/O，Fixed Point，Unscaled，Natural Order，Non-Realtime |
 | Translate CORDIC | Signed Fraction，输入 30-bit，输出 31-bit；粗旋转及增益补偿 |
 | Clocking Wizard | 算法 100 MHz，辅助约 12.2881356 MHz，之后 BUFR /3 |
-| ILA | 100 MHz，6 个 probe，深度 1024；probe0 为结果包有效事件 |
+| ILA | 100 MHz，10 个 probe，深度 1024；原probe0～5保持，新增状态/ADC/候选bin/谱底诊断，见ILA说明 |
 | 时域/频域 BRAM | RTL 推断；时域三份 8192 × 16 镜像，频域 4096 × 32 |
 
 详细参数以三个 `setup_*.tcl` 和当前 RTL 为准。[第一阶段说明](docs/CAPTURE_CALC.md)、[第二阶段说明](docs/FFT_UART.md)保留接口/定点设计过程；其中阶段顶层、时钟或旧流程描述不应覆盖本文的最终板级连接。
@@ -248,6 +248,8 @@ docs/                          分阶段接口与 IP 配置说明
 5. 不创建触摸回传逻辑；FFT 和波形分别放在 `fft`、`wave` 两个页面，由 FPGA 发送页面切换命令。当前由 BtnU 切换 FPGA 内部的 1/3 周期选择，屏幕触摸事件不会被 FPGA 接收。
 
 ## 6. Windows 构建与仿真
+
+当前采用[手动构建交接流程](docs/manual_vivado_workflow.md)。以下自动构建命令保留用于历史复现，不代表助手会继续代为执行综合、实现、生成bit或烧写。不要在GUI构建期间并行运行这些脚本。
 
 ### 6.1 环境与工程识别
 

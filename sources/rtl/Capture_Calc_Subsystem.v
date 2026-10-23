@@ -64,7 +64,10 @@ module Capture_Calc_Subsystem #(
     output wire [1:0]       component_count_out,
     output wire [35:0]      component_bins_out,
     output wire [95:0]      component_magnitudes_out,
-    output wire [31:0]      noise_mean_out
+    output wire [31:0]      noise_mean_out,
+    // Read-only diagnostic taps. Raw candidates remain visible when invalid.
+    output wire [11:0]      diagnostic_adc,
+    output wire [35:0]      diagnostic_bins
 );
 
     wire                    bram_wr_en;
@@ -85,6 +88,7 @@ module Capture_Calc_Subsystem #(
 
     wire                    adc_sample_valid_calc;
     wire [11:0]             adc_data_calc;
+    assign diagnostic_adc=adc_data_calc;
 
     // Re-create a calc_clk-domain frame pulse for the top-level ILA.  The
     // processing modules retain their own CDC synchronizers; this copy is
@@ -224,6 +228,7 @@ module Capture_Calc_Subsystem #(
     wire spectral_valid;
     wire [1:0] analyzed_count;
     wire [35:0] analyzed_bins;
+    assign diagnostic_bins=analyzed_bins;
     wire [95:0] analyzed_magnitudes;
     // Time statistics complete before the FFT's serial input loading ends in
     // this architecture. HMI separately snapshots BOTH qualifiers atomically.

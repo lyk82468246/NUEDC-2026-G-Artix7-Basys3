@@ -3,7 +3,7 @@
 #------------------------------------------------------------------------------
 # Configure the Step 3 Basys 3 top level:
 #   * Clocking Wizard (MMCM): 100 MHz + legal 12.2881356 MHz intermediate
-#   * ILA: six probes clocked by the 100 MHz algorithm clock.  Probe 0 is the
+#   * ILA: ten probes clocked by the 100 MHz algorithm clock. Probe 0 is the
 #     self-consistent measurement-packet event; it is not the raw frame pulse.
 #   * G_FPGA_Top RTL and Basys3_Pinout.xdc
 #
@@ -99,12 +99,19 @@ set_property -dict [list \
     CONFIG.CLKOUT2_USED {true} \
     CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {100.000} \
     CONFIG.CLKOUT2_REQUESTED_OUT_FREQ {12.2881356} \
-    CONFIG.CLKOUT1_DRIVES {BUFG} \
-    CONFIG.CLKOUT2_DRIVES {BUFG} \
     CONFIG.USE_RESET {true} \
     CONFIG.USE_LOCKED {true} \
     CONFIG.RESET_TYPE {ACTIVE_HIGH} \
 ] $clk_ip
+
+# Vivado 2025.2 exposes these resolved buffer selections as read-only on an
+# existing clock IP. Verify them instead of making a repeat run fail by writing
+# the same value. Never silently accept a changed output clock topology.
+foreach drive_prop {CONFIG.CLKOUT1_DRIVES CONFIG.CLKOUT2_DRIVES} {
+    if {[get_property $drive_prop $clk_ip] ne "BUFG"} {
+        error "Expected BUFG at $drive_prop; inspect Clocking Wizard configuration"
+    }
+}
 
 # The requested frequency deterministically selects M=7.250, VCO=725 MHz,
 # CLKOUT0 divide=7.250 (100 MHz), and CLKOUT1 divide=59.  Print the resolved
@@ -136,13 +143,17 @@ if {[llength $ila_ip] == 0} {
 }
 
 set_property -dict [list \
-    CONFIG.C_NUM_OF_PROBES {6} \
+    CONFIG.C_NUM_OF_PROBES {10} \
     CONFIG.C_PROBE0_WIDTH {1} \
     CONFIG.C_PROBE1_WIDTH {16} \
     CONFIG.C_PROBE2_WIDTH {16} \
     CONFIG.C_PROBE3_WIDTH {31} \
     CONFIG.C_PROBE4_WIDTH {12} \
     CONFIG.C_PROBE5_WIDTH {5} \
+    CONFIG.C_PROBE6_WIDTH {32} \
+    CONFIG.C_PROBE7_WIDTH {12} \
+    CONFIG.C_PROBE8_WIDTH {36} \
+    CONFIG.C_PROBE9_WIDTH {32} \
     CONFIG.C_DATA_DEPTH {1024} \
 ] $ila_ip
 
@@ -168,7 +179,7 @@ update_compile_order -fileset $source_set
 puts "INFO: Step 3 board top configured."
 puts "INFO:   top       = G_FPGA_Top"
 puts "INFO:   clock IP  = $clk_name (100 MHz + 12.2881356 MHz, wrapper /3 -> ADC clock)"
-puts "INFO:   ILA       = $ila_name (6 probes, 1024 samples)"
+puts "INFO:   ILA       = $ila_name (10 probes, 1024 samples; probes 0..5 unchanged)"
 puts "INFO:   constraints = $xdc_file"
 
 close_project

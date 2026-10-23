@@ -131,6 +131,22 @@ module G_FPGA_Top #(
     wire        measurement_valid;
     wire [4:0]  uart_state;
     wire measurement_signal_valid;
+    wire [11:0] diagnostic_adc;
+    wire [35:0] diagnostic_bins;
+    wire [31:0] diagnostic_noise;
+    // Sticky stage events for the current transaction survive a timeout.
+    // Clear at frame START, not frame completion or the next arm attempt.
+    reg [4:0] diagnostic_events;
+    always @(posedge clk_algo) begin
+        if(rst_algo || capture_start) diagnostic_events<=0;
+        else diagnostic_events<=diagnostic_events |
+            {frame_valid,result_valid,fft_result_valid,peak_result_valid,measurement_valid};
+    end
+    wire [31:0] diagnostic_status={error_code,run_state,controls,
+        capture_enable,controller_release,capture_start,frame_valid,
+        result_valid,fft_result_valid,peak_result_valid,measurement_signal_valid,
+        capture_busy,calc_busy,fft_busy,peak_busy,hmi_busy,
+        packet_finished,acquisition_fault,diagnostic_events};
 
     Run_Controller u_run_controller(
         .clk(clk_algo),.rst(rst_algo),.controls_ready(controls_ready),
@@ -169,6 +185,8 @@ module G_FPGA_Top #(
         .packet_finished(packet_finished),
         .acquisition_fault(acquisition_fault),
         .signal_valid_out(measurement_signal_valid),
+        .diagnostic_adc(diagnostic_adc),.diagnostic_bins(diagnostic_bins),
+        .noise_mean_out(diagnostic_noise),
         .vpp_out             (vpp_out),
         .vrms_out            (vrms_out),
         .mean_square_out     (mean_square_out),
@@ -204,7 +222,11 @@ module G_FPGA_Top #(
         .probe2(vrms_out),
         .probe3(amp_f1_out[30:0]),
         .probe4(max_index_out),
-        .probe5(uart_state)
+        .probe5(uart_state),
+        .probe6(diagnostic_status),
+        .probe7(diagnostic_adc),
+        .probe8(diagnostic_bins),
+        .probe9(diagnostic_noise)
     );
 
 endmodule
