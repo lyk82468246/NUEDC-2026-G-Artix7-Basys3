@@ -1,0 +1,31 @@
+#-----------------------------------------------------------
+# xsim v2025.2 (64-bit)
+# SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+# IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+# SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+# Start of session at: Thu Oct 29 23:31:46 2026
+# Process ID         : 21212
+# Current directory  : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/display_prepare_sim
+# Command line       : xsim.exe -log tb_display_prepare_compact.log -mode tcl -source {xsim.dir/tb_display_prepare_compact/xsim_script.tcl}
+# Log file           : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/display_prepare_sim/tb_display_prepare_compact.log
+# Journal file       : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/display_prepare_sim\xsim.jou
+# Running On         : LAPTOP-LI
+# Platform           : Windows Server 2016 or Windows 10
+# Operating System   : 26100
+# Processor Detail   : 11th Gen Intel(R) Core(TM) i5-1135G7 @ 2.40GHz
+# CPU Frequency      : 2419 MHz
+# CPU Physical cores : 4
+# CPU Logical cores  : 8
+# Host memory        : 16425 MB
+# Swap memory        : 16425 MB
+# Total Virtual      : 32850 MB
+# Available Virtual  : 11719 MB
+#-----------------------------------------------------------
+source xsim.dir/tb_display_prepare_compact/xsim_script.tcl
+# xsim {tb_display_prepare_compact} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: display preparation 200x128 divider/calibration/wave/spectrum/mV, backpressure and invalid/reset
+$finish called at time : 1374970 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_prepare.sv" Line 228
+exit
+INFO: [Common 17-206] Exiting xsim at Thu Oct 29 23:31:48 2026...
