@@ -1,12 +1,16 @@
 `timescale 1ns/1ps
 // Online calibration sidecar. All signals belong to clk (VIO uses same clock).
 // Gains: unsigned Q16.16, reference microvolts/raw. FFT means sine PEAK,
-// NOT Vpp or RMS. No guessed defaults: reset bank is disabled with zero gains.
+// NOT Vpp or RMS. Generic block defaults to disabled; board top supplies the
+// measured boot bank. Reset restores that bank, not the last volatile VIO edit.
 // Host writes staging bank FIRST, commits it, then toggles request separately.
 // Keep staging stable until ack==request. No request may be pipelined.
 // A request is accepted only between packets. Every job snapshots its epoch,
 // gains and values, so an update cannot mix old/new coefficients within a job.
-module Runtime_Calibration(
+module Runtime_Calibration #(
+    parameter integer DEFAULT_ENABLED=0,
+    parameter [31:0] DEFAULT_VPP_GAIN=0,DEFAULT_RMS_GAIN=0,DEFAULT_FFT_GAIN=0
+)(
     input wire clk, rst,
     input wire request_toggle, staging_valid,
     input wire [31:0] staging_vpp_gain, staging_rms_gain, staging_fft_gain,
@@ -25,6 +29,10 @@ module Runtime_Calibration(
     reg [1:0] state;
     reg [1:0] field;
     reg req_d1, req_d2;
+    // VIO has no board-reset port: its toggle/staging can survive BtnC. Rebase
+    // to the settled toggle after reset; do not replay that OLD commit against
+    // the restored boot bank. Only a subsequent toggle is a new request.
+    reg [1:0] request_settle;
     reg [31:0] values[0:2], gains[0:2];
     reg [63:0] product;
     wire [64:0] rounded={1'b0,product}+65'd32768;
@@ -33,15 +41,20 @@ module Runtime_Calibration(
     integer i;
     always @(posedge clk) begin
         if(rst) begin
-            req_d1<=0;req_d2<=0;ack_toggle<=0;epoch<=0;result_epoch<=0;
-            result_count<=0;active_vpp_gain<=0;active_rms_gain<=0;
-            active_fft_gain<=0;active_valid<=0;
+            req_d1<=0;req_d2<=0;request_settle<=0;ack_toggle<=0;epoch<=0;result_epoch<=0;
+            result_count<=0;active_vpp_gain<=DEFAULT_VPP_GAIN;active_rms_gain<=DEFAULT_RMS_GAIN;
+            active_fft_gain<=DEFAULT_FFT_GAIN;
+            active_valid<=DEFAULT_ENABLED && DEFAULT_VPP_GAIN!=0 && DEFAULT_RMS_GAIN!=0 && DEFAULT_FFT_GAIN!=0;
             state<=IDLE;field<=0;product<=0;
             vpp_uv<=0;rms_uv<=0;peak_uv<=0;
             valid<=0;overflow<=0;busy<=0;done<=0;overrun<=0;
             for(i=0;i<3;i=i+1) begin values[i]<=0;gains[i]<=0;end
         end else begin
             req_d1<=request_toggle;req_d2<=req_d1;done<=0;
+            if(request_settle!=3) begin
+                request_settle<=request_settle+1'b1;
+                if(request_settle==2) ack_toggle<=req_d2;
+            end
             if(sample_valid && busy) overrun<=1; // sticky protocol diagnostic
             case(state)
                 IDLE: begin
@@ -55,7 +68,7 @@ module Runtime_Calibration(
                             gains[0]<=active_vpp_gain;gains[1]<=active_rms_gain;gains[2]<=active_fft_gain;
                             field<=0;busy<=1;state<=MULTIPLY;
                         end
-                    end else if(req_d2!=ack_toggle) begin
+                    end else if(request_settle==3 && req_d2!=ack_toggle) begin
                         active_vpp_gain<=staging_vpp_gain;
                         active_rms_gain<=staging_rms_gain;
                         active_fft_gain<=staging_fft_gain;

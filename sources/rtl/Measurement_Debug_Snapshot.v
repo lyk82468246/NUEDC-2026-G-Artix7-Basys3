@@ -46,7 +46,7 @@ module Measurement_Debug_Snapshot(
                 frame_id_out<=frame_id;
                 calibration_epoch_out<=calibration_present?calibration_epoch:32'd0;
                 metadata_out<={1'b0,three_cycles,single_mode,mode,
-                               calibration_present,calibration_present&&calibration_enabled,signal_valid};
+                               calibration_present,calibration_enabled,signal_valid};
                 fundamental_out<=signal_valid?fundamental_raw:32'd0;
                 fundamental_bin_out<=signal_valid?fundamental_bin:12'd0;
                 component_count_out<=signal_valid?component_count:2'd0;

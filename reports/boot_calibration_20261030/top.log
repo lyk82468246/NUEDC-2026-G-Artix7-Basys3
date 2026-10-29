@@ -1,0 +1,201 @@
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/Measurement_Debug_Snapshot.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Measurement_Debug_Snapshot
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/Runtime_Calibration.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Runtime_Calibration
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_measurement_debug_snapshot.sv" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module tb_measurement_debug_snapshot
+Vivado Simulator v2025.2
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: C:/AMDDesignTools/2025.2/Vivado/bin/unwrapped/win64.o/xelab.exe xil_defaultlib.tb_measurement_debug_snapshot -s measurement_debug 
+Multi-threading is on. Using 6 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+WARNING: [VRFC 10-3645] port 'active_vpp_gain' remains unconnected for this instance [C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_measurement_debug_snapshot.sv:28]
+Completed static elaboration
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling module xil_defaultlib.Measurement_Debug_Snapshot
+Compiling module xil_defaultlib.Runtime_Calibration
+Compiling module xil_defaultlib.tb_measurement_debug_snapshot
+Built simulation snapshot measurement_debug
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 30 00:31:19 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/measurement_debug/xsim_script.tcl
+# xsim {measurement_debug} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: atomic debug snapshot widths/slots/invalid/reset/epoch collision
+$finish called at time : 540 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_measurement_debug_snapshot.sv" Line 72
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 30 00:31:21 2026...
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/ADC_Input_CDC.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module ADC_Input_CDC
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/ADC_Sample_CDC.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module ADC_Sample_CDC
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/AFE_Capture.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module AFE_Capture
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/BIN2BCD.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module BIN2BCD
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/Board_Status_Display.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Board_Status_Display
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/BRAM_FreqDomain.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module BRAM_FreqDomain
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/BRAM_TimeDomain.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module BRAM_TimeDomain
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/Button_Debounce.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Button_Debounce
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/Capture_Calc_Subsystem.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Capture_Calc_Subsystem
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/Component_Analyzer.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Component_Analyzer
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/Display_Frame_Calibrator.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Display_Frame_Calibrator
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/Display_HMI.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Display_HMI
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/Display_mV_Formatter.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Display_mV_Formatter
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/Display_Spectrum_Renderer.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Display_Spectrum_Renderer
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/Display_UART_Command.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Display_UART_Command
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/Display_Unsigned_Divider.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Display_Unsigned_Divider
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/Display_Wave_Renderer.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Display_Wave_Renderer
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/FFT_Processor.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module FFT_Processor
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/FlatTop_Window_ROM.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module FlatTop_Window_ROM
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/G_FPGA_Top.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module G_FPGA_Top
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/HMI_UART_Ctrl.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module HMI_UART_Ctrl
+INFO: [VRFC 10-311] analyzing module UART_Tx
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/Measurement_Calibrator.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Measurement_Calibrator
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/Measurement_Debug_Snapshot.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Measurement_Debug_Snapshot
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/MMCM_Top.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module MMCM_Top
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/Peak_Search.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Peak_Search
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/Reset_Synchronizer.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Reset_Synchronizer
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/Run_Controller.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Run_Controller
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/Runtime_Calibration.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Runtime_Calibration
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/SevenSeg_Scan.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module SevenSeg_Scan
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/Switch_Filter.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Switch_Filter
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/Time_Domain_Calc.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Time_Domain_Calc
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/ip/cordic_sqrt_rms/cordic_sqrt_rms_stub.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module cordic_sqrt_rms
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/ip/cordic_translate_mag/cordic_translate_mag_stub.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module cordic_translate_mag
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/ip/fir_compiler_lp_600k/fir_compiler_lp_600k_stub.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module fir_compiler_lp_600k
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/ip/flat_top_window_rom/flat_top_window_rom_stub.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module flat_top_window_rom
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/ip/mmcm_top_wiz/mmcm_top_wiz_stub.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module mmcm_top_wiz
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/ip/vio_calibration/vio_calibration_stub.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module vio_calibration
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/ip/xfft_8192/xfft_8192_stub.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module xfft_8192
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/ila_system_debug_contract.sv" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module ila_system
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_debug_top_contract.sv" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module tb_debug_top_contract
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/AMDDesignTools/2025.2/data/verilog/src/glbl.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module glbl
+Vivado Simulator v2025.2
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: C:/AMDDesignTools/2025.2/Vivado/bin/unwrapped/win64.o/xelab.exe -L unisims_ver -L unimacro_ver -L secureip xil_defaultlib.tb_debug_top_contract xil_defaultlib.glbl -s debug_top_contract 
+Multi-threading is on. Using 6 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+WARNING: [VRFC 10-3645] port 'adc_clk_out' remains unconnected for this instance [C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_debug_top_contract.sv:5]
+WARNING: [VRFC 10-3645] port 'adc_clk_out' remains unconnected for this instance [C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_debug_top_contract.sv:7]
+WARNING: [VRFC 10-3645] port 'adc_clk_out' remains unconnected for this instance [C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_debug_top_contract.sv:9]
+WARNING: [VRFC 10-3645] port 'adc_clk_out' remains unconnected for this instance [C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_debug_top_contract.sv:11]
+Completed static elaboration
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling module xil_defaultlib.mmcm_top_wiz
+Compiling module unisims_ver.BUFR(BUFR_DIVIDE="3")
+Compiling module xil_defaultlib.MMCM_Top
+Compiling module xil_defaultlib.Reset_Synchronizer
+Compiling module unisims_ver.ODDR(DDR_CLK_EDGE="SAME_EDGE")
+Compiling module xil_defaultlib.Button_Debounce_default
+Compiling module xil_defaultlib.Switch_Filter_default
+Compiling module xil_defaultlib.Run_Controller_default
+Compiling module xil_defaultlib.BIN2BCD_default
+Compiling module xil_defaultlib.SevenSeg_Scan_default
+Compiling module xil_defaultlib.Board_Status_Display(VALIDATE_SI...
+Compiling module xil_defaultlib.ADC_Input_CDC
+Compiling module xil_defaultlib.fir_compiler_lp_600k
+Compiling module xil_defaultlib.AFE_Capture(CONTROLLED_CAPTURE=1...
+Compiling module xil_defaultlib.BRAM_TimeDomain
+Compiling module xil_defaultlib.cordic_sqrt_rms
+Compiling module xil_defaultlib.Time_Domain_Calc_default
+Compiling module xil_defaultlib.flat_top_window_rom
+Compiling module xil_defaultlib.FlatTop_Window_ROM
+Compiling module xil_defaultlib.xfft_8192
+Compiling module xil_defaultlib.cordic_translate_mag
+Compiling module xil_defaultlib.FFT_Processor_default
+Compiling module xil_defaultlib.BRAM_FreqDomain
+Compiling module xil_defaultlib.Component_Analyzer
+Compiling module xil_defaultlib.UART_Tx_default
+Compiling module xil_defaultlib.Display_UART_Command
+Compiling module xil_defaultlib.Display_Unsigned_Divider_default
+Compiling module xil_defaultlib.Display_Wave_Renderer_default
+Compiling module xil_defaultlib.Display_Frame_Calibrator
+Compiling module xil_defaultlib.Display_Spectrum_Renderer
+Compiling module xil_defaultlib.Display_Unsigned_Divider(WIDTH=3...
+Compiling module xil_defaultlib.Display_mV_Formatter
+Compiling module xil_defaultlib.Display_HMI
+Compiling module xil_defaultlib.Capture_Calc_Subsystem(CONTROLLE...
+Compiling module xil_defaultlib.Measurement_Debug_Snapshot
+Compiling module xil_defaultlib.ila_system
+Compiling module xil_defaultlib.G_FPGA_Top_default
+Compiling module xil_defaultlib.Runtime_Calibration(DEFAULT_ENAB...
+Compiling module xil_defaultlib.vio_calibration
+Compiling module xil_defaultlib.G_FPGA_Top(ENABLE_RUNTIME_CALIBR...
+Compiling module xil_defaultlib.HMI_UART_Ctrl(WAVE_POINTS=240,VA...
+Compiling module xil_defaultlib.Capture_Calc_Subsystem(CONTROLLE...
+Compiling module xil_defaultlib.G_FPGA_Top(ENABLE_DISPLAY=0)
+Compiling module xil_defaultlib.G_FPGA_Top(DEFAULT_CALIBRATION_E...
+Compiling module xil_defaultlib.tb_debug_top_contract
+Compiling module xil_defaultlib.glbl
+Built simulation snapshot debug_top_contract
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 30 00:31:29 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/debug_top_contract/xsim_script.tcl
+# xsim {debug_top_contract} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: top port contract VIO on/off, legacy/new HMI, real capture permit blocked during replay (black-box DSP IP)
+$finish called at time : 3 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_debug_top_contract.sv" Line 37
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 30 00:31:31 2026...

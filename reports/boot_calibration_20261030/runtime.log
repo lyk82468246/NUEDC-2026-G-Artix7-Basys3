@@ -1,0 +1,101 @@
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/Runtime_Calibration.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Runtime_Calibration
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_runtime_calibration.sv" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module tb_runtime_calibration
+INFO: [VRFC 10-311] analyzing module tb_runtime_calibration_boot
+INFO: [VRFC 10-311] analyzing module tb_runtime_calibration_zero_boot
+Vivado Simulator v2025.2
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: C:/AMDDesignTools/2025.2/Vivado/bin/unwrapped/win64.o/xelab.exe xil_defaultlib.tb_runtime_calibration -s tb_runtime_calibration 
+Multi-threading is on. Using 6 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+Completed static elaboration
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling module xil_defaultlib.Runtime_Calibration(DEFAULT_VPP_...
+Compiling module xil_defaultlib.tb_runtime_calibration
+Built simulation snapshot tb_runtime_calibration
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 30 00:29:54 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_runtime_calibration/xsim_script.tcl
+# xsim {tb_runtime_calibration} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: runtime calibration BOOT=0 boot bank, first frame, no implicit staging, override, reset restore, atomic epochs, invalid, rounding/saturation
+$finish called at time : 830 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_runtime_calibration.sv" Line 68
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 30 00:29:56 2026...
+Vivado Simulator v2025.2
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: C:/AMDDesignTools/2025.2/Vivado/bin/unwrapped/win64.o/xelab.exe xil_defaultlib.tb_runtime_calibration_boot -s tb_runtime_calibration_boot 
+Multi-threading is on. Using 6 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+Completed static elaboration
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling module xil_defaultlib.Runtime_Calibration(DEFAULT_ENAB...
+Compiling module xil_defaultlib.tb_runtime_calibration(BOOT=1)
+Compiling module xil_defaultlib.tb_runtime_calibration_boot
+Built simulation snapshot tb_runtime_calibration_boot
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 30 00:29:58 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_runtime_calibration_boot/xsim_script.tcl
+# xsim {tb_runtime_calibration_boot} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: runtime calibration BOOT=1 boot bank, first frame, no implicit staging, override, reset restore, atomic epochs, invalid, rounding/saturation
+$finish called at time : 890 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_runtime_calibration.sv" Line 68
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 30 00:30:00 2026...
+Vivado Simulator v2025.2
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: C:/AMDDesignTools/2025.2/Vivado/bin/unwrapped/win64.o/xelab.exe xil_defaultlib.tb_runtime_calibration_zero_boot -s tb_runtime_calibration_zero_boot 
+Multi-threading is on. Using 6 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+Completed static elaboration
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling module xil_defaultlib.Runtime_Calibration(DEFAULT_ENAB...
+Compiling module xil_defaultlib.tb_runtime_calibration(BOOT=2)
+Compiling module xil_defaultlib.tb_runtime_calibration_zero_boot
+Built simulation snapshot tb_runtime_calibration_zero_boot
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 30 00:30:03 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_runtime_calibration_zero_boot/xsim_script.tcl
+# xsim {tb_runtime_calibration_zero_boot} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: runtime calibration BOOT=2 boot bank, first frame, no implicit staging, override, reset restore, atomic epochs, invalid, rounding/saturation
+$finish called at time : 830 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_runtime_calibration.sv" Line 68
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 30 00:30:05 2026...

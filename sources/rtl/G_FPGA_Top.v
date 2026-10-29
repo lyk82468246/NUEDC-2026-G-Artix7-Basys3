@@ -28,13 +28,20 @@ module G_FPGA_Top #(
     parameter integer DISPLAY_STARTUP_CYCLES=50_000_000,DISPLAY_PAGE_REFRESH=16,
     parameter integer DISPLAY_COMMAND_GAP=10000,DISPLAY_PAGE_GAP=5_000_000,
     parameter integer DISPLAY_CURVE_ID=1,DISPLAY_CHANNEL=0,
+    // Verified generator-HIGHZ reference bank, 2026-10-23/24. Q16.16 uV/raw;
+    // NOT independent absolute input calibration. Reset epoch is 0; VIO edits
+    // increment it normally. Set DEFAULT_CALIBRATION_ENABLED=0 to opt out.
+    parameter integer DEFAULT_CALIBRATION_ENABLED=1,
+    parameter [31:0] DEFAULT_VPP_GAIN=32'd3623460,
+    parameter [31:0] DEFAULT_RMS_GAIN=32'd3701829,
+    parameter [31:0] DEFAULT_FFT_GAIN=32'd4194,
     // Raw RMS units, not mV. Keep production default until path calibration.
     // Direct-ADC bench override 16 is supported by measured OFF=3..4 and
     // 50mVpp/100kHz=28. It does NOT reject the noisy external-filter path.
     parameter integer MIN_SIGNAL_RMS = 64,
     // Enable after setup_runtime_calibration.tcl. Feeds the new display's
     // reference-mV bank as well as the diagnostic sidecar; never the DSP path.
-    // Disabled => display voltage fields "--", board/raw diagnostics unchanged.
+    // Disabled => use the static boot bank; raw diagnostics remain unchanged.
     parameter integer ENABLE_RUNTIME_CALIBRATION = 0
 )(
     input  wire       sys_clk,
@@ -256,7 +263,9 @@ module G_FPGA_Top #(
         assign display_vpp_gain=active_vpp;
         assign display_rms_gain=active_rms;
         assign display_fft_gain=active_fft;
-        Runtime_Calibration u_runtime_calibration(
+        Runtime_Calibration #(.DEFAULT_ENABLED(DEFAULT_CALIBRATION_ENABLED),
+            .DEFAULT_VPP_GAIN(DEFAULT_VPP_GAIN),.DEFAULT_RMS_GAIN(DEFAULT_RMS_GAIN),
+            .DEFAULT_FFT_GAIN(DEFAULT_FFT_GAIN)) u_runtime_calibration(
             .clk(clk_algo),.rst(rst_algo),.request_toggle(request),.staging_valid(staged_valid),
             .staging_vpp_gain(staged_vpp),.staging_rms_gain(staged_rms),.staging_fft_gain(staged_fft),
             .sample_valid(measurement_valid),.signal_valid(measurement_signal_valid),
@@ -277,8 +286,11 @@ module G_FPGA_Top #(
             .probe_in8(active_vpp),.probe_in9(active_rms),.probe_in10(active_fft));
     end else begin:g_no_runtime_debug
         assign calibration_epoch=32'd0;
-        assign calibration_enabled=1'b0;
-        assign display_vpp_gain=0;assign display_rms_gain=0;assign display_fft_gain=0;
+        assign calibration_enabled=DEFAULT_CALIBRATION_ENABLED && DEFAULT_VPP_GAIN!=0 &&
+            DEFAULT_RMS_GAIN!=0 && DEFAULT_FFT_GAIN!=0;
+        assign display_vpp_gain=DEFAULT_VPP_GAIN;
+        assign display_rms_gain=DEFAULT_RMS_GAIN;
+        assign display_fft_gain=DEFAULT_FFT_GAIN;
     end endgenerate
 
     wire debug_measurement_valid;

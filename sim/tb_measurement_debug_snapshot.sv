@@ -34,7 +34,8 @@ module tb_measurement_debug_snapshot;
     task sample;begin commit=1;tick();commit=0;end endtask
     initial begin
         repeat(3)tick();assert(!valid && outmags==0 && outid==0) else $fatal(1,"Reset");
-        rst=0;request=1;wait(ack==1);tick();
+        // Wait for reset-time VIO toggle rebasing before a NEW host request.
+        rst=0;repeat(4)tick();request=1;wait(ack==1);tick();
         // Arrange a new bank request pending exactly at the sample edge.
         request=0;tick();tick();sample();
         assert(valid && outepoch==1 && result_epoch==1 && epoch==1)
@@ -65,8 +66,8 @@ module tb_measurement_debug_snapshot;
         assert(valid && outcount==0 && outbins==0 && outmags==0 && outbin==0 && outmag==0 &&
                outpp==1 && outrms==2 && !metadata[0]) else $fatal(1,"Invalid packet not masked");
         tick();sig=1;present=0;count=0;sample();
-        assert(outepoch==0 && metadata[2:1]==0 && outcount==0 && outmags==0)
-            else $fatal(1,"Disabled VIO variant");
+        assert(outepoch==0 && metadata[2:1]==2'b01 && outcount==0 && outmags==0)
+            else $fatal(1,"Static calibration without VIO lost its enabled flag");
         rst=1;tick();assert(!valid && outpp==0 && outmags==0 && metadata==0) else $fatal(1,"Reset active");
         $display("PASS: atomic debug snapshot widths/slots/invalid/reset/epoch collision");$finish;
     end

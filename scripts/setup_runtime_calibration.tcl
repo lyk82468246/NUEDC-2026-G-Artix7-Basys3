@@ -31,4 +31,5 @@ foreach rc_generic [get_property generic [get_filesets sources_1]] {
 lappend rc_generics ENABLE_RUNTIME_CALIBRATION=1
 set_property generic $rc_generics [get_filesets sources_1]
 puts "Runtime calibration registered/enabled. User must manually build and program new bit+LTX."
-puts "All gains and calibration-valid initialize to zero. New display voltage fields stay -- until a bank is loaded and a new frame measured. ILA ports unchanged."
+puts "Board RTL boot bank: Vpp=3623460 RMS=3701829 FFT=4194 Q16.16 reference uV/raw, enabled at epoch 0."
+puts "VIO staging still initializes to zero; it applies ONLY after an explicit request toggle. Reset restores RTL defaults. ILA ports unchanged."
