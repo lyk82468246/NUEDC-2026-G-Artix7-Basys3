@@ -19,6 +19,10 @@ module Run_Controller #(
     output reg [1:0] mode_active,
     output reg single_active, three_cycles_active,
     output reg [1:0] view_active,
+    // UI requests may change during HOLD; measurement mode/view_active keep
+    // their original transaction-latched semantics for board diagnostics.
+    output wire display_three_cycles_request,
+    output wire [1:0] display_view_request,
     output reg [31:0] frame_id,
     output wire result_fresh,
     output reg [3:0] error_code,
@@ -46,6 +50,8 @@ module Run_Controller #(
     // Never pass the previous HMI packet's still-high release to a new frame.
     assign frame_release=(state==IDLE || state==ARMED);
     assign state_debug=state;
+    assign display_three_cycles_request=cycles_requested;
+    assign display_view_request=view_requested;
     assign result_fresh=have_result && (single_active || result_age<TIMEOUT_CYCLES-1);
     always @(posedge clk) begin
         if(rst) begin

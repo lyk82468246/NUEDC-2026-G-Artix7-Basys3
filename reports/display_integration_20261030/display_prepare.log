@@ -1,0 +1,132 @@
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/BIN2BCD.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module BIN2BCD
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/Display_Unsigned_Divider.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Display_Unsigned_Divider
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/Display_Frame_Calibrator.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Display_Frame_Calibrator
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/Display_Wave_Renderer.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Display_Wave_Renderer
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/Display_Spectrum_Renderer.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Display_Spectrum_Renderer
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/Display_mV_Formatter.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Display_mV_Formatter
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_prepare.sv" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module tb_display_prepare
+INFO: [VRFC 10-311] analyzing module tb_display_prepare_compact
+INFO: [VRFC 10-311] analyzing module tb_display_prepare_full_y
+Vivado Simulator v2025.2
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: C:/AMDDesignTools/2025.2/Vivado/bin/unwrapped/win64.o/xelab.exe xil_defaultlib.tb_display_prepare -s tb_display_prepare 
+Multi-threading is on. Using 6 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+Completed static elaboration
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling module xil_defaultlib.Display_Unsigned_Divider(WIDTH=1...
+Compiling module xil_defaultlib.Display_Frame_Calibrator
+Compiling module xil_defaultlib.Display_Unsigned_Divider(WIDTH=3...
+Compiling module xil_defaultlib.BIN2BCD_default
+Compiling module xil_defaultlib.Display_mV_Formatter
+Compiling module xil_defaultlib.Display_Unsigned_Divider_default
+Compiling module xil_defaultlib.Display_Wave_Renderer_default
+Compiling module xil_defaultlib.Display_Spectrum_Renderer
+Compiling module xil_defaultlib.tb_display_prepare
+Built simulation snapshot tb_display_prepare
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Thu Oct 29 23:59:26 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_display_prepare/xsim_script.tcl
+# xsim {tb_display_prepare} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: display preparation 240x160 divider/calibration/wave/spectrum/mV, backpressure and invalid/reset
+$finish called at time : 1513970 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_prepare.sv" Line 228
+exit
+INFO: [Common 17-206] Exiting xsim at Thu Oct 29 23:59:28 2026...
+Vivado Simulator v2025.2
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: C:/AMDDesignTools/2025.2/Vivado/bin/unwrapped/win64.o/xelab.exe xil_defaultlib.tb_display_prepare_compact -s tb_display_prepare_compact 
+Multi-threading is on. Using 6 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+Completed static elaboration
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling module xil_defaultlib.Display_Unsigned_Divider(WIDTH=1...
+Compiling module xil_defaultlib.Display_Frame_Calibrator
+Compiling module xil_defaultlib.Display_Unsigned_Divider(WIDTH=3...
+Compiling module xil_defaultlib.BIN2BCD_default
+Compiling module xil_defaultlib.Display_mV_Formatter
+Compiling module xil_defaultlib.Display_Unsigned_Divider_default
+Compiling module xil_defaultlib.Display_Wave_Renderer(W=200,H=12...
+Compiling module xil_defaultlib.Display_Spectrum_Renderer(W=200,...
+Compiling module xil_defaultlib.tb_display_prepare(W=200,H=128)
+Compiling module xil_defaultlib.tb_display_prepare_compact
+Built simulation snapshot tb_display_prepare_compact
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Thu Oct 29 23:59:35 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_display_prepare_compact/xsim_script.tcl
+# xsim {tb_display_prepare_compact} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: display preparation 200x128 divider/calibration/wave/spectrum/mV, backpressure and invalid/reset
+$finish called at time : 1374970 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_prepare.sv" Line 228
+exit
+INFO: [Common 17-206] Exiting xsim at Thu Oct 29 23:59:38 2026...
+Vivado Simulator v2025.2
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: C:/AMDDesignTools/2025.2/Vivado/bin/unwrapped/win64.o/xelab.exe xil_defaultlib.tb_display_prepare_full_y -s tb_display_prepare_full_y 
+Multi-threading is on. Using 6 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+Completed static elaboration
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling module xil_defaultlib.Display_Unsigned_Divider(WIDTH=1...
+Compiling module xil_defaultlib.Display_Frame_Calibrator
+Compiling module xil_defaultlib.Display_Unsigned_Divider(WIDTH=3...
+Compiling module xil_defaultlib.BIN2BCD_default
+Compiling module xil_defaultlib.Display_mV_Formatter
+Compiling module xil_defaultlib.Display_Unsigned_Divider_default
+Compiling module xil_defaultlib.Display_Wave_Renderer(W=17,H=256...
+Compiling module xil_defaultlib.Display_Spectrum_Renderer(W=17,H...
+Compiling module xil_defaultlib.tb_display_prepare(W=17,H=256)
+Compiling module xil_defaultlib.tb_display_prepare_full_y
+Built simulation snapshot tb_display_prepare_full_y
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Thu Oct 29 23:59:49 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_display_prepare_full_y/xsim_script.tcl
+# xsim {tb_display_prepare_full_y} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: display preparation 17x256 divider/calibration/wave/spectrum/mV, backpressure and invalid/reset
+$finish called at time : 739120 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_prepare.sv" Line 228
+exit
+INFO: [Common 17-206] Exiting xsim at Thu Oct 29 23:59:52 2026...

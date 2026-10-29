@@ -31,4 +31,4 @@ foreach rc_generic [get_property generic [get_filesets sources_1]] {
 lappend rc_generics ENABLE_RUNTIME_CALIBRATION=1
 set_property generic $rc_generics [get_filesets sources_1]
 puts "Runtime calibration registered/enabled. User must manually build and program new bit+LTX."
-puts "All gains and calibration-valid initialize to zero. Existing ILA and raw HMI unchanged."
+puts "All gains and calibration-valid initialize to zero. New display voltage fields stay -- until a bank is loaded and a new frame measured. ILA ports unchanged."

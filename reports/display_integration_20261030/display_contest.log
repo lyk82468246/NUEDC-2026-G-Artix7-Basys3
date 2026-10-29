@@ -1,0 +1,337 @@
+Generated 7 OFFLINE cases in C:\Users\Joe\Documents\Verilog\G_FPGA\test_results\contest_reference; no hardware calibration implied
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/Switch_Filter.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Switch_Filter
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/Run_Controller.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Run_Controller
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/BIN2BCD.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module BIN2BCD
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/SevenSeg_Scan.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module SevenSeg_Scan
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/Board_Status_Display.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Board_Status_Display
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/Button_Debounce.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Button_Debounce
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/AFE_Capture.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module AFE_Capture
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/Component_Analyzer.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Component_Analyzer
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/Measurement_Calibrator.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Measurement_Calibrator
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/HMI_UART_Ctrl.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module HMI_UART_Ctrl
+INFO: [VRFC 10-311] analyzing module UART_Tx
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_run_controller.sv" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module tb_run_controller
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_board_panel.sv" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module tb_board_panel
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_afe_frame_ownership.sv" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module tb_afe_frame_ownership
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_afe_small_signal.sv" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module fir_compiler_lp_600k
+INFO: [VRFC 10-311] analyzing module tb_afe_small_signal
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_component_analyzer.sv" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module tb_component_analyzer
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_measurement_calibrator.sv" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module tb_measurement_calibrator
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_hmi_signal_valid.sv" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module tb_hmi_signal_valid
+INFO: [VRFC 10-311] analyzing module tb_hmi_signal_valid_direct
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_hmi_uart.sv" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module tb_hmi_uart
+Vivado Simulator v2025.2
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: C:/AMDDesignTools/2025.2/Vivado/bin/unwrapped/win64.o/xelab.exe -debug typical -s tb_run_controller xil_defaultlib.tb_run_controller 
+Multi-threading is on. Using 6 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+Completed static elaboration
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling module xil_defaultlib.Run_Controller(TIMEOUT_CYCLES=10...
+Compiling module xil_defaultlib.tb_run_controller
+Built simulation snapshot tb_run_controller
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Thu Oct 29 23:59:26 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_run_controller/xsim_script.tcl
+# xsim {tb_run_controller} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: tb_run_controller priority16, single, queued request, stale release, deadlines
+$finish called at time : 5590 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_run_controller.sv" Line 69
+exit
+INFO: [Common 17-206] Exiting xsim at Thu Oct 29 23:59:28 2026...
+Vivado Simulator v2025.2
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: C:/AMDDesignTools/2025.2/Vivado/bin/unwrapped/win64.o/xelab.exe -debug typical -s tb_board_panel xil_defaultlib.tb_board_panel 
+Multi-threading is on. Using 6 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+Completed static elaboration
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling module xil_defaultlib.Switch_Filter(STABLE_CYCLES=4)
+Compiling module xil_defaultlib.Button_Debounce(CLK_FREQ_HZ=1000...
+Compiling module xil_defaultlib.BIN2BCD_default
+Compiling module xil_defaultlib.SevenSeg_Scan(SCAN_CYCLES=8)
+Compiling module xil_defaultlib.Board_Status_Display(CLK_HZ=1000...
+Compiling module xil_defaultlib.tb_board_panel
+Built simulation snapshot tb_board_panel
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Thu Oct 29 23:59:33 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_board_panel/xsim_script.tcl
+# xsim {tb_board_panel} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: tb_board_panel switch32, bounce, active-low scan, kHz point, OFLO and invalid
+$finish called at time : 72990 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_board_panel.sv" Line 107
+exit
+INFO: [Common 17-206] Exiting xsim at Thu Oct 29 23:59:36 2026...
+Vivado Simulator v2025.2
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: C:/AMDDesignTools/2025.2/Vivado/bin/unwrapped/win64.o/xelab.exe -debug typical -s tb_afe_frame_ownership xil_defaultlib.tb_afe_frame_ownership 
+Multi-threading is on. Using 6 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+Completed static elaboration
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling module xil_defaultlib.fir_compiler_lp_600k
+Compiling module xil_defaultlib.AFE_Capture(FRAME_LENGTH=16,ADDR...
+Compiling module xil_defaultlib.tb_afe_frame_ownership
+Built simulation snapshot tb_afe_frame_ownership
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Thu Oct 29 23:59:41 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_afe_frame_ownership/xsim_script.tcl
+# xsim {tb_afe_frame_ownership} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: tb_afe_frame_ownership no-permit, exact16 writes, stale release and rearm
+$finish called at time : 5520 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_afe_frame_ownership.sv" Line 38
+exit
+INFO: [Common 17-206] Exiting xsim at Thu Oct 29 23:59:43 2026...
+Vivado Simulator v2025.2
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: C:/AMDDesignTools/2025.2/Vivado/bin/unwrapped/win64.o/xelab.exe -debug typical -s tb_afe_small_signal xil_defaultlib.tb_afe_small_signal 
+Multi-threading is on. Using 6 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+WARNING: [VRFC 10-3645] port 'capture_enable' remains unconnected for this instance [C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_afe_small_signal.sv:36]
+Completed static elaboration
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling module xil_defaultlib.fir_compiler_lp_600k
+Compiling module xil_defaultlib.AFE_Capture(FRAME_LENGTH=256,ADD...
+Compiling module xil_defaultlib.tb_afe_small_signal
+Built simulation snapshot tb_afe_small_signal
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Thu Oct 29 23:59:51 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_afe_small_signal/xsim_script.tcl
+# xsim {tb_afe_small_signal} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+AFE: post_frames=77 samples=19692 sum=9846 min=-400 max=401
+PASS: tb_afe_small_signal continuous rearm and near-zero mean
+$finish called at time : 1950300 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_afe_small_signal.sv" Line 86
+exit
+INFO: [Common 17-206] Exiting xsim at Thu Oct 29 23:59:54 2026...
+Vivado Simulator v2025.2
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: C:/AMDDesignTools/2025.2/Vivado/bin/unwrapped/win64.o/xelab.exe -debug typical -s tb_component_analyzer xil_defaultlib.tb_component_analyzer 
+Multi-threading is on. Using 6 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+WARNING: [VRFC 10-3645] port 'noise_mean_raw' remains unconnected for this instance [C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_component_analyzer.sv:11]
+Completed static elaboration
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling module xil_defaultlib.Component_Analyzer
+Compiling module xil_defaultlib.tb_component_analyzer
+Built simulation snapshot tb_component_analyzer
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Thu Oct 29 23:59:57 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_component_analyzer/xsim_script.tcl
+# xsim {tb_component_analyzer} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: tb_component_analyzer seven composite FFT fixtures, strong harmonics, off-bin, silence and inconsistent peaks
+$finish called at time : 1091040 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_component_analyzer.sv" Line 75
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 30 00:00:00 2026...
+Vivado Simulator v2025.2
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: C:/AMDDesignTools/2025.2/Vivado/bin/unwrapped/win64.o/xelab.exe -debug typical -s tb_measurement_calibrator xil_defaultlib.tb_measurement_calibrator 
+Multi-threading is on. Using 6 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+Completed static elaboration
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling module xil_defaultlib.Measurement_Calibrator
+Compiling module xil_defaultlib.tb_measurement_calibrator
+Built simulation snapshot tb_measurement_calibrator
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 30 00:00:02 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_measurement_calibrator/xsim_script.tcl
+# xsim {tb_measurement_calibrator} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: tb_measurement_calibrator Q24 units, rounding, atomic gains, saturation and invalid calibration
+$finish called at time : 300 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_measurement_calibrator.sv" Line 27
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 30 00:00:05 2026...
+Vivado Simulator v2025.2
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: C:/AMDDesignTools/2025.2/Vivado/bin/unwrapped/win64.o/xelab.exe -debug typical -s tb_hmi_signal_valid xil_defaultlib.tb_hmi_signal_valid 
+Multi-threading is on. Using 6 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+Completed static elaboration
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling module xil_defaultlib.BIN2BCD_default
+Compiling module xil_defaultlib.UART_Tx(CLK_FREQ_HZ=1152000)
+Compiling module xil_defaultlib.HMI_UART_Ctrl(CLK_FREQ_HZ=115200...
+Compiling module xil_defaultlib.tb_hmi_signal_valid
+Built simulation snapshot tb_hmi_signal_valid
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 30 00:00:08 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_hmi_signal_valid/xsim_script.tcl
+# xsim {tb_hmi_signal_valid} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: tb_hmi_signal_valid MIN_RMS=64 atomic ordering, threshold boundaries, measured direct levels, clear-only invalid, stop-bit release and recovery
+$finish called at time : 729730 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_hmi_signal_valid.sv" Line 70
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 30 00:00:10 2026...
+Vivado Simulator v2025.2
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: C:/AMDDesignTools/2025.2/Vivado/bin/unwrapped/win64.o/xelab.exe -debug typical -s tb_hmi_uart xil_defaultlib.tb_hmi_uart 
+Multi-threading is on. Using 6 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+WARNING: [VRFC 10-3645] port 'signal_valid_in' remains unconnected for this instance [C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_hmi_uart.sv:86]
+Completed static elaboration
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling module xil_defaultlib.BIN2BCD_default
+Compiling module xil_defaultlib.UART_Tx(CLK_FREQ_HZ=1152000)
+Compiling module xil_defaultlib.HMI_UART_Ctrl(CLK_FREQ_HZ=115200...
+Compiling module xil_defaultlib.tb_hmi_uart
+Built simulation snapshot tb_hmi_uart
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 30 00:00:14 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_hmi_uart/xsim_script.tcl
+# xsim {tb_hmi_uart} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: tb_hmi_uart decoded 184 UART bytes and all BIN2BCD/HMI checks.
+$finish called at time : 187835 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_hmi_uart.sv" Line 386
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 30 00:00:16 2026...
+Vivado Simulator v2025.2
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: C:/AMDDesignTools/2025.2/Vivado/bin/unwrapped/win64.o/xelab.exe -debug typical -s tb_hmi_signal_valid_direct xil_defaultlib.tb_hmi_signal_valid_direct 
+Multi-threading is on. Using 6 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+Completed static elaboration
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling module xil_defaultlib.BIN2BCD_default
+Compiling module xil_defaultlib.UART_Tx(CLK_FREQ_HZ=1152000)
+Compiling module xil_defaultlib.HMI_UART_Ctrl(CLK_FREQ_HZ=115200...
+Compiling module xil_defaultlib.tb_hmi_signal_valid(MIN_RMS=16)
+Compiling module xil_defaultlib.tb_hmi_signal_valid_direct
+Built simulation snapshot tb_hmi_signal_valid_direct
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 30 00:00:19 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_hmi_signal_valid_direct/xsim_script.tcl
+# xsim {tb_hmi_signal_valid_direct} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: tb_hmi_signal_valid MIN_RMS=16 atomic ordering, threshold boundaries, measured direct levels, clear-only invalid, stop-bit release and recovery
+$finish called at time : 856990 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_hmi_signal_valid.sv" Line 70
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 30 00:00:22 2026...
+PASS: all contest control/AFE simulations

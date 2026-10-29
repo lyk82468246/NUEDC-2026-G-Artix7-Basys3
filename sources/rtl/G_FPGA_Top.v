@@ -22,12 +22,19 @@ module G_FPGA_Top #(
     parameter integer SWITCH_STABLE_CYCLES = 2_000_000,
     // PLACEHOLDER: portrait 240x320 HMI. Confirm actual plot width before use.
     parameter integer WAVE_POINTS = 240,
+    parameter integer ENABLE_DISPLAY=1,
+    parameter integer DISPLAY_HEIGHT=160,DISPLAY_INVERT_Y=0,DISPLAY_STATUS=0,
+    parameter integer SCREEN_FFT_VIEW=3,
+    parameter integer DISPLAY_STARTUP_CYCLES=50_000_000,DISPLAY_PAGE_REFRESH=16,
+    parameter integer DISPLAY_COMMAND_GAP=10000,DISPLAY_PAGE_GAP=5_000_000,
+    parameter integer DISPLAY_CURVE_ID=1,DISPLAY_CHANNEL=0,
     // Raw RMS units, not mV. Keep production default until path calibration.
     // Direct-ADC bench override 16 is supported by measured OFF=3..4 and
     // 50mVpp/100kHz=28. It does NOT reject the noisy external-filter path.
     parameter integer MIN_SIGNAL_RMS = 64,
-    // Optional sidecar only. Enable after setup_runtime_calibration.tcl.
-    // Default keeps the existing top/IP interface and raw HMI unchanged.
+    // Enable after setup_runtime_calibration.tcl. Feeds the new display's
+    // reference-mV bank as well as the diagnostic sidecar; never the DSP path.
+    // Disabled => display voltage fields "--", board/raw diagnostics unchanged.
     parameter integer ENABLE_RUNTIME_CALIBRATION = 0
 )(
     input  wire       sys_clk,
@@ -146,6 +153,9 @@ module G_FPGA_Top #(
     wire [95:0] component_magnitudes;
     wire [31:0] calibration_epoch;
     wire calibration_enabled;
+    wire [31:0] display_vpp_gain,display_rms_gain,display_fft_gain;
+    wire display_cycles_request;
+    wire [1:0] display_view_request;
     // Sticky stage events for the current transaction survive a timeout.
     // Clear at frame START, not frame completion or the next arm attempt.
     reg [4:0] diagnostic_events;
@@ -170,6 +180,7 @@ module G_FPGA_Top #(
         .capture_enable(capture_enable),.frame_release(controller_release),
         .mode_active(mode_active),.single_active(single_active),
         .three_cycles_active(display_three_cycles),.view_active(view_active),
+        .display_three_cycles_request(display_cycles_request),.display_view_request(display_view_request),
         .frame_id(frame_id),.result_fresh(result_fresh),.error_code(error_code),
         .latency_cycles(latency_cycles),.state_debug(run_state));
 
@@ -184,6 +195,11 @@ module G_FPGA_Top #(
         .vpp_raw(vpp_out),.rms_raw(vrms_out),.led(led),.seg(seg),.an(an),.dp(dp));
 
     Capture_Calc_Subsystem #(.CONTROLLED_CAPTURE(1),.WAVE_POINTS(WAVE_POINTS),
+        .ENABLE_DISPLAY(ENABLE_DISPLAY),.DISPLAY_HEIGHT(DISPLAY_HEIGHT),
+        .DISPLAY_INVERT_Y(DISPLAY_INVERT_Y),.DISPLAY_STATUS(DISPLAY_STATUS),
+        .DISPLAY_STARTUP_CYCLES(DISPLAY_STARTUP_CYCLES),.DISPLAY_PAGE_REFRESH(DISPLAY_PAGE_REFRESH),
+        .DISPLAY_COMMAND_GAP(DISPLAY_COMMAND_GAP),.DISPLAY_PAGE_GAP(DISPLAY_PAGE_GAP),
+        .DISPLAY_CURVE_ID(DISPLAY_CURVE_ID),.DISPLAY_CHANNEL(DISPLAY_CHANNEL),
         .MIN_SIGNAL_RMS(MIN_SIGNAL_RMS)) u_capture_calc_subsystem (
         .adc_clk             (clk_adc),
         .calc_clk            (clk_algo),
@@ -194,6 +210,11 @@ module G_FPGA_Top #(
         .capture_enable(capture_enable),
         .controller_release(controller_release),
         .mode_active(mode_active),
+        .display_page_fft(display_view_request==SCREEN_FFT_VIEW),
+        .display_cycles_request(display_cycles_request),.single_mode(single_active),
+        .display_frame_id(frame_id),.display_calibration_epoch(calibration_epoch),
+        .display_vpp_gain(display_vpp_gain),.display_rms_gain(display_rms_gain),.display_fft_gain(display_fft_gain),
+        .display_calibration_valid(calibration_enabled),.display_error_code(error_code),
         .capture_start(capture_start),
         .packet_finished(packet_finished),
         .acquisition_fault(acquisition_fault),
@@ -232,6 +253,9 @@ module G_FPGA_Top #(
         wire [7:0] flags={3'd0,overrun,busy,overflow,valid,active_valid};
         assign calibration_epoch=epoch;
         assign calibration_enabled=active_valid;
+        assign display_vpp_gain=active_vpp;
+        assign display_rms_gain=active_rms;
+        assign display_fft_gain=active_fft;
         Runtime_Calibration u_runtime_calibration(
             .clk(clk_algo),.rst(rst_algo),.request_toggle(request),.staging_valid(staged_valid),
             .staging_vpp_gain(staged_vpp),.staging_rms_gain(staged_rms),.staging_fft_gain(staged_fft),
@@ -254,6 +278,7 @@ module G_FPGA_Top #(
     end else begin:g_no_runtime_debug
         assign calibration_epoch=32'd0;
         assign calibration_enabled=1'b0;
+        assign display_vpp_gain=0;assign display_rms_gain=0;assign display_fft_gain=0;
     end endgenerate
 
     wire debug_measurement_valid;

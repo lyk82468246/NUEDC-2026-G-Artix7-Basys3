@@ -8,7 +8,7 @@
 //      -> BRAM_TimeDomain（时域统计/FFT/HMI 三个独立读副本）
 //      -> Time_Domain_Calc
 //      -> FFT_Processor -> BRAM_FreqDomain -> Peak_Search
-//      -> HMI_UART_Ctrl -> UART TX
+//      -> Display_HMI -> UART TX (board default); legacy HMI_UART_Ctrl optional
 //
 // 该模块故意不包含板级时钟管理；最终 Basys 3 顶层负责产生 adc_clk 和
 // calc_clk。ADC 随路时钟域只负责并行总线采样寄存器；ADC_Input_CDC 将样本
@@ -19,12 +19,17 @@
 // frame_release 释放捕获器，再允许下一帧启动。这样三个消费者读取的是同一
 // 个完整快照，而不会在慢速 UART 发送期间被下一帧覆盖。
 //
-// 它仍然是没有板级引脚约束的联调 synthesis top，后续只需在更外层加入
-// MMCM、ADC 引脚、UART 引脚和实际 Basys 3 XDC 即可。
+// 板级时钟、控制和引脚由外层 G_FPGA_Top 提供。显示独占第三读副本，
+// 保持态重绘也会抑制新的采集许可；显示busy时不允许覆盖源帧。
 //==============================================================================
 module Capture_Calc_Subsystem #(
     parameter integer CONTROLLED_CAPTURE=0,
     parameter integer WAVE_POINTS=400,
+    parameter integer ENABLE_DISPLAY=0,DISPLAY_HEIGHT=160,DISPLAY_INVERT_Y=0,
+    parameter integer DISPLAY_STATUS=0,
+    parameter integer DISPLAY_STARTUP_CYCLES=50_000_000,DISPLAY_PAGE_REFRESH=16,
+    parameter integer DISPLAY_COMMAND_GAP=10000,DISPLAY_PAGE_GAP=5_000_000,
+    parameter integer DISPLAY_CURVE_ID=1,DISPLAY_CHANNEL=0,
     parameter integer MIN_SIGNAL_RMS=64
 )(
     input  wire             adc_clk,
@@ -36,6 +41,11 @@ module Capture_Calc_Subsystem #(
     input  wire             capture_enable,
     input  wire             controller_release,
     input  wire [1:0]       mode_active,
+    input wire display_page_fft,display_cycles_request,single_mode,
+    input wire [31:0] display_frame_id,display_calibration_epoch,
+    input wire [31:0] display_vpp_gain,display_rms_gain,display_fft_gain,
+    input wire display_calibration_valid,
+    input wire [3:0] display_error_code,
 
     output wire [16:0]      vpp_out,
     output wire [15:0]      vrms_out,
@@ -154,7 +164,9 @@ module Capture_Calc_Subsystem #(
         .adc_data         (adc_data_calc),
         .sample_valid     (adc_sample_valid_calc),
         .frame_release    (frame_release),
-        .capture_enable   (capture_enable),
+        // The retained frame may be replayed while the run controller is idle.
+        // A pending arm waits for the replay UART drain before writing BRAM.
+        .capture_enable   (capture_enable && (!ENABLE_DISPLAY || !hmi_busy)),
         .bram_wr_en       (bram_wr_en),
         .bram_wr_addr     (bram_wr_addr),
         .bram_wr_data     (bram_wr_data),
@@ -269,6 +281,28 @@ module Capture_Calc_Subsystem #(
     );
     end endgenerate
 
+    generate if(ENABLE_DISPLAY) begin:g_display
+        Display_HMI #(.W(WAVE_POINTS),.H(DISPLAY_HEIGHT),.INVERT_Y(DISPLAY_INVERT_Y),
+            .ENABLE_STATUS(DISPLAY_STATUS),.STARTUP_CYCLES(DISPLAY_STARTUP_CYCLES),
+            .PAGE_REFRESH_FRAMES(DISPLAY_PAGE_REFRESH),.COMMAND_GAP_CYCLES(DISPLAY_COMMAND_GAP),
+            .PAGE_GAP_CYCLES(DISPLAY_PAGE_GAP),.CURVE_ID(DISPLAY_CURVE_ID),.CHANNEL_ID(DISPLAY_CHANNEL)) u_display(
+            .clk(calc_clk),.rst(rst),.capture_start(frame_start_pulse),
+            .allow_redraw(!capture_enable && !capture_busy && CONTROLLED_CAPTURE),
+            .time_result_valid(result_valid),.peak_result_valid(peak_result_valid),
+            .vpp_raw(vpp_out),.rms_raw(vrms_out),.signal_valid(qualified),
+            .component_count(CONTROLLED_CAPTURE?analyzed_count:2'd1),
+            .component_bins(CONTROLLED_CAPTURE?analyzed_bins:{24'd0,analyzed_index}),
+            .component_magnitudes(CONTROLLED_CAPTURE?analyzed_magnitudes:{64'd0,analyzed_magnitude}),
+            .frame_id(display_frame_id),.calibration_epoch(display_calibration_epoch),
+            .vpp_gain(display_vpp_gain),.rms_gain(display_rms_gain),.fft_gain(display_fft_gain),
+            .calibration_valid(display_calibration_valid),.page_fft_request(display_page_fft),
+            .three_cycles_request(display_cycles_request),.single_mode(single_mode),
+            .mode(mode_active),.error_code(display_error_code),
+            .time_rd_en(hmi_time_rd_en),.time_rd_addr(hmi_time_rd_addr),.time_rd_data(hmi_time_rd_data),
+            .uart_tx(uart_tx),.tx_idle(tx_idle),.busy(hmi_busy),.frame_release(hmi_frame_release),
+            .measurement_valid(measurement_valid),.signal_valid_out(signal_valid_out),
+            .waveform_done(waveform_done),.state_debug(uart_state));
+    end else begin:g_legacy_hmi
     HMI_UART_Ctrl #(
         .CLK_FREQ_HZ     (100_000_000),
         .BAUD_RATE       (115_200),
@@ -302,5 +336,6 @@ module Capture_Calc_Subsystem #(
         .measurement_valid (measurement_valid),
         .state_debug       (uart_state)
     );
+    end endgenerate
 
 endmodule

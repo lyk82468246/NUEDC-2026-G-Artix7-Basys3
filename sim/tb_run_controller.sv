@@ -6,6 +6,8 @@ module tb_run_controller;
     reg [3:0] switches=0;
     wire ce,release_frame,fresh,sm,three;
     wire [1:0] mode,view;
+    wire cycles_request;
+    wire [1:0] view_request;
     wire [31:0] frame_id,latency;
     wire [3:0] error;
     wire [2:0] state;
@@ -16,6 +18,7 @@ module tb_run_controller;
         .measurement_valid(mv),.packet_finished(finished),.acquisition_fault(fault),
         .capture_enable(ce),.frame_release(release_frame),.mode_active(mode),
         .single_active(sm),.three_cycles_active(three),.view_active(view),
+        .display_three_cycles_request(cycles_request),.display_view_request(view_request),
         .frame_id(frame_id),.result_fresh(fresh),.error_code(error),
         .latency_cycles(latency),.state_debug(state));
     task tick; begin @(negedge clk); end endtask
@@ -49,6 +52,7 @@ module tb_run_controller;
         // A request queued during RUN must survive until the next safe boundary.
         request(); capture(); start=1; cyc=1; right=1; tick(); start=0;cyc=0;right=0;
         assert(!three && view==0) else $fatal(1,"Active options mutated");
+        assert(cycles_request && view_request==1) else $fatal(1,"Live display requests lost during RUN/HOLD");
         packet(); tick();
         assert(ce && three && view==1 && frame_id==18) else $fatal(1,"Queued request/options lost");
         capture(); packet();

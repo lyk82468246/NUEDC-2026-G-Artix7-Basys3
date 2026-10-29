@@ -6,7 +6,7 @@ import xml.etree.ElementTree as ET
 
 
 NAMES=('Display_Unsigned_Divider','Display_Frame_Calibrator','Display_Wave_Renderer',
-       'Display_Spectrum_Renderer','Display_mV_Formatter')
+       'Display_Spectrum_Renderer','Display_mV_Formatter','Display_UART_Command','Display_HMI')
 
 
 class TestDisplayPrepareRegistration(unittest.TestCase):
