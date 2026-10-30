@@ -19,3 +19,13 @@ clockInfo.txt
 __pycache__/
 test_results/
 .lab_locks/
+
+# Workspace scratch files and local configuration-Flash exports.
+# Release artifacts in a dedicated subdirectory can still be archived.
+/tmp/
+/*.mcs
+/*.prm
+
+# Vivado's automatic, machine-local incremental synthesis checkpoints.
+# Keep sources/ip products and authored project configuration tracked.
+/G_FPGA.srcs/utils_1/imports/
