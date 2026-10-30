@@ -1,0 +1,53 @@
+XSim 2025.2 behavioral simulation results, 2026-10-30
+No synthesis, implementation, bit generation or programming.
+
+[tb_display_alignment]
+case PASS bin=20.000000 phase=0.000000 harmonics=17 three=0 lock=1
+case PASS bin=20.370000 phase=1.700000 harmonics=17 three=1 lock=1
+case PASS bin=20.370000 phase=4.600000 harmonics=17 three=1 lock=1
+case PASS bin=200.400000 phase=5.900000 harmonics=5 three=0 lock=1
+case PASS bin=999.700000 phase=2.800000 harmonics=2 three=1 lock=1
+case PASS bin=20.200000 phase=3.100000 harmonics=17 three=1 lock=1
+case PASS bin=20.000000 phase=0.900000 harmonics=17 three=0 lock=0
+PASS: fundamental phase/period, off-grid and strong harmonics, exact original-frame pixels, backpressure, confidence fallback
+$finish called at time : 12957370 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_alignment.sv" Line 99
+
+[tb_display_hmi]
+PASS: UART spec including us/FFT midpoint labels, zero-origin plot, page policy, atomic gains, all pixels, HOLD, invalid/CAL, reset/STOP drain
+$finish called at time : 6955700 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_hmi.sv" Line 259
+
+[tb_display_hmi_full]
+PASS: UART spec including us/FFT midpoint labels, zero-origin plot, page policy, atomic gains, all pixels, HOLD, invalid/CAL, reset/STOP drain
+$finish called at time : 63770220 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_hmi.sv" Line 259
+
+[tb_display_hmi_inverted]
+PASS: UART spec including us/FFT midpoint labels, zero-origin plot, page policy, atomic gains, all pixels, HOLD, invalid/CAL, reset/STOP drain
+$finish called at time : 7054250 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_hmi.sv" Line 259
+
+[tb_display_hmi_no_guard]
+PASS: UART spec including us/FFT midpoint labels, zero-origin plot, page policy, atomic gains, all pixels, HOLD, invalid/CAL, reset/STOP drain
+$finish called at time : 6396050 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_hmi.sv" Line 259
+
+[tb_display_aligned_hmi]
+PASS: full-size aligned composite HMI, actual UART fine-period labels, same-page suppression and refresh transaction
+$finish called at time : 10145670 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_aligned_hmi.sv" Line 81
+
+[tb_display_prepare]
+PASS: display preparation 240x160 divider/calibration/wave/spectrum/mV, backpressure and invalid/reset
+$finish called at time : 1514890 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_prepare.sv" Line 228
+
+[tb_display_prepare_compact]
+PASS: display preparation 200x128 divider/calibration/wave/spectrum/mV, backpressure and invalid/reset
+$finish called at time : 1375890 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_prepare.sv" Line 228
+
+[tb_display_prepare_full_y]
+PASS: display preparation 17x256 divider/calibration/wave/spectrum/mV, backpressure and invalid/reset
+$finish called at time : 739990 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_prepare.sv" Line 228
+
+[measurement_debug]
+PASS: atomic debug snapshot widths/slots/invalid/reset/epoch collision
+$finish called at time : 540 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_measurement_debug_snapshot.sv" Line 72
+
+[debug_top_contract]
+PASS: top port contract VIO on/off, legacy/new HMI, real capture permit blocked during replay (black-box DSP IP)
+$finish called at time : 3 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_debug_top_contract.sv" Line 37

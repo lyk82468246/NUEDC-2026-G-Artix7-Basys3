@@ -11,9 +11,11 @@ module Display_HMI #(
     parameter integer INVERT_Y=0,ENABLE_STATUS=0,
     parameter integer STARTUP_CYCLES=50_000_000,
     parameter integer COMMAND_GAP_CYCLES=10000,PAGE_GAP_CYCLES=5_000_000,
-    // Spec default: reassert the SELECTED page before EVERY batch. Never
-    // alternate pages automatically. Larger values retain optional sparse sync.
-    parameter integer PAGE_REFRESH_FRAMES=1,
+    // Zero: page only on entry/change. Repeated page redraws every control.
+    parameter integer PAGE_REFRESH_FRAMES=0,
+    // Refresh guard requires the screen firmware's ref_stop/ref_star support.
+    // Set to zero for firmware without this command pair; no RX port is assumed.
+    parameter integer REFRESH_GUARD=1,WAVE_ALIGNMENT=1,
     // Right-aligned ASCII names; changing layout does not change the FSM.
     parameter [127:0] PAGE_WAVE="wave",PAGE_FFT="fft",
     parameter [127:0] NAME_VPP="tUpp",NAME_RMS="tUrms",
@@ -46,8 +48,9 @@ module Display_HMI #(
         SEND=13,SEND_WAIT=14,CLEAR=15,PLOT=16,FINISH=18,
         BUILD_NAME=19,BUILD_SUFFIX=20,BUILD_VALUE=21,BUILD_CLOSE=22,
         COMMAND_LENGTH=23,MV_QUEUE=24,BCD_DIGITS=25,BCD_QUEUE=26,
-        TIME_ROUND=27,TIME_START=28,TIME_WAIT=29,TIME_DOT=30,TIME_FRAC=31;
-    reg [4:0] state,resume_state;
+        TIME_ROUND=27,TIME_START=28,TIME_WAIT=29,TIME_DOT=30,TIME_FRAC=31,
+        PAUSE_REFRESH=32,AFTER_PLOT=33,COMMIT_CURVE=34,RESUME_REFRESH=35,SESSION_RESUME=36;
+    reg [5:0] state,resume_state;
     // Reset distribution is registered with IDENTICAL latency for the FSM and
     // each child. Avoid driving all command, DSP and divider reset pins from a
     // single global net. DONT_TOUCH prevents merging the local replicas.
@@ -95,6 +98,8 @@ module Display_HMI #(
     wire [15:0] amax,wave_index;
     wire [7:0] wave_y;
     wire wave_plot_valid,wave_clamped;
+    wire wave_aligned;
+    wire [31:0] wave_bin_q20;
     reg wave_finished;
     wire spec_ready,spec_axis,spec_pixel_valid,spec_done;
     wire [15:0] spec_index;
@@ -125,7 +130,8 @@ module Display_HMI #(
     wire take_pixel=state==PLOT && pixel_valid;
     wire take_wave=page_fft?1'b1:take_pixel;
     assign busy=state!=IDLE;
-    assign state_debug=state;
+    // Keep the deployed ILA port width. Code 17 groups extended refresh states.
+    assign state_debug=state>31?5'd17:state[4:0];
 
     function [6:0] ascii_length;
         input [511:0] value;
@@ -143,7 +149,7 @@ module Display_HMI #(
         end
     endfunction
     task queue_command;
-        input [511:0] value;input page;input [4:0] next_state;
+        input [511:0] value;input page;input [5:0] next_state;
         begin command<=value;command_length<=0;command_page<=page;
             length_scan<=value;build_left<=64;
             resume_state<=next_state;state<=COMMAND_LENGTH;end
@@ -167,8 +173,14 @@ module Display_HMI #(
             field_name<=name;field_unit_us<=1;sign_char<=0;text_value<=0;
             field_valid<=source_valid && count!=0 && frequencies[31:0]!=0;
             if(source_valid && count!=0 && frequencies[31:0]!=0) begin
-                time_numerator<=three_cycles?48'd30000000:48'd10000000;
-                time_denominator<=midpoint?({16'd0,frequencies[31:0]}<<1):{16'd0,frequencies[31:0]};
+                if(wave_aligned)begin
+                    // (cycles*10^7/500)*2^20 / refined FFT bin Q20.
+                    time_numerator<=three_cycles?48'd62914560000:48'd20971520000;
+                    time_denominator<=midpoint?({16'd0,wave_bin_q20}<<1):{16'd0,wave_bin_q20};
+                end else begin
+                    time_numerator<=three_cycles?48'd30000000:48'd10000000;
+                    time_denominator<=midpoint?({16'd0,frequencies[31:0]}<<1):{16'd0,frequencies[31:0]};
+                end
                 state<=TIME_ROUND;
             end else queue_text(name,"--");
         end
@@ -187,11 +199,13 @@ module Display_HMI #(
         .clk(clk),.rst(reset_local[1]),.in_valid(state==SEND),.in_ready(command_ready),
         .command(command),.length(command_length),.is_page(command_page),
         .uart_tx(uart_tx),.tx_idle(tx_idle),.done(command_done));
-    Display_Wave_Renderer #(.FRAME_LENGTH(FRAME_LENGTH),.ADDR_WIDTH(ADDR_WIDTH),.W(W),.H(H)) u_wave(
+    Display_Wave_Renderer #(.FRAME_LENGTH(FRAME_LENGTH),.ADDR_WIDTH(ADDR_WIDTH),.W(W),.H(H),
+        .ENABLE_ALIGNMENT(WAVE_ALIGNMENT)) u_wave(
         .clk(clk),.rst(reset_local[2]),.in_valid(state==WAVE_START),.in_ready(wave_ready),
         .signal_valid(source_valid),.three_cycles(three_cycles),.fundamental_bin(active_bins[11:0]),.frame_id(id),
         .rd_en(time_rd_en),.rd_addr(time_rd_addr),.rd_data(time_rd_data),
         .axis_valid(wave_axis),.amax_raw(amax),.plot_valid(wave_plot_valid),.window_clamped(wave_clamped),
+        .alignment_locked(wave_aligned),.refined_bin_q20(wave_bin_q20),
         .pixel_valid(wave_pixel_valid),.pixel_ready(take_wave),.pixel_index(wave_index),.pixel_y(wave_y),
         .frame_id_out(),.done(wave_done),.busy());
     Display_Frame_Calibrator u_cal(
@@ -292,14 +306,30 @@ module Display_HMI #(
                     // A reset may interrupt an ASCII command. Flush the screen
                     // parser before the first page command (empty payload => FFx3).
                     if(!session_synced) begin
-                        session_synced<=1;queue_command(512'd0,0,PREPARE_PAGE);
+                        session_synced<=1;queue_command(512'd0,0,SESSION_RESUME);
                     end else if(!page_known || current_page!=page_fft ||
                        (PAGE_REFRESH_FRAMES>0 && page_age>=PAGE_REFRESH_FRAMES-1)) begin
                         page_known<=1;current_page<=page_fft;page_age<=0;
                         queue_command((512'h7061676520<<(ascii_length(page_fft?PAGE_FFT:PAGE_WAVE)*8))|
-                            (page_fft?PAGE_FFT:PAGE_WAVE),1,FIELDS);
-                    end else begin page_age<=page_age+1'b1;state<=FIELDS;end
+                            (page_fft?PAGE_FFT:PAGE_WAVE),1,PAUSE_REFRESH);
+                    end else begin page_age<=page_age+1'b1;state<=PAUSE_REFRESH;end
                 end
+                SESSION_RESUME:if(REFRESH_GUARD)queue_command("ref_star",0,PREPARE_PAGE);
+                    else state<=PREPARE_PAGE;
+                PAUSE_REFRESH:if(REFRESH_GUARD)queue_command("ref_stop",0,CLEAR);
+                    else state<=CLEAR;
+                AFTER_PLOT:begin field<=0;state<=FIELDS;end
+                COMMIT_CURVE:begin
+                    if(ENABLE_STATUS && field<31) begin
+                        queue_text(NAME_STATUS,
+                            (fault!=0)?"FAULT":(!source_valid?"NO SIGNAL":(voltage_overflow?"OVERFLOW":
+                            (!voltage_valid?"CAL":(held_single?"HOLD":"RUN")))));
+                        field<=31;
+                    end else if(REFRESH_GUARD)queue_command(
+                        (512'h72656620<<(ascii_length(small_decimal(CURVE_ID))*8))|small_decimal(CURVE_ID),0,RESUME_REFRESH);
+                    else state<=FINISH;
+                end
+                RESUME_REFRESH:queue_command("ref_star",0,FINISH);
                 FIELDS:begin
                     if(!page_fft) case(field)
                         0:format_mv(NAME_VPP,uv_vpp,voltage_valid,0);
@@ -312,7 +342,7 @@ module Display_HMI #(
                         7:queue_text(NAME_WLEFT,"0us");
                         8:format_time(NAME_WMID,1'b1);
                         9:format_time(NAME_WRIGHT,1'b0);
-                        default:state<=CLEAR;
+                        default:state<=COMMIT_CURVE;
                     endcase
                     else case(field)
                         0:format_frequency(NAME_F1,frequencies[31:0],source_valid && count>0);
@@ -330,7 +360,7 @@ module Display_HMI #(
                         9:queue_text(NAME_FLEFT,"0kHz");
                         10:queue_text(NAME_FXMID,(fmax==200000)?"100kHz":"250kHz");
                         11:queue_text(NAME_FRIGHT,(fmax==200000)?"200kHz":"500kHz");
-                        default:state<=CLEAR;
+                        default:state<=COMMIT_CURVE;
                     endcase
                 end
                 MV_START:if(mv_ready) begin
@@ -396,12 +426,7 @@ module Display_HMI #(
                 SEND:if(command_ready) state<=SEND_WAIT;
                 SEND_WAIT:if(command_done) state<=resume_state;
                 CLEAR:begin
-                    if(ENABLE_STATUS && field<31) begin
-                        queue_text(NAME_STATUS,
-                            (fault!=0)?"FAULT":(!source_valid?"NO SIGNAL":(voltage_overflow?"OVERFLOW":
-                            (!voltage_valid?"CAL":(held_single?"HOLD":"RUN")))));
-                        field<=31;resume_state<=CLEAR;
-                    end else queue_command((512'h636c6520<<((ascii_length(small_decimal(CURVE_ID))+
+                    queue_command((512'h636c6520<<((ascii_length(small_decimal(CURVE_ID))+
                         ascii_length(small_decimal(CHANNEL_ID))+1)*8))|
                         ({480'd0,small_decimal(CURVE_ID)}<<((ascii_length(small_decimal(CHANNEL_ID))+1)*8))|
                         (512'h2c<<(ascii_length(small_decimal(CHANNEL_ID))*8))|small_decimal(CHANNEL_ID),0,PLOT);
@@ -414,7 +439,7 @@ module Display_HMI #(
                         (512'h2c<<((ascii_length(small_decimal(CHANNEL_ID))+ascii_length(small_decimal(screen_y))+1)*8))|
                         ({480'd0,small_decimal(CHANNEL_ID)}<<((ascii_length(small_decimal(screen_y))+1)*8))|
                         (512'h2c<<(ascii_length(small_decimal(screen_y))*8))|small_decimal(screen_y),0,
-                        (pixel_index==W-1)?FINISH:PLOT);
+                        (pixel_index==W-1)?AFTER_PLOT:PLOT);
                 end
                 FINISH:if(wave_finished && tx_idle) begin
                     frame_release<=1;waveform_done<=1;state<=IDLE;

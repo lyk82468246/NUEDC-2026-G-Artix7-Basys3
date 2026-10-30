@@ -2,13 +2,13 @@
 // Layout-independent plot stream. Caller MUST hold this frame's BRAM frozen
 // from the start handshake through done, including downstream backpressure.
 // Synchronous BRAM: rd_en at edge E -> rd_data consumed at edge E+1.
-// First scan computes Amax=max(abs(samples)); then fractional coordinates use
-// p*C*N/((W-1)*bin), including the repeated endpoint at C estimated periods.
-// bin is still a 500-Hz-grid estimate: this fixes integer-span truncation, NOT
-// off-grid frequency estimation or composite-waveform phase synchronization.
+// First scan computes Amax=max(abs(samples)). Optional fundamental projection
+// estimates phase/period; ONLY coordinates change, never the plotted BRAM data.
+// Low-confidence / disabled alignment falls back to the coarse FFT-bin span.
 // Y is a LOGICAL positive-up level; the final screen adapter chooses inversion.
 module Display_Wave_Renderer #(
-    parameter integer FRAME_LENGTH=8192,ADDR_WIDTH=13,W=240,H=160,F=12
+    parameter integer FRAME_LENGTH=8192,ADDR_WIDTH=13,W=240,H=160,F=12,
+    parameter integer ENABLE_ALIGNMENT=0
 )(
     input wire clk,rst,input wire in_valid,output wire in_ready,
     input wire signal_valid,three_cycles,input wire [11:0] fundamental_bin,
@@ -16,6 +16,7 @@ module Display_Wave_Renderer #(
     output wire rd_en,output wire [ADDR_WIDTH-1:0] rd_addr,
     input wire signed [15:0] rd_data,
     output reg axis_valid,output reg [15:0] amax_raw,
+    output reg alignment_locked,output reg [31:0] refined_bin_q20,
     output reg plot_valid,window_clamped,
     output reg pixel_valid,input wire pixel_ready,
     output reg [15:0] pixel_index,output reg [7:0] pixel_y,
@@ -23,16 +24,33 @@ module Display_Wave_Renderer #(
 );
     localparam IDLE=0,SCAN_REQ=1,SCAN_READ=2,ADDR_START=3,ADDR_WAIT=4,
         READ0_REQ=5,READ0=6,READ1_REQ=7,READ1=8,INTERPOLATE=9,
-        Y_START=10,Y_WAIT=11,EMIT=12,WAIT_PIXEL=13;
+        Y_START=10,Y_WAIT=11,EMIT=12,WAIT_PIXEL=13,ALIGN_START=14,ALIGN_WAIT=15;
     localparam integer MID=H/2,YSPAN=(H-1)/2;
     localparam [ADDR_WIDTH-1:0] LAST=FRAME_LENGTH-1;
     localparam [47:0] MAXQ=(FRAME_LENGTH-1)*(48'd1<<F);
+    localparam [47:0] PIXEL_INTERVALS=W-1;
     reg [3:0] state;
     reg [ADDR_WIDTH-1:0] scan_addr;
     reg [11:0] bin;
     reg [1:0] cycles;
     reg [15:0] point;
     reg [47:0] coord;
+    reg [31:0] origin_q12,span_q12;
+    reg [47:0] phase_numerator;
+    wire align_ready,align_valid,align_locked,align_rd_en;
+    wire [ADDR_WIDTH-1:0] align_rd_addr;
+    wire [31:0] align_bin,align_period,align_origin;
+    generate if(ENABLE_ALIGNMENT) begin:g_align
+        Display_Fundamental_Aligner #(.FRAME_LENGTH(FRAME_LENGTH),.ADDR_WIDTH(ADDR_WIDTH)) u_align(
+            .clk(clk),.rst(rst),.in_valid(state==ALIGN_START),.in_ready(align_ready),
+            .fundamental_bin(bin),.amax(amax_raw),.rd_en(align_rd_en),.rd_addr(align_rd_addr),
+            .rd_data(rd_data),.out_valid(align_valid),.out_ready(state==ALIGN_WAIT),
+            .locked(align_locked),.bin_q20(align_bin),.period_q12(align_period),.start_q12(align_origin));
+    end else begin:g_no_align
+        assign align_ready=0;assign align_valid=0;assign align_locked=0;
+        assign align_rd_en=0;assign align_rd_addr=0;
+        assign align_bin=0;assign align_period=0;assign align_origin=0;
+    end endgenerate
     reg signed [15:0] sample0,sample1,interpolated_sample;
     reg [7:0] pending_y;
     wire [ADDR_WIDTH-1:0] address0=coord[F+:ADDR_WIDTH];
@@ -53,23 +71,26 @@ module Display_Wave_Renderer #(
     wire [47:0] quotient;
     Display_Unsigned_Divider #(.WIDTH(48)) u_div(
         .clk(clk),.rst(rst),.in_valid(div_request),.in_ready(div_ready),
-        .numerator((state==ADDR_START)?address_numerator:y_numerator),
-        .denominator((state==ADDR_START)?address_denominator:{32'd0,amax_raw}),
+        .numerator((state==ADDR_START)?(alignment_locked?phase_numerator:address_numerator):y_numerator),
+        .denominator((state==ADDR_START)?(alignment_locked?PIXEL_INTERVALS:address_denominator):{32'd0,amax_raw}),
         .out_valid(div_valid),.out_ready(state==ADDR_WAIT || state==Y_WAIT),
         .quotient(quotient),.remainder(),.divide_by_zero(div_zero));
     assign in_ready=!rst && state==IDLE && !pixel_valid;
     assign busy=(state!=IDLE) || pixel_valid;
-    assign rd_en=(state==SCAN_REQ || state==READ0_REQ || state==READ1_REQ);
-    assign rd_addr=(state==SCAN_REQ)?scan_addr:((state==READ1_REQ)?address1:address0);
+    assign rd_en=(state==ALIGN_START || state==ALIGN_WAIT)?align_rd_en:
+        (state==SCAN_REQ || state==READ0_REQ || state==READ1_REQ);
+    assign rd_addr=(state==ALIGN_START || state==ALIGN_WAIT)?align_rd_addr:
+        ((state==SCAN_REQ)?scan_addr:((state==READ1_REQ)?address1:address0));
     // synthesis translate_off
     initial if(W<2 || W>65535 || H<3 || H>256 || F<1 || F>16 || FRAME_LENGTH<2 ||
-               FRAME_LENGTH>(1<<ADDR_WIDTH)) $fatal(1,"Invalid wave renderer parameters");
+               FRAME_LENGTH>(1<<ADDR_WIDTH) || (ENABLE_ALIGNMENT && F!=12)) $fatal(1,"Invalid wave renderer parameters");
     // synthesis translate_on
     always @(posedge clk) begin
         if(rst) begin
             state<=IDLE;scan_addr<=0;bin<=0;cycles<=1;point<=0;coord<=0;
             sample0<=0;sample1<=0;interpolated_sample<=0;pending_y<=MID;
             axis_valid<=0;amax_raw<=0;plot_valid<=0;window_clamped<=0;
+            alignment_locked<=0;refined_bin_q20<=0;origin_q12<=0;span_q12<=0;phase_numerator<=0;
             pixel_valid<=0;pixel_index<=0;pixel_y<=0;frame_id_out<=0;done<=0;
         end else begin
             axis_valid<=0;done<=0;
@@ -77,6 +98,8 @@ module Display_Wave_Renderer #(
                 IDLE: if(in_valid && in_ready) begin
                     frame_id_out<=frame_id;bin<=fundamental_bin;cycles<=three_cycles?3:1;
                     point<=0;scan_addr<=0;amax_raw<=0;window_clamped<=0;pending_y<=MID;
+                    alignment_locked<=0;refined_bin_q20<={fundamental_bin,20'd0};
+                    phase_numerator<=0;origin_q12<=0;
                     plot_valid<=signal_valid && fundamental_bin!=0;
                     if(signal_valid && fundamental_bin!=0) state<=SCAN_REQ;
                     else begin axis_valid<=1;state<=EMIT;end
@@ -85,13 +108,23 @@ module Display_Wave_Renderer #(
                 SCAN_READ: begin
                     amax_raw<=max_candidate;
                     if(scan_addr==LAST) begin
-                        axis_valid<=1;plot_valid<=max_candidate!=0;state<=ADDR_START;
+                        plot_valid<=max_candidate!=0;
+                        if(ENABLE_ALIGNMENT && max_candidate!=0)state<=ALIGN_START;
+                        else begin axis_valid<=1;state<=ADDR_START;end
                     end else begin scan_addr<=scan_addr+1'b1;state<=SCAN_REQ;end
+                end
+                ALIGN_START:if(align_ready)state<=ALIGN_WAIT;
+                ALIGN_WAIT:if(align_valid)begin
+                    alignment_locked<=align_locked;refined_bin_q20<=align_bin;
+                    origin_q12<=align_origin;
+                    span_q12<=(cycles==3)?((align_period<<1)+align_period):align_period;
+                    axis_valid<=1;state<=ADDR_START;
                 end
                 ADDR_START:if(div_ready) state<=ADDR_WAIT;
                 ADDR_WAIT:if(div_valid) begin
-                    if(quotient>MAXQ || div_zero) begin coord<=MAXQ;window_clamped<=1;end
-                    else coord<=quotient;
+                    if(quotient+(alignment_locked?{16'd0,origin_q12}:48'd0)>MAXQ || div_zero)
+                        begin coord<=MAXQ;window_clamped<=1;end
+                    else coord<=quotient+(alignment_locked?{16'd0,origin_q12}:48'd0);
                     state<=READ0_REQ;
                 end
                 READ0_REQ:state<=READ0;
@@ -112,7 +145,8 @@ module Display_Wave_Renderer #(
                 WAIT_PIXEL:if(pixel_valid && pixel_ready) begin
                     pixel_valid<=0;
                     if(point==W-1) begin done<=1;state<=IDLE;end
-                    else begin point<=point+1'b1;state<=plot_valid?ADDR_START:EMIT;end
+                    else begin point<=point+1'b1;phase_numerator<=phase_numerator+span_q12;
+                        state<=plot_valid?ADDR_START:EMIT;end
                 end
                 default:state<=IDLE;
             endcase

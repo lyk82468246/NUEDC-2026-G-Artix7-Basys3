@@ -11,11 +11,11 @@
 | 层次 | 当前结论 |
 | --- | --- |
 | RTL | 已集成采集、Vpp/RMS、8192点FFT、最多三分量分析、默认幅值系数、双页显示及板载控制 |
-| 最近通过的实现 | 用户09:06版本：**WNS +0.447 ns、WHS +0.013 ns、TNS/THS均0**。之后的us/中点刻度适配源码尚未重新综合实现，需单独确认新时序 |
+| 最近通过的实现 | 用户09:06版本：**WNS +0.447 ns、WHS +0.013 ns、TNS/THS均0**。之后的坐标适配、复合波相位对齐及刷新修订尚未重新综合实现，需单独确认新时序 |
 | 最近通过的产物 | 用户09:06:50生成bit及匹配LTX；bitgen前DRC 0错误，构建日志0严重警告。此bit不包含后续坐标适配；烧写状态尚无本轮确认 |
-| 最近构建资源 | 09:06版本BRAM 47/50、DSP 89/90、LUT 14948/20800；新刻度适配后的占用待重新综合核对 |
+| 最近构建资源 | 09:06版本BRAM 47/50、DSP 89/90、LUT 14948/20800；新显示逻辑后的占用待重新综合核对；新增共享乘法器与小ROM，资源余量需重点确认 |
 | 实板基线 | 此前版本已验证单音、部分三分量/非整频组合和板载交互；这些结果不能代替新显示版本的回归 |
-| 显示 | 新双页协议与完整尺寸UART行为仿真通过；最终屏幕布局、坐标方向、可见刷新和新版本实屏表现待确认 |
+| 显示 | 同页page修复、复合采样相位对齐及完整尺寸UART仿真通过；ref_stop/ref_star固件支持、可见刷新与新版实屏表现待确认 |
 | 尚未完成的验收 | 独立绝对电压精度、完整C模式干扰测试、外部ADC时序/CDC边界、任意组合波稳定完整周期、端到端两秒响应 |
 
 最新构建详情及产物校验值见[构建核对记录](docs/build_verification_20261030.md)。此前WNS为−4.383 ns的08:43构建已被本次通过结果取代，[失败定位记录](reports/display_timing_20261030/README.md)仅用于追溯。
@@ -91,7 +91,7 @@ flowchart TD
 
 - **采集/时域**：12-bit码默认减2048、左移4位后进入FIR；带小数状态的IIR跟踪残余DC，预热后检测非正到正过零。Vpp为unsigned 17-bit，RMS为unsigned 16-bit；RMS由未加窗样本平方平均后开方，不由Vpp推算，也不是逐帧精确去均值。
 - **频域**：平顶窗ROM为signed Q1.15。FFT/CORDIC幅值是raw；分析器排除同一主瓣、估计谱底，再按频率排序并检查谐波一致性。最多输出三分量，仍可能漏检弱基频；不支持亚bin估计。`MIN_SIGNAL_RMS=64 raw`为当前默认门限，不是64 mV。
-- **波形**：按`p × C × 8192 / ((W−1) × bin)`的Q12分数地址插值，C为1或3；按整帧最大绝对样本Amax设置对称纵轴。仍依赖格点基频估计，不保证任意非整频、复杂多次过零组合波的精确周期边界或相位稳定。
+- **波形**：默认通过两半帧Hann加权基波投影，细化显示周期并确定基波相位起点，再对原始AFE复合采样作Q12分数地址插值，保留谐波畸变；按全帧Amax设置对称纵轴。低置信度回退格点跨度；此细化仅用于显示，不改变测量结果，任意组合及实屏稳定性仍待验收。
 - **谱图**：绘制已检测三分量的定性谱线；不是完整噪声底。共用像素的峰取最大值，精确频率/幅值看文本列表。
 - **时序/CDC**：ADC输入延迟目前仍采用min 0 ns / max 8 ns占位假设；bundled-data CDC依赖总线保持窗口。内部实现通过不代表这些外部接口假设已经实测验收。
 
@@ -181,7 +181,7 @@ PMOD 5/11为GND，6/12为3.3 V。屏幕TX不接FPGA；本设计无UART RX。板�
 
 两页各自使用曲线ID=1、通道0；默认发送240点，Y范围0～159，不以屏幕总分辨率代替绘图区大小。每条ASCII正文后追加三个二进制FF，无回车换行。仅刷新选定页，不逐帧在两页间轮播。
 
-首次显示前同步串口解析器；默认每批重申选定页，更新全部文本/刻度后cle并发送240点。wave横轴为0us、中点、1T/3T对应的右端时间；fft横轴为0～200/500kHz，并更新横/纵轴中点。单向TX无法读取ACK或判断页面是否执行完毕。缺失分量/无效电压显示`--`；已判无效的新帧清除旧曲线并绘中线或零基线。若输入恒定到没有过零，新帧可能无法完成，须区分采集超时和无效帧清除。
+首次显示前同步串口解析器并恢复刷新；默认仅首次/切页发送page，同页不重发。批内依次暂停刷新、cle及240点add、同帧文本/刻度、显式刷新曲线并恢复刷新。暂停指令的具体屏幕固件兼容性待实测，可用DISPLAY_REFRESH_GUARD=0禁用；该选项关闭后仍可能看到cle/add逐点重画。wave横轴为0us、中点、1T/3T对应的右端时间；fft横轴为0～200/500kHz，并更新横/纵轴中点。单向TX无法读取ACK或判断页面是否执行完毕。缺失分量/无效电压显示`--`；已判无效的新帧清除旧曲线并绘中线或零基线。若输入恒定到没有过零，新帧可能无法完成，须区分采集超时和无效帧清除。
 
 **控件、绘图区和Y方向仍待实屏核对。** [新屏幕spec](docs/TJC_UART_FORMAT.md)所需的us时间和中点刻度已在[适配源码](docs/screen_spec_alignment_20261030.md)中补齐并通过UART仿真，尚未构建/烧写。实际行为以所下载bit为准，不能将新源码当作已上机结果。
 
@@ -255,6 +255,7 @@ PMOD 5/11为GND，6/12为3.3 V。屏幕TX不接FPGA；本设计无UART RX。板�
 ```powershell
 .\scripts\run_display_hmi_sim.ps1
 .\scripts\run_display_prepare_sim.ps1
+.\scripts\run_display_alignment_sim.ps1
 .\scripts\run_runtime_calibration_sim.ps1
 .\scripts\run_measurement_debug_sim.ps1
 .\scripts\run_contest_sim.ps1
@@ -272,7 +273,8 @@ PMOD 5/11为GND，6/12为3.3 V。屏幕TX不接FPGA；本设计无UART RX。板�
 | 本轮通过的构建 | [2026-10-30构建核对](docs/build_verification_20261030.md) |
 | 现场验收操作 | [完整操作手册](docs/contest_acceptance_runbook.md)、[空白记录表](docs/contest_acceptance_record_template.md)、[A/B彩排向量](docs/acceptance_vectors/README.md) |
 | 显示接口/参数 | [显示集成契约](docs/display_integration_20261029.md)、[屏幕spec](docs/TJC_UART_FORMAT.md) |
-| 新刻度适配 | [us时间/FFT中点与默认刷新策略](docs/screen_spec_alignment_20261030.md) |
+| 显示稳定性修订 | [同页刷新、复合采样相位对齐、验证与手动构建](docs/display_stability_20261030.md) |
+| 前次刻度适配 | [us时间/FFT中点适配记录](docs/screen_spec_alignment_20261030.md)（刷新策略已被上项取代） |
 | 默认/在线标定 | [标定与VIO](docs/runtime_calibration.md)、[默认bank回归](reports/boot_calibration_20261030/README.md) |
 | 时序修订/仿真证据 | [时序定位与回归](reports/display_timing_20261030/README.md)、[双页集成回归](reports/display_integration_20261030/README.md) |
 | 操作/测量记录 | [板载交互确认](docs/interactive_controls_20261029.md)、[实机记录表](docs/hardware_test_record.md) |

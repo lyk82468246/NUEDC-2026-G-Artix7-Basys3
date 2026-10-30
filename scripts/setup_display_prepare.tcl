@@ -3,7 +3,7 @@
 if {[llength [get_projects -quiet]]==0} {error "Open the existing GUI project first"}
 set dp_root [file normalize [file join [file dirname [info script]] ..]]
 if {[file normalize [get_property DIRECTORY [current_project]]] ne $dp_root} {error "Wrong project"}
-foreach dp_name {Display_Unsigned_Divider Display_Frame_Calibrator Display_Wave_Renderer Display_Spectrum_Renderer Display_mV_Formatter Display_UART_Command Display_HMI} {
+foreach dp_name {Display_Unsigned_Divider Display_Frame_Calibrator Display_Sine_ROM Display_Fundamental_Aligner Display_Wave_Renderer Display_Spectrum_Renderer Display_mV_Formatter Display_UART_Command Display_HMI} {
     set dp_path [file join $dp_root sources rtl ${dp_name}.v]
     if {![file exists $dp_path]} {error "Missing display preparation source: $dp_path"}
     if {[llength [get_files -quiet $dp_path]]==0} {add_files -fileset sources_1 -norecurse $dp_path}
