@@ -1,0 +1,25 @@
+Debug snapshot configured: 15 probes / 1024 samples. Save project; manually build and check timing/DRC.
+New bit AND matching new LTX required. No build or programming performed. FIR/VIO unchanged.
+Display sources registered. No build launched. Manually rebuild/program to activate the new display RTL.
+Display sources registered. No build launched. Manually rebuild/program to activate the new display RTL.
+FIR selection=experimental, 95 coefficients on Q1.15 grid, sum=32672. Production COE unchanged.
+Actual IP coefficient fractional bits=15; inspect accumulator/output scaling, not just COE format.
+Manually inspect IP symmetry, save GUI project, build/route/check timing, generate bit+LTX.
+EXPERIMENTAL MODEL ONLY: no absolute voltage, phase or general C-mode acceptance.
+FIR selection=baseline, 95 coefficients on Q1.15 grid, sum=32768. Production COE unchanged.
+Actual IP coefficient fractional bits=15; inspect accumulator/output scaling, not just COE format.
+Manually inspect IP symmetry, save GUI project, build/route/check timing, generate bit+LTX.
+EXPERIMENTAL MODEL ONLY: no absolute voltage, phase or general C-mode acceptance.
+FIR selection=baseline, 95 coefficients on Q1.15 grid, sum=32768. Production COE unchanged.
+Actual IP coefficient fractional bits=16; inspect accumulator/output scaling, not just COE format.
+Manually inspect IP symmetry, save GUI project, build/route/check timing, generate bit+LTX.
+EXPERIMENTAL MODEL ONLY: no absolute voltage, phase or general C-mode acceptance.
+............................usage: hds242s.py [-h] [--output OUTPUT] {identify,capture,ila,sweep} ...
+hds242s.py: error: Multi-sample plans require lab_server.py run_plan; this legacy CLI captures once per point
+OWON,HDS242S,serial,V8.1.0
+Results: C:\Users\Joe\AppData\Local\Temp\tmp6nl1z6uy\result
+........................................................................................
+----------------------------------------------------------------------
+Ran 116 tests in 8.486s
+
+OK

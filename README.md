@@ -11,9 +11,9 @@
 | 层次 | 当前结论 |
 | --- | --- |
 | RTL | 已集成采集、Vpp/RMS、8192点FFT、最多三分量分析、默认幅值系数、双页显示及板载控制 |
-| 最新实现 | 用户09:06的布线报告：**WNS +0.447 ns、WHS +0.013 ns、TNS/THS均0**；满足当前已指定时序约束 |
-| 最新产物 | 用户09:06:50生成bit及匹配LTX；bitgen前DRC 0错误，构建日志0严重警告。此版本是否已烧写，尚无本轮确认 |
-| 资源 | BRAM 47/50、DSP 89/90、LUT 14948/20800；后续扩展需按当前余量核算 |
+| 最近通过的实现 | 用户09:06版本：**WNS +0.447 ns、WHS +0.013 ns、TNS/THS均0**。之后的us/中点刻度适配源码尚未重新综合实现，需单独确认新时序 |
+| 最近通过的产物 | 用户09:06:50生成bit及匹配LTX；bitgen前DRC 0错误，构建日志0严重警告。此bit不包含后续坐标适配；烧写状态尚无本轮确认 |
+| 最近构建资源 | 09:06版本BRAM 47/50、DSP 89/90、LUT 14948/20800；新刻度适配后的占用待重新综合核对 |
 | 实板基线 | 此前版本已验证单音、部分三分量/非整频组合和板载交互；这些结果不能代替新显示版本的回归 |
 | 显示 | 新双页协议与完整尺寸UART行为仿真通过；最终屏幕布局、坐标方向、可见刷新和新版本实屏表现待确认 |
 | 尚未完成的验收 | 独立绝对电压精度、完整C模式干扰测试、外部ADC时序/CDC边界、任意组合波稳定完整周期、端到端两秒响应 |
@@ -181,9 +181,9 @@ PMOD 5/11为GND，6/12为3.3 V。屏幕TX不接FPGA；本设计无UART RX。板�
 
 两页各自使用曲线ID=1、通道0；默认发送240点，Y范围0～159，不以屏幕总分辨率代替绘图区大小。每条ASCII正文后追加三个二进制FF，无回车换行。仅刷新选定页，不逐帧在两页间轮播。
 
-首次显示前同步串口解析器；之后可周期性重申当前页，支持连续测量下屏幕重启后的恢复。单向TX无法读取ACK或判断页面是否执行完毕。缺失分量/无效电压显示`--`；已判无效的新帧清除旧曲线并绘中线或零基线。若输入恒定到没有过零，新帧可能无法完成，须区分采集超时和无效帧清除。
+首次显示前同步串口解析器；默认每批重申选定页，更新全部文本/刻度后cle并发送240点。wave横轴为0us、中点、1T/3T对应的右端时间；fft横轴为0～200/500kHz，并更新横/纵轴中点。单向TX无法读取ACK或判断页面是否执行完毕。缺失分量/无效电压显示`--`；已判无效的新帧清除旧曲线并绘中线或零基线。若输入恒定到没有过零，新帧可能无法完成，须区分采集超时和无效帧清除。
 
-**控件、绘图区和Y方向仍待实屏核对。** 已合并[队友的新屏幕spec](docs/TJC_UART_FORMAT.md)；它新增的中点刻度、us时间标签与当前RTL仍有适配差异，见[现场手册的上场前核对](docs/contest_acceptance_runbook.md#新屏幕spec与当前bit的适配检查)。当前实际发送行为以`Display_HMI.v`和[集成说明](docs/display_integration_20261029.md)为准，不能因文档合并就认定bit已更新。
+**控件、绘图区和Y方向仍待实屏核对。** [新屏幕spec](docs/TJC_UART_FORMAT.md)所需的us时间和中点刻度已在[适配源码](docs/screen_spec_alignment_20261030.md)中补齐并通过UART仿真，尚未构建/烧写。实际行为以所下载bit为准，不能将新源码当作已上机结果。
 
 ## 构建与下载
 
@@ -272,6 +272,7 @@ PMOD 5/11为GND，6/12为3.3 V。屏幕TX不接FPGA；本设计无UART RX。板�
 | 本轮通过的构建 | [2026-10-30构建核对](docs/build_verification_20261030.md) |
 | 现场验收操作 | [完整操作手册](docs/contest_acceptance_runbook.md)、[空白记录表](docs/contest_acceptance_record_template.md)、[A/B彩排向量](docs/acceptance_vectors/README.md) |
 | 显示接口/参数 | [显示集成契约](docs/display_integration_20261029.md)、[屏幕spec](docs/TJC_UART_FORMAT.md) |
+| 新刻度适配 | [us时间/FFT中点与默认刷新策略](docs/screen_spec_alignment_20261030.md) |
 | 默认/在线标定 | [标定与VIO](docs/runtime_calibration.md)、[默认bank回归](reports/boot_calibration_20261030/README.md) |
 | 时序修订/仿真证据 | [时序定位与回归](reports/display_timing_20261030/README.md)、[双页集成回归](reports/display_integration_20261030/README.md) |
 | 操作/测量记录 | [板载交互确认](docs/interactive_controls_20261029.md)、[实机记录表](docs/hardware_test_record.md) |

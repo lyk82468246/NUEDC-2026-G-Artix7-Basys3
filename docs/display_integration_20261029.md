@@ -2,6 +2,8 @@
 
 ## 1. 状态与范围
 
+2026-10-30新spec适配：已补齐us时间、FFT横纵中点，默认每批page刷新且谱图改为0起点；新源码尚未构建/烧写。当前坐标与发送契约详见[适配说明](screen_spec_alignment_20261030.md)，09:06构建数据仅适用于适配前版本。
+
 2026-10-30 09:06结果补充：用户重新实现后WNS=+0.447ns、WHS=+0.013ns、TNS/THS为0，bit已生成；本轮是否烧写/实屏通过未确认。后文“等待重新实现”属于早前检查点，当前以[构建核对记录](build_verification_20261030.md)为准。
 
 2026-10-30上午后续：用户首次完整实现WNS=-4.383ns，未满足时序；已作分拍算术、逐字节命令构造和分组复位修订，行为回归通过，等待用户重新实现。原始失败数据与证据见[时序修订记录](../reports/display_timing_20261030/README.md)，不能把下面早期集成仿真通过视作硬件时序通过。
@@ -45,7 +47,7 @@ flowchart TD
 
 一帧只刷新当前选择的页面，不在每帧交替切到另一个页面。发送中按键改变请求，会先完成旧事务，再刷新最新请求；不会在半条命令中切页。单次保持的切页/周期重绘不产生新 `measurement_valid`，不增加测量 frame_id，也不改变原统计量。
 
-上电首次有效显示前默认等待自 FPGA 复位起500ms，再发送三个 FF 同步解析器、`page <选定页>`、文本、`cle`、恰好 W 个 `add`。这三个 FF 可终止上次 FPGA 复位时中断的 ASCII 指令。之后仅切页或每16个显示批次重申当前页；不会自动在 wave/fft 之间轮播。TX-only 无法检测屏幕断电；连续测量可在后续周期重同步时恢复，单次保持则需切页/重绘或重新测量。不能把 UART 完成当成屏幕已经执行完毕的 ACK。
+上电首次有效显示前默认等待自 FPGA 复位起500ms，再发送三个 FF 同步解析器、`page <选定页>`、文本、`cle`、恰好 W 个 `add`。这三个 FF 可终止上次 FPGA 复位时中断的 ASCII 指令。新spec默认每批重申选定页并等待切页间隔，不会自动在 wave/fft 之间轮播。TX-only 无法检测屏幕断电；连续测量可在后续刷新时恢复，单次保持则需切页/重绘或重新测量。不能把 UART 完成当成屏幕已经执行完毕的 ACK。
 
 ## 4. 屏幕工程契约
 
@@ -55,10 +57,10 @@ flowchart TD
 | --- | --- | --- |
 | wave | tUpp、tUrms、tF1 | 一位小数 mV、mV、整数 Hz |
 | wave | tWaveYTop、tWaveY0、tWaveYBot | +Amax mV、0、-Amax mV |
-| wave | tWaveSpan、tWaveXLeft、tWaveXRight | 1T/3T、0T、1T/3T |
+| wave | tWaveSpan、tWaveXLeft、tWaveXMid、tWaveXRight | 1T/3T、0us、中点和右端us（一位小数） |
 | fft | tF1、tA1、tF2、tA2、tF3、tA3 | 按频率升序排列的 Hz / 正弦峰值 mV |
-| fft | tFftYTop、tFftY0 | 本帧范围内最大峰值 mV、0 |
-| fft | tFftXLeft、tFftXRight | 10kHz、A模式200kHz或其余模式500kHz |
+| fft | tFftYTop、tFftYMid、tFftY0 | 本帧范围内最大峰值mV、其一半、0 |
+| fft | tFftXLeft、tFftXMid、tFftXRight | A为0/100/200kHz，其余模式为0/250/500kHz |
 | 两页，可选 | tStatus | 默认不发送，DISPLAY_STATUS=1才启用 |
 
 无信号的数值为 `--`，波形清除后绘中线、频谱绘零基线，避免保留旧噪声/旧幅值；有信号但未加载有效系数时仍显示频率和归一化形状，所有电压文本显示 `--`。缺失的分量槽为 `--`。可选状态按优先级显示 FAULT、NO SIGNAL、OVERFLOW、CAL、HOLD/RUN，来自该帧快照；没有新结果事件的采集超时仍由现有板载LED/错误码指示，并非本次新增实时屏幕故障通知。
@@ -78,7 +80,7 @@ flowchart TD
 | DISPLAY_STATUS | 0 | 两页是否存在tStatus |
 | DISPLAY_STARTUP_CYCLES | 50,000,000 | FPGA复位后等待；并非已测得屏幕启动时间 |
 | DISPLAY_COMMAND_GAP / DISPLAY_PAGE_GAP | 10,000 / 5,000,000 | 普通命令100µs / 切页50ms，均需实屏核验 |
-| DISPLAY_PAGE_REFRESH | 16 | 周期性重申当前页；0关闭 |
+| DISPLAY_PAGE_REFRESH | 1 | 新spec默认每批重申选定页；更大值/0仅作非默认兼容配置 |
 | DISPLAY_CURVE_ID / DISPLAY_CHANNEL | 1 / 0 | 曲线组件ID、通道 |
 
 页面名、全部文本控件名集中在 `Display_HMI.v` 参数区（每名最长16 ASCII字符），无需修改状态机。后续最终 spec 主要在这里适配。

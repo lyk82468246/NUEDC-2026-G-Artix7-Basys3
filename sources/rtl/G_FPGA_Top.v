@@ -25,7 +25,7 @@ module G_FPGA_Top #(
     parameter integer ENABLE_DISPLAY=1,
     parameter integer DISPLAY_HEIGHT=160,DISPLAY_INVERT_Y=0,DISPLAY_STATUS=0,
     parameter integer SCREEN_FFT_VIEW=3,
-    parameter integer DISPLAY_STARTUP_CYCLES=50_000_000,DISPLAY_PAGE_REFRESH=16,
+    parameter integer DISPLAY_STARTUP_CYCLES=50_000_000,DISPLAY_PAGE_REFRESH=1,
     parameter integer DISPLAY_COMMAND_GAP=10000,DISPLAY_PAGE_GAP=5_000_000,
     parameter integer DISPLAY_CURVE_ID=1,DISPLAY_CHANNEL=0,
     // Verified generator-HIGHZ reference bank, 2026-10-23/24. Q16.16 uV/raw;

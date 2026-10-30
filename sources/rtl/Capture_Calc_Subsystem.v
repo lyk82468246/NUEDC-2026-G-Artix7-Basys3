@@ -27,7 +27,7 @@ module Capture_Calc_Subsystem #(
     parameter integer WAVE_POINTS=400,
     parameter integer ENABLE_DISPLAY=0,DISPLAY_HEIGHT=160,DISPLAY_INVERT_Y=0,
     parameter integer DISPLAY_STATUS=0,
-    parameter integer DISPLAY_STARTUP_CYCLES=50_000_000,DISPLAY_PAGE_REFRESH=16,
+    parameter integer DISPLAY_STARTUP_CYCLES=50_000_000,DISPLAY_PAGE_REFRESH=1,
     parameter integer DISPLAY_COMMAND_GAP=10000,DISPLAY_PAGE_GAP=5_000_000,
     parameter integer DISPLAY_CURVE_ID=1,DISPLAY_CHANNEL=0,
     parameter integer MIN_SIGNAL_RMS=64

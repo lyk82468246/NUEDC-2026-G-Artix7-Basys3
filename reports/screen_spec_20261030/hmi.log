@@ -1,0 +1,149 @@
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/BIN2BCD.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module BIN2BCD
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/HMI_UART_Ctrl.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module HMI_UART_Ctrl
+INFO: [VRFC 10-311] analyzing module UART_Tx
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/Display_Unsigned_Divider.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Display_Unsigned_Divider
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/Display_Frame_Calibrator.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Display_Frame_Calibrator
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/Display_Wave_Renderer.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Display_Wave_Renderer
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/Display_Spectrum_Renderer.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Display_Spectrum_Renderer
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/Display_mV_Formatter.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Display_mV_Formatter
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/Display_UART_Command.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Display_UART_Command
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sources/rtl/Display_HMI.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Display_HMI
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_hmi.sv" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module tb_display_hmi
+INFO: [VRFC 10-311] analyzing module tb_display_hmi_full
+INFO: [VRFC 10-311] analyzing module tb_display_hmi_inverted
+Vivado Simulator v2025.2
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: C:/AMDDesignTools/2025.2/Vivado/bin/unwrapped/win64.o/xelab.exe xil_defaultlib.tb_display_hmi -s tb_display_hmi 
+Multi-threading is on. Using 6 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+Completed static elaboration
+Starting simulation data flow analysis
+WARNING: [XSIM 43-4328] File: C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_hmi.sv Line: 178 : Sensitivity on input argument "target_done" of task "finish_packet" may never get triggered.
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling module xil_defaultlib.UART_Tx(CLK_FREQ_HZ=1152000)
+Compiling module xil_defaultlib.Display_UART_Command(CLK_FREQ_HZ...
+Compiling module xil_defaultlib.Display_Unsigned_Divider_default
+Compiling module xil_defaultlib.Display_Wave_Renderer(FRAME_LENG...
+Compiling module xil_defaultlib.Display_Frame_Calibrator
+Compiling module xil_defaultlib.Display_Spectrum_Renderer(W=8)
+Compiling module xil_defaultlib.Display_Unsigned_Divider(WIDTH=3...
+Compiling module xil_defaultlib.BIN2BCD_default
+Compiling module xil_defaultlib.Display_mV_Formatter
+Compiling module xil_defaultlib.Display_HMI(CLK_FREQ_HZ=1152000,...
+Compiling module xil_defaultlib.tb_display_hmi
+Built simulation snapshot tb_display_hmi
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 30 10:30:46 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_display_hmi/xsim_script.tcl
+# xsim {tb_display_hmi} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: UART spec including us/FFT midpoint labels, zero-origin plot, page policy, atomic gains, all pixels, HOLD, invalid/CAL, reset/STOP drain
+$finish called at time : 6535370 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_hmi.sv" Line 243
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 30 10:30:48 2026...
+Vivado Simulator v2025.2
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: C:/AMDDesignTools/2025.2/Vivado/bin/unwrapped/win64.o/xelab.exe xil_defaultlib.tb_display_hmi_full -s tb_display_hmi_full 
+Multi-threading is on. Using 6 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+Completed static elaboration
+Starting simulation data flow analysis
+WARNING: [XSIM 43-4328] File: C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_hmi.sv Line: 178 : Sensitivity on input argument "target_done" of task "finish_packet" may never get triggered.
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling module xil_defaultlib.UART_Tx(CLK_FREQ_HZ=1152000)
+Compiling module xil_defaultlib.Display_UART_Command(CLK_FREQ_HZ...
+Compiling module xil_defaultlib.Display_Unsigned_Divider_default
+Compiling module xil_defaultlib.Display_Wave_Renderer_default
+Compiling module xil_defaultlib.Display_Frame_Calibrator
+Compiling module xil_defaultlib.Display_Spectrum_Renderer
+Compiling module xil_defaultlib.Display_Unsigned_Divider(WIDTH=3...
+Compiling module xil_defaultlib.BIN2BCD_default
+Compiling module xil_defaultlib.Display_mV_Formatter
+Compiling module xil_defaultlib.Display_HMI(CLK_FREQ_HZ=1152000,...
+Compiling module xil_defaultlib.tb_display_hmi(N=8192,W=240)
+Compiling module xil_defaultlib.tb_display_hmi_full
+Built simulation snapshot tb_display_hmi_full
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 30 10:30:52 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_display_hmi_full/xsim_script.tcl
+# xsim {tb_display_hmi_full} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: UART spec including us/FFT midpoint labels, zero-origin plot, page policy, atomic gains, all pixels, HOLD, invalid/CAL, reset/STOP drain
+$finish called at time : 63349890 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_hmi.sv" Line 243
+run: Time (s): cpu = 00:00:00 ; elapsed = 00:00:06 . Memory (MB): peak = 196.109 ; gain = 0.043
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 30 10:31:00 2026...
+Vivado Simulator v2025.2
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: C:/AMDDesignTools/2025.2/Vivado/bin/unwrapped/win64.o/xelab.exe xil_defaultlib.tb_display_hmi_inverted -s tb_display_hmi_inverted 
+Multi-threading is on. Using 6 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+Completed static elaboration
+Starting simulation data flow analysis
+WARNING: [XSIM 43-4328] File: C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_hmi.sv Line: 178 : Sensitivity on input argument "target_done" of task "finish_packet" may never get triggered.
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling module xil_defaultlib.UART_Tx(CLK_FREQ_HZ=1152000)
+Compiling module xil_defaultlib.Display_UART_Command(CLK_FREQ_HZ...
+Compiling module xil_defaultlib.Display_Unsigned_Divider_default
+Compiling module xil_defaultlib.Display_Wave_Renderer(FRAME_LENG...
+Compiling module xil_defaultlib.Display_Frame_Calibrator
+Compiling module xil_defaultlib.Display_Spectrum_Renderer(W=8)
+Compiling module xil_defaultlib.Display_Unsigned_Divider(WIDTH=3...
+Compiling module xil_defaultlib.BIN2BCD_default
+Compiling module xil_defaultlib.Display_mV_Formatter
+Compiling module xil_defaultlib.Display_HMI(CLK_FREQ_HZ=1152000,...
+Compiling module xil_defaultlib.tb_display_hmi(YINV=1,PERIODIC=2...
+Compiling module xil_defaultlib.tb_display_hmi_inverted
+Built simulation snapshot tb_display_hmi_inverted
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Fri Oct 30 10:31:03 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/tb_display_hmi_inverted/xsim_script.tcl
+# xsim {tb_display_hmi_inverted} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: UART spec including us/FFT midpoint labels, zero-origin plot, page policy, atomic gains, all pixels, HOLD, invalid/CAL, reset/STOP drain
+$finish called at time : 6493910 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_hmi.sv" Line 243
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Oct 30 10:31:06 2026...

@@ -11,18 +11,18 @@ module Display_HMI #(
     parameter integer INVERT_Y=0,ENABLE_STATUS=0,
     parameter integer STARTUP_CYCLES=50_000_000,
     parameter integer COMMAND_GAP_CYCLES=10000,PAGE_GAP_CYCLES=5_000_000,
-    // TX-only cannot detect a screen reboot. Periodically reassert ONLY the
-    // selected page so a screen power cycle recovers without flipping pages.
-    parameter integer PAGE_REFRESH_FRAMES=16,
+    // Spec default: reassert the SELECTED page before EVERY batch. Never
+    // alternate pages automatically. Larger values retain optional sparse sync.
+    parameter integer PAGE_REFRESH_FRAMES=1,
     // Right-aligned ASCII names; changing layout does not change the FSM.
     parameter [127:0] PAGE_WAVE="wave",PAGE_FFT="fft",
     parameter [127:0] NAME_VPP="tUpp",NAME_RMS="tUrms",
     parameter [127:0] NAME_F1="tF1",NAME_F2="tF2",NAME_F3="tF3",
     parameter [127:0] NAME_A1="tA1",NAME_A2="tA2",NAME_A3="tA3",
     parameter [127:0] NAME_WTOP="tWaveYTop",NAME_WZERO="tWaveY0",NAME_WBOT="tWaveYBot",
-    parameter [127:0] NAME_SPAN="tWaveSpan",NAME_WLEFT="tWaveXLeft",NAME_WRIGHT="tWaveXRight",
-    parameter [127:0] NAME_FTOP="tFftYTop",NAME_FZERO="tFftY0",
-    parameter [127:0] NAME_FLEFT="tFftXLeft",NAME_FRIGHT="tFftXRight",NAME_STATUS="tStatus",
+    parameter [127:0] NAME_SPAN="tWaveSpan",NAME_WLEFT="tWaveXLeft",NAME_WMID="tWaveXMid",NAME_WRIGHT="tWaveXRight",
+    parameter [127:0] NAME_FTOP="tFftYTop",NAME_FYMID="tFftYMid",NAME_FZERO="tFftY0",
+    parameter [127:0] NAME_FLEFT="tFftXLeft",NAME_FXMID="tFftXMid",NAME_FRIGHT="tFftXRight",NAME_STATUS="tStatus",
     parameter [31:0] CURVE_ID=1,CHANNEL_ID=0
 )(
     input wire clk,rst,capture_start,allow_redraw,
@@ -45,7 +45,8 @@ module Display_HMI #(
         MV_START=9,MV_WAIT=10,BCD_START=11,BCD_WAIT=12,
         SEND=13,SEND_WAIT=14,CLEAR=15,PLOT=16,FINISH=18,
         BUILD_NAME=19,BUILD_SUFFIX=20,BUILD_VALUE=21,BUILD_CLOSE=22,
-        COMMAND_LENGTH=23,MV_QUEUE=24,BCD_DIGITS=25,BCD_QUEUE=26;
+        COMMAND_LENGTH=23,MV_QUEUE=24,BCD_DIGITS=25,BCD_QUEUE=26,
+        TIME_ROUND=27,TIME_START=28,TIME_WAIT=29,TIME_DOT=30,TIME_FRAC=31;
     reg [4:0] state,resume_state;
     // Reset distribution is registered with IDENTICAL latency for the FSM and
     // each child. Avoid driving all command, DSP and divider reset pins from a
@@ -74,6 +75,7 @@ module Display_HMI #(
     reg [127:0] field_name;
     reg [31:0] field_value;
     reg field_valid;
+    reg field_unit_us;
     reg [7:0] sign_char;
     reg [159:0] text_value;
     reg [511:0] command;
@@ -108,6 +110,12 @@ module Display_HMI #(
     wire [7:0] mv_byte;
     wire [39:0] bcd;
     wire bcd_done;
+    // Duration directly in 0.1us units, rounded ONCE: C*10^7/f (midpoint /2).
+    // Reuse BCD digit serialization with a decimal point; no extra multiplier,
+    // double rounding, DSP, or combinational variable division.
+    reg [47:0] time_numerator,time_denominator;
+    wire time_ready,time_valid,time_zero;
+    wire [47:0] time_quotient;
     wire pixel_valid=page_fft?spec_pixel_valid:wave_pixel_valid;
     wire [7:0] logical_y=page_fft?spec_y:wave_y;
     wire [7:0] screen_y=INVERT_Y?(H-1-logical_y):logical_y;
@@ -151,11 +159,24 @@ module Display_HMI #(
     task format_mv;
         input [127:0] name;input [31:0] value;input valid_value;input [7:0] sign_value;
         begin field_name<=name;field_value<=value;field_valid<=valid_value;
-            sign_char<=sign_value;text_value<=0;state<=MV_START;end
+            field_unit_us<=0;sign_char<=sign_value;text_value<=0;state<=MV_START;end
+    endtask
+    task format_time;
+        input [127:0] name;input midpoint;
+        begin
+            field_name<=name;field_unit_us<=1;sign_char<=0;text_value<=0;
+            field_valid<=source_valid && count!=0 && frequencies[31:0]!=0;
+            if(source_valid && count!=0 && frequencies[31:0]!=0) begin
+                time_numerator<=three_cycles?48'd30000000:48'd10000000;
+                time_denominator<=midpoint?({16'd0,frequencies[31:0]}<<1):{16'd0,frequencies[31:0]};
+                state<=TIME_ROUND;
+            end else queue_text(name,"--");
+        end
     endtask
     task format_frequency;
         input [127:0] name;input [31:0] value;input valid_value;
         begin
+            field_unit_us<=0;
             if(valid_value) begin field_name<=name;field_value<=value;state<=BCD_START;end
             else queue_text(name,"--");
         end
@@ -193,6 +214,11 @@ module Display_HMI #(
         .byte_data(mv_byte),.byte_last(mv_last),.done());
     BIN2BCD #(.INPUT_WIDTH(32),.DIGITS(10)) u_bcd(.clk(clk),.rst(reset_local[5]),
         .start(state==BCD_START),.binary_in(field_value),.bcd_out(bcd),.busy(),.done(bcd_done));
+    Display_Unsigned_Divider #(.WIDTH(48)) u_time_div(.clk(clk),.rst(reset_local[5]),
+        .in_valid(state==TIME_START),.in_ready(time_ready),
+        .numerator(time_numerator),.denominator(time_denominator),
+        .out_valid(time_valid),.out_ready(state==TIME_WAIT),.quotient(time_quotient),
+        .remainder(),.divide_by_zero(time_zero));
 
     // synthesis translate_off
     initial if(CURVE_ID>255 || CHANNEL_ID>3 || STARTUP_CYCLES<0)
@@ -205,7 +231,8 @@ module Display_HMI #(
             raw_vpp<=0;raw_rms<=0;source_valid<=0;cal_valid<=0;page_fft<=0;three_cycles<=0;held_single<=0;
             count<=0;active_bins<=0;mags<=0;gain_vpp<=0;gain_rms<=0;gain_fft<=0;id<=0;epoch<=0;fmin<=0;fmax<=0;
             fault<=0;page_known<=0;current_page<=0;session_synced<=0;page_age<=0;startup_count<=0;field<=0;field_name<=0;field_value<=0;
-            field_valid<=0;sign_char<=0;text_value<=0;command<=0;command_length<=0;command_page<=0;
+            field_valid<=0;field_unit_us<=0;sign_char<=0;text_value<=0;command<=0;command_length<=0;command_page<=0;
+            time_numerator<=0;time_denominator<=0;
             build_name<=0;build_value<=0;build_suffix<=0;build_left<=0;length_scan<=0;
             digit_index<=0;digit_started<=0;
             wave_finished<=0;fft_scale_uv<=0;frame_release<=0;measurement_valid<=0;signal_valid_out<=0;waveform_done<=0;
@@ -228,7 +255,7 @@ module Display_HMI #(
                         count<=pending_signal?pending_count:2'd0;active_bins<=pending_signal?pending_bins:36'd0;
                         mags<=pending_signal?pending_mags:96'd0;
                         id<=frame_id;
-                        fmin<=10000;fmax<=(mode==0)?200000:500000;fault<=error_code;
+                        fmin<=0;fmax<=(mode==0)?200000:500000;fault<=error_code;
                         page_fft<=page_fft_request;three_cycles<=three_cycles_request;held_single<=single_mode;
                         have_time<=0;have_peak<=0;have_frame<=1;frame_release<=0;new_packet<=1;
                         wave_finished<=0;measurement_valid<=1;state<=WAVE_START;
@@ -282,8 +309,9 @@ module Display_HMI #(
                         4:queue_text(NAME_WZERO,"0");
                         5:format_mv(NAME_WBOT,uv_amax,voltage_valid,"-");
                         6:queue_text(NAME_SPAN,three_cycles?"3T":"1T");
-                        7:queue_text(NAME_WLEFT,"0T");
-                        8:queue_text(NAME_WRIGHT,three_cycles?"3T":"1T");
+                        7:queue_text(NAME_WLEFT,"0us");
+                        8:format_time(NAME_WMID,1'b1);
+                        9:format_time(NAME_WRIGHT,1'b0);
                         default:state<=CLEAR;
                     endcase
                     else case(field)
@@ -294,9 +322,14 @@ module Display_HMI #(
                         4:format_frequency(NAME_F3,frequencies[95:64],source_valid && count>2);
                         5:format_mv(NAME_A3,uv_peaks[95:64],voltage_valid && count>2,0);
                         6:format_mv(NAME_FTOP,fft_scale_uv,voltage_valid && spec_plot_valid,0);
-                        7:queue_text(NAME_FZERO,"0");
-                        8:queue_text(NAME_FLEFT,"10kHz");
-                        9:queue_text(NAME_FRIGHT,(fmax==200000)?"200kHz":"500kHz");
+                        // Floor at the intermediate uV resolution: rounding
+                        // an odd half-uV upward here would double-round e.g.
+                        // 99uV/2=49.5uV to 0.1mV instead of the correct 0.0mV.
+                        7:format_mv(NAME_FYMID,fft_scale_uv>>1,voltage_valid && spec_plot_valid,0);
+                        8:queue_text(NAME_FZERO,"0");
+                        9:queue_text(NAME_FLEFT,"0kHz");
+                        10:queue_text(NAME_FXMID,(fmax==200000)?"100kHz":"250kHz");
+                        11:queue_text(NAME_FRIGHT,(fmax==200000)?"200kHz":"500kHz");
                         default:state<=CLEAR;
                     endcase
                 end
@@ -309,17 +342,30 @@ module Display_HMI #(
                 end
                 MV_QUEUE:if(!field_valid) queue_text(field_name,"--");
                     else queue_text(field_name,(text_value<<16)|16'h6d56);
+                TIME_ROUND:begin
+                    time_numerator<=time_numerator+(time_denominator>>1);state<=TIME_START;
+                end
+                TIME_START:if(time_ready) state<=TIME_WAIT;
+                TIME_WAIT:if(time_valid) begin
+                    field_value<=time_quotient[31:0];
+                    field_valid<=!time_zero && time_quotient[47:32]==0;
+                    if(time_zero || time_quotient[47:32]!=0) queue_text(field_name,"--");
+                    else state<=BCD_START;
+                end
                 BCD_START:state<=BCD_WAIT;
                 BCD_WAIT:if(bcd_done) begin
                     digit_index<=9;digit_started<=0;text_value<=0;state<=BCD_DIGITS;
                 end
                 BCD_DIGITS:begin
-                    if(digit_started || bcd[digit_index*4+:4]!=0 || digit_index==0) begin
+                    if(digit_started || bcd[digit_index*4+:4]!=0 || digit_index==(field_unit_us?1:0)) begin
                         text_value<=(text_value<<8)|(8'd48+bcd[digit_index*4+:4]);digit_started<=1;
                     end
-                    if(digit_index==0) state<=BCD_QUEUE;else digit_index<=digit_index-1'b1;
+                    if(field_unit_us && digit_index==1) state<=TIME_DOT;
+                    else if(digit_index==0) state<=BCD_QUEUE;else digit_index<=digit_index-1'b1;
                 end
-                BCD_QUEUE:queue_text(field_name,(text_value<<16)|16'h487a);
+                TIME_DOT:begin text_value<=(text_value<<8)|8'h2e;state<=TIME_FRAC;end
+                TIME_FRAC:begin text_value<=(text_value<<8)|(8'd48+bcd[3:0]);state<=BCD_QUEUE;end
+                BCD_QUEUE:queue_text(field_name,(text_value<<16)|(field_unit_us?16'h7573:16'h487a));
                 BUILD_NAME:begin
                     if(build_name[127:120]!=0) begin
                         command<=(command<<8)|build_name[127:120];command_length<=command_length+1'b1;
