@@ -43,7 +43,10 @@ module G_FPGA_Top #(
     // Enable after setup_runtime_calibration.tcl. Feeds the new display's
     // reference-mV bank as well as the diagnostic sidecar; never the DSP path.
     // Disabled => use the static boot bank; raw diagnostics remain unchanged.
-    parameter integer ENABLE_RUNTIME_CALIBRATION = 0
+    parameter integer ENABLE_RUNTIME_CALIBRATION = 0,
+    // P1 diagnostic only: never writes flash and does not apply restored banks.
+    // Requires setup_flash_readonly.tcl (VIO + source + pin/timing registration).
+    parameter integer ENABLE_FLASH_READONLY_PROBE = 0
 )(
     input  wire       sys_clk,
     input  wire       sys_rst_n,
@@ -56,8 +59,37 @@ module G_FPGA_Top #(
     output wire [15:0] led,
     output wire [6:0] seg,
     output wire [3:0] an,
-    output wire       dp
+    output wire       dp,
+    output wire       flash_cs_n,flash_mosi,flash_wp_n,flash_hold_n,
+    input wire        flash_miso
 );
+
+    assign flash_wp_n=1'b1;
+    assign flash_hold_n=1'b1;
+    generate if(ENABLE_FLASH_READONLY_PROBE)begin:g_flash_readonly
+        wire flash_sck,flash_eos,flash_request;
+        wire [31:0] flash_status,flash_sequence,flash_saved_epoch;
+        wire [23:0] flash_jedec;
+        wire [96:0] flash_bank;
+        // Configuration INIT values establish POR independently of BtnC.
+        reg [7:0] power_settle=8'hff;
+        always @(posedge sys_clk)begin
+            if(!flash_eos)power_settle<=8'hff;
+            else power_settle<={power_settle[6:0],1'b0};
+        end
+        STARTUPE2 u_flash_startup(.CFGCLK(),.CFGMCLK(),.EOS(flash_eos),.PREQ(),
+            .CLK(1'b0),.GSR(1'b0),.GTS(1'b0),.KEYCLEARB(1'b1),.PACK(1'b0),
+            .USRCCLKO(flash_sck),.USRCCLKTS(1'b0),.USRDONEO(1'b1),.USRDONETS(1'b1));
+        Flash_Readonly_Probe u_probe(.clk(sys_clk),.por(|power_settle),.request_toggle(flash_request),
+            .cs_n(flash_cs_n),.sck(flash_sck),.mosi(flash_mosi),.miso(flash_miso),
+            .status(flash_status),.jedec_id(flash_jedec),.record_sequence(flash_sequence),
+            .saved_epoch(flash_saved_epoch),.bank(flash_bank));
+        vio_flash_calibration u_vio_flash_calibration(.clk(sys_clk),.probe_out0(flash_request),
+            .probe_in0(flash_status),.probe_in1(flash_jedec),.probe_in2(flash_sequence),
+            .probe_in3(flash_saved_epoch),.probe_in4(flash_bank));
+    end else begin:g_no_flash_probe
+        assign flash_cs_n=1'b1;assign flash_mosi=1'b1;
+    end endgenerate
 
     wire clk_algo;
     wire clk_adc;

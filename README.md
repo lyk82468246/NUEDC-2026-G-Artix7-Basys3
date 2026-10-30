@@ -16,6 +16,7 @@
 | 最近构建资源 | 13:12版本BRAM47.5/50、DSP90/90、LUT17267/20800；本轮修订需重新确认占用及时序 |
 | 实板基线 | 此前版本已验证单音、部分三分量/非整频组合和板载交互；这些结果不能代替新显示版本的回归 |
 | 显示 | 用户确认整页闪烁消失；本轮修订FFT发送方向、逐文字ref及一位小数kHz，离线回归通过，修订后实屏待确认 |
+| Flash持久化进度 | 已加入默认关闭的只读JEDEC/SR/A/B诊断、记录协议及NOR离线模型；真实save和启动应用尚未实现，现有标定仍易失 |
 | 尚未完成的验收 | 独立绝对电压精度、完整C模式干扰测试、外部ADC时序/CDC边界、任意组合波稳定完整周期、端到端两秒响应 |
 
 13:12报告摘要及新修订边界见[实屏适配记录](docs/screen_axis_refresh_20261030.md)；此前09:06构建详情见[历史核对记录](docs/build_verification_20261030.md)。此前WNS为−4.383 ns的08:43构建已被本次通过结果取代，[失败定位记录](reports/display_timing_20261030/README.md)仅用于追溯。
@@ -276,6 +277,7 @@ PMOD 5/11为GND，6/12为3.3 V。屏幕TX不接FPGA；本设计无UART RX。板�
 | 现场验收操作 | [完整操作手册](docs/contest_acceptance_runbook.md)、[空白记录表](docs/contest_acceptance_record_template.md)、[A/B彩排向量](docs/acceptance_vectors/README.md) |
 | AFG1022验收信号 | [A/B/C波形配方、离线制表与负载核验](docs/afg1022_acceptance_waveforms.md) |
 | 显示接口/参数 | [显示集成契约](docs/display_integration_20261029.md)、[屏幕spec](docs/TJC_UART_FORMAT.md) |
+| Flash标定持久化 | [方案](docs/flash_calibration_plan.md)、[记录格式与P1只读上机](docs/flash_calibration_format_v1.md)；尚未支持保存 |
 | 最新实屏反馈修订 | [频谱方向、文字刷新、kHz格式及标定顺序](docs/screen_axis_refresh_20261030.md) |
 | 显示稳定性修订 | [同页刷新、复合采样相位对齐、验证与手动构建](docs/display_stability_20261030.md) |
 | 前次刻度适配 | [us时间/FFT中点适配记录](docs/screen_spec_alignment_20261030.md)（刷新策略已被上项取代） |

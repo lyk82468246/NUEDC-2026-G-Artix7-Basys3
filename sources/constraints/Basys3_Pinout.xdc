@@ -1,6 +1,13 @@
 ##==============================================================================
 ## Basys3_Pinout.xdc
+## Board configuration Flash SPI x1 (Digilent Basys-3 Master.xdc, rev B).
+## CCLK uses STARTUPE2; never assign a normal package pin to it.
 ##------------------------------------------------------------------------------
+set_property -dict {PACKAGE_PIN K19 IOSTANDARD LVCMOS33} [get_ports flash_cs_n]
+set_property -dict {PACKAGE_PIN D18 IOSTANDARD LVCMOS33} [get_ports flash_mosi]
+set_property -dict {PACKAGE_PIN D19 IOSTANDARD LVCMOS33} [get_ports flash_miso]
+set_property -dict {PACKAGE_PIN G18 IOSTANDARD LVCMOS33} [get_ports flash_wp_n]
+set_property -dict {PACKAGE_PIN F18 IOSTANDARD LVCMOS33} [get_ports flash_hold_n]
 ## Basys 3 rev B package pin assignments, based on Digilent's Basys-3 Master
 ## XDC.  The AD9226 bus is intentionally assigned in connector order:
 ##

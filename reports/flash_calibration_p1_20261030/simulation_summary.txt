@@ -1,0 +1,26 @@
+XSim 2025.2 read-only flash P1, 2026-10-30.
+No synthesis, routing, bit/MCS generation or hardware access.
+
+[tb_flash_readonly]
+PASS: physical SPI read-only restore, CRC/commit, sequence wrap/conflict, blank/unknown/WIP timeout, backpressure
+$finish called at time : 258110 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_flash_readonly.sv" Line 84
+
+[tb_flash_unknown]
+PASS: physical SPI read-only restore, CRC/commit, sequence wrap/conflict, blank/unknown/WIP timeout, backpressure
+$finish called at time : 3970 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_flash_readonly.sv" Line 84
+
+[tb_flash_busy]
+PASS: physical SPI read-only restore, CRC/commit, sequence wrap/conflict, blank/unknown/WIP timeout, backpressure
+$finish called at time : 2500 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_flash_readonly.sv" Line 84
+
+[flash_top_contract]
+PASS: actual board top with read-only flash/VIO/STARTUPE2 wiring (black-box algorithm IP)
+$finish called at time : 3 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_flash_top_contract.sv" Line 24
+
+[measurement_debug]
+PASS: atomic debug snapshot widths/slots/invalid/reset/epoch collision
+$finish called at time : 540 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_measurement_debug_snapshot.sv" Line 72
+
+[debug_top_contract]
+PASS: top port contract VIO on/off, legacy/new HMI, real capture permit blocked during replay (black-box DSP IP)
+$finish called at time : 3 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_debug_top_contract.sv" Line 37
