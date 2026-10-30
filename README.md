@@ -183,7 +183,7 @@ PMOD 5/11为GND，6/12为3.3 V。屏幕TX不接FPGA；本设计无UART RX。板�
 
 首次显示前同步串口解析器；之后可周期性重申当前页，支持连续测量下屏幕重启后的恢复。单向TX无法读取ACK或判断页面是否执行完毕。缺失分量/无效电压显示`--`；已判无效的新帧清除旧曲线并绘中线或零基线。若输入恒定到没有过零，新帧可能无法完成，须区分采集超时和无效帧清除。
 
-**最终控件、绘图区和Y方向仍待实屏核对。** 完整名称/参数以[显示集成契约](docs/display_integration_20261029.md)及`Display_HMI.v`为准；[队友的屏幕spec](docs/TJC_UART_FORMAT.md)含历史描述，待最终修订，不能与旧bit协议混用。
+**控件、绘图区和Y方向仍待实屏核对。** 已合并[队友的新屏幕spec](docs/TJC_UART_FORMAT.md)；它新增的中点刻度、us时间标签与当前RTL仍有适配差异，见[现场手册的上场前核对](docs/contest_acceptance_runbook.md#新屏幕spec与当前bit的适配检查)。当前实际发送行为以`Display_HMI.v`和[集成说明](docs/display_integration_20261029.md)为准，不能因文档合并就认定bit已更新。
 
 ## 构建与下载
 
@@ -271,7 +271,7 @@ PMOD 5/11为GND，6/12为3.3 V。屏幕TX不接FPGA；本设计无UART RX。板�
 | --- | --- |
 | 本轮通过的构建 | [2026-10-30构建核对](docs/build_verification_20261030.md) |
 | 现场验收操作 | [完整操作手册](docs/contest_acceptance_runbook.md)、[空白记录表](docs/contest_acceptance_record_template.md)、[A/B彩排向量](docs/acceptance_vectors/README.md) |
-| 显示接口/参数 | [显示集成契约](docs/display_integration_20261029.md)、[屏幕spec草案](docs/TJC_UART_FORMAT.md) |
+| 显示接口/参数 | [显示集成契约](docs/display_integration_20261029.md)、[屏幕spec](docs/TJC_UART_FORMAT.md) |
 | 默认/在线标定 | [标定与VIO](docs/runtime_calibration.md)、[默认bank回归](reports/boot_calibration_20261030/README.md) |
 | 时序修订/仿真证据 | [时序定位与回归](reports/display_timing_20261030/README.md)、[双页集成回归](reports/display_integration_20261030/README.md) |
 | 操作/测量记录 | [板载交互确认](docs/interactive_controls_20261029.md)、[实机记录表](docs/hardware_test_record.md) |
