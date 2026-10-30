@@ -2,7 +2,7 @@
 // Decode actual UART wire (including start/stop), not the command FSM's data.
 // Goldens cover atomic gain/raw snapshots, selected-page commands, every plot
 // point, HOLD replay, no-signal clearing, missing slots, reset and STOP drain.
-module tb_display_hmi #(parameter N=64,W=8,YINV=0,PERIODIC=0,GUARD=1);
+module tb_display_hmi #(parameter N=64,W=8,YINV=0,PERIODIC=0,GUARD=1,REV=1);
     localparam H=160,CPB=10;
     reg clk=0,rst=1;always #5 clk=~clk;
     reg capture_start=0,allow_redraw=1,tv=0,pv=0;
@@ -22,7 +22,7 @@ module tb_display_hmi #(parameter N=64,W=8,YINV=0,PERIODIC=0,GUARD=1);
     reg [511:0] received=0;
     integer ff_count=0;
     Display_HMI #(.CLK_FREQ_HZ(1152000),.BAUD_RATE(115200),.FRAME_LENGTH(N),
-        .W(W),.H(H),.INVERT_Y(YINV),.WAVE_ALIGNMENT(0),.REFRESH_GUARD(GUARD),.PAGE_REFRESH_FRAMES(PERIODIC),.ENABLE_STATUS(1),.STARTUP_CYCLES(1000),
+        .W(W),.H(H),.INVERT_Y(YINV),.WAVE_ALIGNMENT(0),.FFT_REVERSE_X(REV),.REFRESH_GUARD(GUARD),.PAGE_REFRESH_FRAMES(PERIODIC),.ENABLE_STATUS(1),.STARTUP_CYCLES(1000),
         .COMMAND_GAP_CYCLES(3),.PAGE_GAP_CYCLES(20)) dut(
         .clk(clk),.rst(rst),.capture_start(capture_start),.allow_redraw(allow_redraw),
         .time_result_valid(tv),.peak_result_valid(pv),.vpp_raw(vpp),.rms_raw(rms),
@@ -77,6 +77,21 @@ module tb_display_hmi #(parameter N=64,W=8,YINV=0,PERIODIC=0,GUARD=1);
             result={result[463:0],".txt=\""};
             for(k=19;k>=0;k=k-1)if(value[k*8+:8]!=0)result=(result<<8)|value[k*8+:8];
             add((result<<8)|8'h22);
+            if(GUARD)begin result="ref ";for(k=15;k>=0;k=k-1)if(name[k*8+:8]!=0)result=(result<<8)|name[k*8+:8];add(result);end
+        end
+    endtask
+    task fft_amplitude_only;
+        integer p,batch_first;
+        begin
+            if(PERIODIC==1)add("page fft");batch_first=expect_count;
+            text("tF1","10.0kHz");text("tA1","6.0mV");
+            text("tF2","--");text("tA2","--");text("tF3","--");text("tA3","--");
+            text("tFftYTop","6.0mV");text("tFftYMid","3.0mV");text("tFftY0","0");
+            text("tFftXLeft","0kHz");text("tFftXMid","100kHz");text("tFftXRight","200kHz");
+            text("tStatus","HOLD");add("cle 1,0");
+            for(p=0;p<W;p=p+1)plot(YINV?159-(((REV?W-1-p:p)==(10000*(W-1)+100000)/200000)?159:0):
+                (((REV?W-1-p:p)==(10000*(W-1)+100000)/200000)?159:0));
+            guarded_order(batch_first,13);
         end
     endtask
     task plot(input integer y);
@@ -113,7 +128,7 @@ module tb_display_hmi #(parameter N=64,W=8,YINV=0,PERIODIC=0,GUARD=1);
     task guarded_order(input integer first,input integer fields);
         reg [511:0] saved[0:300];integer k,last;
         begin
-            last=expect_count-first;
+            fields=fields*(GUARD?2:1);last=expect_count-first;
             for(k=0;k<last;k=k+1)saved[k]=expected[first+k];
             expect_count=first;
             if(GUARD)add("ref_stop");
@@ -129,7 +144,7 @@ module tb_display_hmi #(parameter N=64,W=8,YINV=0,PERIODIC=0,GUARD=1);
             if(send_page)add("page wave");batch_first=expect_count;
             text("tUpp",status_kind==0?"2.0mV":"--");
             text("tUrms",status_kind==0?"0.7mV":"--");
-            $sformat(expected_frequency,"%0dHz",golden_bin*500);
+            $sformat(expected_frequency,"%0d.%0dkHz",golden_bin/2,(golden_bin%2)*5);
             text("tF1",status_kind==1?"--":expected_frequency);
             text("tWaveYTop",status_kind==0?"+1.0mV":"--");text("tWaveY0","0");
             text("tWaveYBot",status_kind==0?"-1.0mV":"--");
@@ -141,20 +156,20 @@ module tb_display_hmi #(parameter N=64,W=8,YINV=0,PERIODIC=0,GUARD=1);
         end
     endtask
     task fft_packet(input bit send_page,input integer components,input bit calibrated,input integer maxfreq);
-        integer p,y,batch_first;
+        integer p,y,batch_first,x;
         begin
             if(send_page)add("page fft");batch_first=expect_count;
-            text("tF1","10000Hz");text("tA1",calibrated?"3.0mV":"--");
-            text("tF2",components>1?"100000Hz":"--");text("tA2",calibrated && components>1?"2.0mV":"--");
-            text("tF3",components>2?"200000Hz":"--");text("tA3",calibrated && components>2?"1.0mV":"--");
+            text("tF1","10.0kHz");text("tA1",calibrated?"3.0mV":"--");
+            text("tF2",components>1?"100.0kHz":"--");text("tA2",calibrated && components>1?"2.0mV":"--");
+            text("tF3",components>2?"200.0kHz":"--");text("tA3",calibrated && components>2?"1.0mV":"--");
             text("tFftYTop",calibrated?"3.0mV":"--");text("tFftYMid",calibrated?"1.5mV":"--");text("tFftY0","0");
             text("tFftXLeft","0kHz");text("tFftXMid",maxfreq==200000?"100kHz":"250kHz");
             text("tFftXRight",maxfreq==200000?"200kHz":"500kHz");
             text("tStatus",calibrated?"HOLD":"CAL");add("cle 1,0");
             for(p=0;p<W;p=p+1) begin
-                y=0;if(p==(10000*(W-1)+maxfreq/2)/maxfreq)y=159;
-                if(components>1 && p==(100000*(W-1)+maxfreq/2)/maxfreq && y<106) y=106;
-                if(components>2 && p==(200000*(W-1)+maxfreq/2)/maxfreq && y<53) y=53;
+                x=REV?W-1-p:p;y=0;if(x==(10000*(W-1)+maxfreq/2)/maxfreq)y=159;
+                if(components>1 && x==(100000*(W-1)+maxfreq/2)/maxfreq && y<106) y=106;
+                if(components>2 && x==(200000*(W-1)+maxfreq/2)/maxfreq && y<53) y=53;
                 plot(YINV?H-1-y:y);
             end
             guarded_order(batch_first,13);
@@ -179,13 +194,13 @@ module tb_display_hmi #(parameter N=64,W=8,YINV=0,PERIODIC=0,GUARD=1);
     task fft_half_rounding_edge;
         integer p,batch_first;
         begin
-            add("page fft");batch_first=expect_count;text("tF1","10000Hz");text("tA1","0.1mV");
+            add("page fft");batch_first=expect_count;text("tF1","10.0kHz");text("tA1","0.1mV");
             text("tF2","--");text("tA2","--");text("tF3","--");text("tA3","--");
             text("tFftYTop","0.1mV");text("tFftYMid","0.0mV");text("tFftY0","0");
             text("tFftXLeft","0kHz");text("tFftXMid","100kHz");text("tFftXRight","200kHz");
             text("tStatus","HOLD");add("cle 1,0");
-            for(p=0;p<W;p=p+1)plot(YINV?159-((p==(10000*(W-1)+100000)/200000)?159:0):
-                ((p==(10000*(W-1)+100000)/200000)?159:0));
+            for(p=0;p<W;p=p+1)plot(YINV?159-(((REV?W-1-p:p)==(10000*(W-1)+100000)/200000)?159:0):
+                (((REV?W-1-p:p)==(10000*(W-1)+100000)/200000)?159:0));
             guarded_order(batch_first,13);
         end
     endtask
@@ -235,11 +250,11 @@ module tb_display_hmi #(parameter N=64,W=8,YINV=0,PERIODIC=0,GUARD=1);
         // capture_start cancels stale HOLD replay before any BRAM read.
         @(negedge clk);capture_start=1;page=0;@(negedge clk);capture_start=0;
         repeat(100)@(negedge clk);assert(!busy && !dut.have_frame)else $fatal(1,"Stale frame replay");
-        // Exact spec example (100kHz), fractional periods (10.5kHz), upper
+        // Compact frequency example (135.0kHz), half-bin step (10.5kHz), upper
         // production band (500kHz), and sub-us/half-up formatting (2MHz debug).
         for(j=0;j<4;j=j+1) begin
             allow_redraw=0;cycles=0;page=0;valid=1;mode=3;
-            golden_bin=(j==0)?200:((j==1)?21:((j==2)?1000:4000));
+            golden_bin=(j==0)?270:((j==1)?21:((j==2)?1000:4000));
             test_bins=golden_bin;id=6+j;
             wave_packet(j==0 || PERIODIC>0,1,2);new_frame();wait(measurement);@(negedge clk);allow_redraw=1;
             finish_packet(9+j*2);
@@ -250,6 +265,9 @@ module tb_display_hmi #(parameter N=64,W=8,YINV=0,PERIODIC=0,GUARD=1);
         golden_bin=20;test_bins=20;mags=99;id=10;
         fft_half_rounding_edge();new_frame();wait(measurement);@(negedge clk);allow_redraw=1;
         finish_packet(17);
+        // Same frequency, changed amplitude: MUST produce new text/ref commands.
+        // This detects any accidental refresh policy keyed only on bin changes.
+        allow_redraw=0;mags=6000;id=11;fft_amplitude_only();new_frame();finish_packet(18);
         // Reset during an in-flight UART packet: state/valids/release cancel.
         valid=1;page=0;allow_redraw=0;calvalid=0;
         wave_packet(1,3,2);tv=1;@(negedge clk);tv=0;pv=1;@(negedge clk);pv=0;
@@ -269,4 +287,8 @@ endmodule
 
 module tb_display_hmi_no_guard;
     tb_display_hmi #(.GUARD(0)) t();
+endmodule
+
+module tb_display_hmi_forward;
+ tb_display_hmi #(.REV(0)) t();
 endmodule

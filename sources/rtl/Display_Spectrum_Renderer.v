@@ -4,7 +4,7 @@
 // Peaks sharing a pixel use max amplitude and raise collision; out-of-range
 // components are excluded and flagged, never silently folded onto an edge.
 // Caller supplies detected components; raw noise/undetected tones are NOT shown.
-module Display_Spectrum_Renderer #(parameter integer W=240,H=160)(
+module Display_Spectrum_Renderer #(parameter integer W=240,H=160,REVERSE_X=0)(
     input wire clk,rst,input wire in_valid,output wire in_ready,
     input wire signal_valid,input wire [1:0] component_count,
     input wire [95:0] frequencies_hz,magnitudes_raw,
@@ -25,6 +25,9 @@ module Display_Spectrum_Renderer #(parameter integer W=240,H=160)(
     reg [2:0] used;
     reg [15:0] xpos[0:2],point;
     reg [7:0] ypos[0:2],level;
+    // Stream ordinal stays increasing. Some panels insert newest add at right;
+    // send high-frequency positions first so the final physical axis increases.
+    wire [15:0] lookup_point=REVERSE_X?(W-1-point):point;
     wire div_ready,div_valid,div_zero;
     wire [47:0] q;
     // Register every arithmetic boundary: select -> subtract -> 16x16 partial
@@ -46,7 +49,7 @@ module Display_Spectrum_Renderer #(parameter integer W=240,H=160)(
     always @* begin
         level=0;
         for(j=0;j<3;j=j+1)
-            if(used[j] && xpos[j]==point && ypos[j]>level) level=ypos[j];
+            if(used[j] && xpos[j]==lookup_point && ypos[j]>level) level=ypos[j];
     end
     // synthesis translate_off
     initial if(W<2 || W>65535 || H<2 || H>256) $fatal(1,"Invalid spectrum renderer parameters");

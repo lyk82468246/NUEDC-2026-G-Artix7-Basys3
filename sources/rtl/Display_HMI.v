@@ -16,6 +16,7 @@ module Display_HMI #(
     // Refresh guard requires the screen firmware's ref_stop/ref_star support.
     // Set to zero for firmware without this command pair; no RX port is assumed.
     parameter integer REFRESH_GUARD=1,WAVE_ALIGNMENT=1,
+    parameter integer FFT_REVERSE_X=1,
     // Right-aligned ASCII names; changing layout does not change the FSM.
     parameter [127:0] PAGE_WAVE="wave",PAGE_FFT="fft",
     parameter [127:0] NAME_VPP="tUpp",NAME_RMS="tUrms",
@@ -49,7 +50,8 @@ module Display_HMI #(
         BUILD_NAME=19,BUILD_SUFFIX=20,BUILD_VALUE=21,BUILD_CLOSE=22,
         COMMAND_LENGTH=23,MV_QUEUE=24,BCD_DIGITS=25,BCD_QUEUE=26,
         TIME_ROUND=27,TIME_START=28,TIME_WAIT=29,TIME_DOT=30,TIME_FRAC=31,
-        PAUSE_REFRESH=32,AFTER_PLOT=33,COMMIT_CURVE=34,RESUME_REFRESH=35,SESSION_RESUME=36;
+        PAUSE_REFRESH=32,AFTER_PLOT=33,COMMIT_CURVE=34,RESUME_REFRESH=35,SESSION_RESUME=36,
+        TEXT_REFRESH=37;
     reg [5:0] state,resume_state;
     // Reset distribution is registered with IDENTICAL latency for the FSM and
     // each child. Avoid driving all command, DSP and divider reset pins from a
@@ -87,6 +89,8 @@ module Display_HMI #(
     // Serial ASCII construction replaces a wide length-priority encoder and
     // data-dependent 512-bit barrel shifts. Each cycle appends at most ONE byte.
     reg [127:0] build_name;
+    reg [127:0] refresh_name;
+    reg building_ref;
     reg [159:0] build_value;
     reg [47:0] build_suffix;
     reg [6:0] build_left;
@@ -157,9 +161,9 @@ module Display_HMI #(
     task queue_text;
         input [127:0] name;input [159:0] value;
         begin
-            build_name<=name;build_value<=value;build_suffix<=48'h2e7478743d22;
+            build_name<=name;refresh_name<=name;building_ref<=0;build_value<=value;build_suffix<=48'h2e7478743d22;
             build_left<=16;command<=0;command_length<=0;command_page<=0;
-            resume_state<=FIELDS;state<=BUILD_NAME;field<=field+1'b1;
+            resume_state<=TEXT_REFRESH;state<=BUILD_NAME;field<=field+1'b1;
         end
     endtask
     task format_mv;
@@ -216,7 +220,7 @@ module Display_HMI #(
         .out_valid(cal_out),.out_ready(state==CAL_WAIT),.vpp_uv(uv_vpp),.rms_uv(uv_rms),.amax_uv(uv_amax),
         .peaks_uv(uv_peaks),.frequencies_hz(frequencies),.count_out(),.frame_id_out(),.epoch_out(),.metadata_out(),
         .signal_valid_out(),.calibration_valid_out(),.voltage_valid(voltage_valid),.overflow(voltage_overflow));
-    Display_Spectrum_Renderer #(.W(W),.H(H)) u_spec(
+    Display_Spectrum_Renderer #(.W(W),.H(H),.REVERSE_X(FFT_REVERSE_X)) u_spec(
         .clk(clk),.rst(reset_local[4]),.in_valid(state==SPEC_START),.in_ready(spec_ready),
         .signal_valid(source_valid),.component_count(count),.frequencies_hz(frequencies),.magnitudes_raw(mags),
         .frequency_min(fmin),.frequency_max(fmax),.frame_id(id),
@@ -247,7 +251,7 @@ module Display_HMI #(
             fault<=0;page_known<=0;current_page<=0;session_synced<=0;page_age<=0;startup_count<=0;field<=0;field_name<=0;field_value<=0;
             field_valid<=0;field_unit_us<=0;sign_char<=0;text_value<=0;command<=0;command_length<=0;command_page<=0;
             time_numerator<=0;time_denominator<=0;
-            build_name<=0;build_value<=0;build_suffix<=0;build_left<=0;length_scan<=0;
+            build_name<=0;refresh_name<=0;building_ref<=0;build_value<=0;build_suffix<=0;build_left<=0;length_scan<=0;
             digit_index<=0;digit_started<=0;
             wave_finished<=0;fft_scale_uv<=0;frame_release<=0;measurement_valid<=0;signal_valid_out<=0;waveform_done<=0;
         end else begin
@@ -330,6 +334,14 @@ module Display_HMI #(
                     else state<=FINISH;
                 end
                 RESUME_REFRESH:queue_command("ref_star",0,FINISH);
+                // Do not assume ref_star redraws text assigned under ref_stop.
+                TEXT_REFRESH:if(REFRESH_GUARD)begin
+                    // Reuse byte-serial builder: no dynamic length encoder or
+                    // 512-bit variable shift on the registered component name.
+                    command<="ref ";command_length<=4;command_page<=0;
+                    build_name<=refresh_name;build_left<=16;building_ref<=1;
+                    resume_state<=FIELDS;state<=BUILD_NAME;
+                end else state<=FIELDS;
                 FIELDS:begin
                     if(!page_fft) case(field)
                         0:format_mv(NAME_VPP,uv_vpp,voltage_valid,0);
@@ -387,21 +399,27 @@ module Display_HMI #(
                     digit_index<=9;digit_started<=0;text_value<=0;state<=BCD_DIGITS;
                 end
                 BCD_DIGITS:begin
-                    if(digit_started || bcd[digit_index*4+:4]!=0 || digit_index==(field_unit_us?1:0)) begin
+                    if(digit_started || bcd[digit_index*4+:4]!=0 || digit_index==(field_unit_us?1:3)) begin
                         text_value<=(text_value<<8)|(8'd48+bcd[digit_index*4+:4]);digit_started<=1;
                     end
-                    if(field_unit_us && digit_index==1) state<=TIME_DOT;
+                    // Hz BCD: integer kHz ends at digit 3, tenths kHz is digit 2.
+                    // Production bins are 500Hz: fractional digit is always 0/5.
+                    if(digit_index==(field_unit_us?1:3)) state<=TIME_DOT;
                     else if(digit_index==0) state<=BCD_QUEUE;else digit_index<=digit_index-1'b1;
                 end
                 TIME_DOT:begin text_value<=(text_value<<8)|8'h2e;state<=TIME_FRAC;end
-                TIME_FRAC:begin text_value<=(text_value<<8)|(8'd48+bcd[3:0]);state<=BCD_QUEUE;end
-                BCD_QUEUE:queue_text(field_name,(text_value<<16)|(field_unit_us?16'h7573:16'h487a));
+                TIME_FRAC:begin text_value<=(text_value<<8)|(8'd48+(field_unit_us?bcd[3:0]:bcd[11:8]));state<=BCD_QUEUE;end
+                BCD_QUEUE:if(field_unit_us)queue_text(field_name,(text_value<<16)|16'h7573);
+                    else queue_text(field_name,(text_value<<24)|24'h6b487a);
                 BUILD_NAME:begin
                     if(build_name[127:120]!=0) begin
                         command<=(command<<8)|build_name[127:120];command_length<=command_length+1'b1;
                     end
                     build_name<=build_name<<8;build_left<=build_left-1'b1;
-                    if(build_left==1) begin build_left<=6;state<=BUILD_SUFFIX;end
+                    if(build_left==1) begin
+                        if(building_ref)state<=SEND;
+                        else begin build_left<=6;state<=BUILD_SUFFIX;end
+                    end
                 end
                 BUILD_SUFFIX:begin
                     command<=(command<<8)|build_suffix[47:40];command_length<=command_length+1'b1;
