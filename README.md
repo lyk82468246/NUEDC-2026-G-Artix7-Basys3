@@ -271,6 +271,7 @@ PMOD 5/11为GND，6/12为3.3 V。屏幕TX不接FPGA；本设计无UART RX。板�
 | --- | --- |
 | 本轮通过的构建 | [2026-10-30构建核对](docs/build_verification_20261030.md) |
 | 现场验收操作 | [完整操作手册](docs/contest_acceptance_runbook.md)、[空白记录表](docs/contest_acceptance_record_template.md)、[A/B彩排向量](docs/acceptance_vectors/README.md) |
+| AFG1022验收信号 | [A/B/C波形配方、离线制表与负载核验](docs/afg1022_acceptance_waveforms.md) |
 | 显示接口/参数 | [显示集成契约](docs/display_integration_20261029.md)、[屏幕spec](docs/TJC_UART_FORMAT.md) |
 | 新刻度适配 | [us时间/FFT中点与默认刷新策略](docs/screen_spec_alignment_20261030.md) |
 | 默认/在线标定 | [标定与VIO](docs/runtime_calibration.md)、[默认bank回归](reports/boot_calibration_20261030/README.md) |

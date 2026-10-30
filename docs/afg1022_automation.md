@@ -1,5 +1,7 @@
 # AFG1022 控制脚本
 
+验收组合波的完整配方、HIGHZ/50 Ω换算、A/B/C制表与执行步骤见[AFG1022验收波形方案](afg1022_acceptance_waveforms.md)。新增制表入口仅离线运算，不连接仪器。
+
 入口 `scripts/afg1022.ps1`，Python 类 `scripts/instruments/afg1022.py:AFG1022`。复用项目 `.venv-hds` 中的 PyVISA 和现有 NI-VISA；无需新增包、替换 USB 驱动。其他电脑依赖见 `scripts/instruments/requirements-utg932.txt`。
 
 协议依据：[Tektronix AFG1022 编程手册](https://download.tek.com/manual/AFG1022-Programmer-Manual-EN.pdf)。仅自动发现 USB `0699:0353`，打开后核验厂商及型号；多台时用全局 `--resource` 参数选择。与其他仪器使用独立进程锁。
