@@ -9,6 +9,7 @@ from pathlib import Path
 import struct
 import sys
 import threading
+import time
 
 from resource_lock import ResourceLock
 from utg932 import boolean, channel_number, number, resource_manager, serialized
@@ -215,7 +216,9 @@ class AFG1022:
         if state.get("mode", "CW") not in ("CW", "FIX") or any(state.get("modulation", {}).values()):
             raise RuntimeError("Continuous mode not acknowledged")
         for key, value in (("amplitude", config["vpp"]), ("offset_v", config["offset_v"])):
-            if not math.isclose(state[key], value, rel_tol=1e-4, abs_tol=1e-4):
+            # V1.2.4 HIGHZ amplitude is rounded to a 1 mVpp grid.
+            tolerance = 0.000501 if key == "amplitude" else 1e-4
+            if not math.isclose(state[key], value, rel_tol=1e-4, abs_tol=tolerance):
                 raise RuntimeError(f"Readback mismatch: {key}")
         if config["waveform"] != "dc" and not math.isclose(state["hz"], config["hz"], rel_tol=1e-6, abs_tol=1e-6):
             raise RuntimeError("Frequency readback mismatch")
@@ -243,7 +246,7 @@ class AFG1022:
     def upload_arb(self, samples):
         """Overwrite shared volatile EMEM only; full DAC-code readback required."""
         codes = sample_codes(samples)
-        payload = struct.pack(f"<{len(codes)}H", *codes)
+        payload = struct.pack(f">{len(codes)}H", *codes)
         count = str(len(payload)).encode("ascii")
         packet = b"DATA:DATA EMEMory,#" + str(len(count)).encode("ascii") + count + payload + b"\n"
         try:
@@ -251,10 +254,12 @@ class AFG1022:
                 self.output_off(ch)
             if self.device.write_raw(packet) != len(packet):
                 raise IOError("Short waveform write")
-            self._write("*WAI")
+            # V1.2.4 needs processing time after a full table; immediate *WAI
+            # followed by a query can produce an empty USBTMC response.
+            time.sleep(0.3)
             self._check_error()
             points = int(self.query("DATA:POIN? EMEMory"))
-            observed = self.device.query_binary_values("DATA:DATA? EMEMory", datatype="H", is_big_endian=False,
+            observed = self.device.query_binary_values("DATA:DATA? EMEMory", datatype="H", is_big_endian=True,
                                                       expect_termination=False)
             if points != len(codes) or list(observed) != codes:
                 raise RuntimeError("Waveform DAC-code readback mismatch")

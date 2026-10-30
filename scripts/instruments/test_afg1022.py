@@ -52,7 +52,8 @@ class AFGTests(unittest.TestCase):
         result = d.upload_arb([-1, 0, 1])
         self.assertEqual(result['points'], 3)
         packet = d.device.write_raw.call_args.args[0]
-        self.assertEqual(packet, b'DATA:DATA EMEMory,#16' + struct.pack('<3H', 0, 8192, 16383) + b'\n')
+        self.assertEqual(packet, b'DATA:DATA EMEMory,#16' + struct.pack('>3H', 0, 8192, 16383) + b'\n')
+        self.assertTrue(d.device.query_binary_values.call_args.kwargs['is_big_endian'])
         d.device.query_binary_values.return_value = [0, 8191, 16383]
         with self.assertRaises(RuntimeError):
             d.upload_arb([-1, 0, 1])
