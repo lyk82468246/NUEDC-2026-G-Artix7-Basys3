@@ -34,6 +34,7 @@ proc rc_apply {vpp rms fft {enabled 1}} {
     if {$enabled ni {0 1}} {error "enabled must be 0/1"}
     set c [rc::core]
     refresh_hw_vio -update_output_values $c
+    if {([rc::input $c flags]&32)!=0} {error "Persistent calibration busy/restoring; apply rejected before staging"}
     set request [rc::probe $c request]
     set old [rc::hexvalue $request OUTPUT_VALUE]
     if {[rc::input $c ack]!=$old} {error "Prior commit pending; do not overwrite staging"}
@@ -62,6 +63,7 @@ proc rc_apply {vpp rms fft {enabled 1}} {
     foreach {signal value} [list active_vpp $vpp active_rms $rms active_fft $fft] {
         if {[rc::input $c $signal]!=$value} {error "Applied bank mismatch: $signal"}
     }
+    if {([rc::input $c flags]&64)!=0} {error "Hardware rejected apply during storage operation; no replay queued"}
     if {([rc::input $c flags]&1)!=$enabled} {error "Applied calibration-valid mismatch"}
     return [dict create applied_epoch [rc::input $c epoch] enabled $enabled]
 }

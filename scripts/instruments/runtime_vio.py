@@ -15,7 +15,7 @@ from vivado_paths import aliased, workspace_alias
 
 
 def run(vivado, ltx, directory, action, gains=None, enabled=1):
-    if action not in ('inspect','read','apply'):
+    if action not in ('inspect','read','apply','flash_status','flash_probe','store_status','store_probe','store_save','store_reload','store_export'):
         raise ValueError('Unsupported action')
     if action == 'apply' and (not gains or len(gains)!=3 or any(type(x)!=int or not 0<=x<=0xffffffff for x in gains)):
         raise ValueError('Three uint32 gains required')
@@ -48,7 +48,7 @@ def run(vivado, ltx, directory, action, gains=None, enabled=1):
 
 def main():
     p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument('action',choices=['inspect','read','apply'])
+    p.add_argument('action',choices=['inspect','read','apply','flash_status','flash_probe','store_status','store_probe','store_save','store_reload','store_export'])
     p.add_argument('--vivado',default='C:/AMDDesignTools/2025.2/Vivado/bin/vivado.bat')
     p.add_argument('--ltx',required=True,type=Path)
     p.add_argument('--directory',required=True,type=Path)

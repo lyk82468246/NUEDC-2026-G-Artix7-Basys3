@@ -9,7 +9,8 @@
 // gains and values, so an update cannot mix old/new coefficients within a job.
 module Runtime_Calibration #(
     parameter integer DEFAULT_ENABLED=0,
-    parameter [31:0] DEFAULT_VPP_GAIN=0,DEFAULT_RMS_GAIN=0,DEFAULT_FFT_GAIN=0
+    parameter [31:0] DEFAULT_VPP_GAIN=0,DEFAULT_RMS_GAIN=0,DEFAULT_FFT_GAIN=0,
+    parameter integer EXTERNAL_BANK=0
 )(
     input wire clk, rst,
     input wire request_toggle, staging_valid,
@@ -23,7 +24,9 @@ module Runtime_Calibration #(
     output reg [31:0] active_vpp_gain, active_rms_gain, active_fft_gain,
     output reg active_valid,
     output reg [31:0] vpp_uv, rms_uv, peak_uv,
-    output reg valid, overflow, busy, done, overrun
+    output reg valid, overflow, busy, done, overrun,
+    input wire restore_valid,input wire [96:0] restore_bank,output wire restore_ready,
+    input wire request_block,packet_busy,output reg commit_rejected
 );
     localparam IDLE=0, MULTIPLY=1, ROUND=2;
     reg [1:0] state;
@@ -39,6 +42,10 @@ module Runtime_Calibration #(
     wire clipped=|rounded[64:48];
     wire [31:0] converted=clipped?32'hffffffff:rounded[47:16];
     integer i;
+    wire block_requests=EXTERNAL_BANK?request_block:1'b0;
+    wire accept_restore=EXTERNAL_BANK?restore_valid:1'b0;
+    wire packet_active=EXTERNAL_BANK?packet_busy:1'b0;
+    assign restore_ready=EXTERNAL_BANK && !rst && state==IDLE && !sample_valid && !packet_active && request_settle==3;
     always @(posedge clk) begin
         if(rst) begin
             req_d1<=0;req_d2<=0;request_settle<=0;ack_toggle<=0;epoch<=0;result_epoch<=0;
@@ -48,12 +55,18 @@ module Runtime_Calibration #(
             state<=IDLE;field<=0;product<=0;
             vpp_uv<=0;rms_uv<=0;peak_uv<=0;
             valid<=0;overflow<=0;busy<=0;done<=0;overrun<=0;
+            commit_rejected<=0;
             for(i=0;i<3;i=i+1) begin values[i]<=0;gains[i]<=0;end
         end else begin
             req_d1<=request_toggle;req_d2<=req_d1;done<=0;
             if(request_settle!=3) begin
                 request_settle<=request_settle+1'b1;
                 if(request_settle==2) ack_toggle<=req_d2;
+            end
+            // Reject/rebase toggles received while persistent storage is busy.
+            // Never replay such requests later against a restored bank.
+            if(block_requests && request_settle==3 && req_d2!=ack_toggle)begin
+                ack_toggle<=req_d2;commit_rejected<=1;
             end
             if(sample_valid && busy) overrun<=1; // sticky protocol diagnostic
             case(state)
@@ -68,13 +81,20 @@ module Runtime_Calibration #(
                             gains[0]<=active_vpp_gain;gains[1]<=active_rms_gain;gains[2]<=active_fft_gain;
                             field<=0;busy<=1;state<=MULTIPLY;
                         end
-                    end else if(request_settle==3 && req_d2!=ack_toggle) begin
+                    end else if(accept_restore && restore_ready)begin
+                        active_vpp_gain<=restore_bank[95:64];active_rms_gain<=restore_bank[63:32];
+                        active_fft_gain<=restore_bank[31:0];
+                        active_valid<=restore_bank[96] && restore_bank[95:64]!=0 &&
+                            restore_bank[63:32]!=0 && restore_bank[31:0]!=0;
+                        epoch<=epoch+1'b1;ack_toggle<=req_d2;commit_rejected<=0;
+                    end else if(!block_requests && !packet_active && request_settle==3 && req_d2!=ack_toggle) begin
                         active_vpp_gain<=staging_vpp_gain;
                         active_rms_gain<=staging_rms_gain;
                         active_fft_gain<=staging_fft_gain;
                         active_valid<=staging_valid && staging_vpp_gain!=0 &&
                                       staging_rms_gain!=0 && staging_fft_gain!=0;
                         epoch<=epoch+1'b1;ack_toggle<=req_d2;
+                        commit_rejected<=0;
                         // Last result remains tagged with result_epoch, not epoch.
                         // It must not be reinterpreted using the new bank.
                     end

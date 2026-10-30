@@ -46,7 +46,8 @@ module G_FPGA_Top #(
     parameter integer ENABLE_RUNTIME_CALIBRATION = 0,
     // P1 diagnostic only: never writes flash and does not apply restored banks.
     // Requires setup_flash_readonly.tcl (VIO + source + pin/timing registration).
-    parameter integer ENABLE_FLASH_READONLY_PROBE = 0
+    parameter integer ENABLE_FLASH_READONLY_PROBE = 0,
+    parameter integer ENABLE_FLASH_PERSISTENCE = 0
 )(
     input  wire       sys_clk,
     input  wire       sys_rst_n,
@@ -66,7 +67,7 @@ module G_FPGA_Top #(
 
     assign flash_wp_n=1'b1;
     assign flash_hold_n=1'b1;
-    generate if(ENABLE_FLASH_READONLY_PROBE)begin:g_flash_readonly
+    generate if(ENABLE_FLASH_READONLY_PROBE && !ENABLE_FLASH_PERSISTENCE)begin:g_flash_readonly
         wire flash_sck,flash_eos,flash_request;
         wire [31:0] flash_status,flash_sequence,flash_saved_epoch;
         wire [23:0] flash_jedec;
@@ -87,7 +88,7 @@ module G_FPGA_Top #(
         vio_flash_calibration u_vio_flash_calibration(.clk(sys_clk),.probe_out0(flash_request),
             .probe_in0(flash_status),.probe_in1(flash_jedec),.probe_in2(flash_sequence),
             .probe_in3(flash_saved_epoch),.probe_in4(flash_bank));
-    end else begin:g_no_flash_probe
+    end else if(!ENABLE_FLASH_PERSISTENCE)begin:g_no_flash_probe
         assign flash_cs_n=1'b1;assign flash_mosi=1'b1;
     end endgenerate
 
@@ -98,7 +99,9 @@ module G_FPGA_Top #(
     // Basys 3 pushbuttons have a pull-down and assert high.  The parameter
     // keeps the wrapper usable with an active-low external reset source too.
     wire reset_button_asserted = BUTTON_ACTIVE_HIGH ? sys_rst_n : ~sys_rst_n;
-    wire mmcm_reset = reset_button_asserted;
+    // Persistent controller must keep running while BtnC resets algorithms.
+    // MMCM starts normally on configuration; only lock loss is POR for storage.
+    wire mmcm_reset = ENABLE_FLASH_PERSISTENCE?1'b0:reset_button_asserted;
     wire reset_async = reset_button_asserted | ~mmcm_locked;
 
     MMCM_Top u_mmcm_top (
@@ -111,6 +114,8 @@ module G_FPGA_Top #(
 
     wire rst_algo;
     wire rst_adc;
+    wire rst_store;
+    Reset_Synchronizer u_reset_sync_store(.clk(clk_algo),.arst(~mmcm_locked),.srst(rst_store));
 
     Reset_Synchronizer u_reset_sync_algo (
         .clk (clk_algo),
@@ -196,6 +201,41 @@ module G_FPGA_Top #(
     wire [31:0] display_vpp_gain,display_rms_gain,display_fft_gain;
     wire display_cycles_request;
     wire [1:0] display_view_request;
+    wire store_ready,store_apply_block,store_restore_valid,store_restore_ready;
+    wire [96:0] store_restore_bank;
+    wire runtime_commit_pending,runtime_convert_busy,runtime_commit_rejected;
+    generate if(ENABLE_FLASH_PERSISTENCE)begin:g_flash_persistent
+        wire store_sck,store_eos,store_request;
+        wire [1:0] store_command;
+        wire [31:0] store_status,store_sequence,store_saved_epoch;
+        wire [23:0] store_jedec;
+        wire [96:0] store_saved_bank;
+        reg [7:0] power_settle=8'hff;
+        always @(posedge clk_algo)begin
+            if(!store_eos)power_settle<=8'hff;else power_settle<={power_settle[6:0],1'b0};
+        end
+        STARTUPE2 u_flash_startup(.CFGCLK(),.CFGMCLK(),.EOS(store_eos),.PREQ(),
+            .CLK(1'b0),.GSR(1'b0),.GTS(1'b0),.KEYCLEARB(1'b1),.PACK(1'b0),
+            .USRCCLKO(store_sck),.USRCCLKTS(1'b0),.USRDONEO(1'b1),.USRDONETS(1'b1));
+        Calibration_Store #(.DEFAULT_BANK({(DEFAULT_CALIBRATION_ENABLED!=0),DEFAULT_VPP_GAIN,DEFAULT_RMS_GAIN,DEFAULT_FFT_GAIN})) u_store(
+            .clk(clk_algo),.por(rst_store || |power_settle),.panel_reset(rst_algo),
+            .request_toggle(store_request),.command(store_command),
+            .active_bank({calibration_enabled,display_vpp_gain,display_rms_gain,display_fft_gain}),.active_epoch(calibration_epoch),
+            .apply_pending(runtime_commit_pending),.runtime_busy(runtime_convert_busy),
+            .restore_valid(store_restore_valid),.restore_ready(store_restore_ready),.restore_bank(store_restore_bank),
+            .calibration_ready(store_ready),.apply_block(store_apply_block),.status(store_status),.jedec_id(store_jedec),
+            .saved_sequence(store_sequence),.saved_epoch(store_saved_epoch),.saved_bank(store_saved_bank),
+            .cs_n(flash_cs_n),.sck(store_sck),.mosi(flash_mosi),.miso(flash_miso));
+        vio_flash_store u_vio_flash_store(.clk(clk_algo),.probe_out0(store_request),.probe_out1(store_command),
+            .probe_in0(store_status),.probe_in1(store_jedec),.probe_in2(store_sequence),
+            .probe_in3(store_saved_epoch),.probe_in4(store_saved_bank));
+        // synthesis translate_off
+        initial if(!ENABLE_RUNTIME_CALIBRATION)$fatal(1,"Flash persistence requires runtime calibration");
+        // synthesis translate_on
+    end else begin:g_no_persistence
+        assign store_ready=1'b1;assign store_apply_block=1'b0;
+        assign store_restore_valid=1'b0;assign store_restore_bank=97'd0;
+    end endgenerate
     // Sticky stage events for the current transaction survive a timeout.
     // Clear at frame START, not frame completion or the next arm attempt.
     reg [4:0] diagnostic_events;
@@ -211,7 +251,7 @@ module G_FPGA_Top #(
         packet_finished,acquisition_fault,diagnostic_events};
 
     Run_Controller u_run_controller(
-        .clk(clk_algo),.rst(rst_algo),.controls_ready(controls_ready),
+        .clk(clk_algo),.rst(rst_algo),.controls_ready(controls_ready && store_ready),
         .mode_switches(controls[3:0]),.single_request(controls[4]),
         .start_pulse(button_pulse[1]),.cycle_pulse(button_pulse[0]),
         .left_pulse(button_pulse[2]),.right_pulse(button_pulse[3]),
@@ -248,7 +288,7 @@ module G_FPGA_Top #(
         .rst_adc             (rst_adc),
         .adc_data            (adc_data_in),
         .display_three_cycles(display_three_cycles),
-        .capture_enable(capture_enable),
+        .capture_enable(capture_enable && store_ready),
         .controller_release(controller_release),
         .mode_active(mode_active),
         .display_page_fft(display_view_request==SCREEN_FFT_VIEW),
@@ -291,7 +331,10 @@ module G_FPGA_Top #(
         wire [31:0] epoch,result_epoch,count,active_vpp,active_rms,active_fft;
         wire [31:0] vpp_uv,rms_uv,peak_uv;
         wire valid,overflow,busy,done,overrun;
-        wire [7:0] flags={3'd0,overrun,busy,overflow,valid,active_valid};
+        wire [7:0] flags={(ENABLE_FLASH_PERSISTENCE?store_ready:1'b0),runtime_commit_rejected,
+            store_apply_block,overrun,busy,overflow,valid,active_valid};
+        assign runtime_commit_pending=request!=ack;
+        assign runtime_convert_busy=busy;
         assign calibration_epoch=epoch;
         assign calibration_enabled=active_valid;
         assign display_vpp_gain=active_vpp;
@@ -299,7 +342,7 @@ module G_FPGA_Top #(
         assign display_fft_gain=active_fft;
         Runtime_Calibration #(.DEFAULT_ENABLED(DEFAULT_CALIBRATION_ENABLED),
             .DEFAULT_VPP_GAIN(DEFAULT_VPP_GAIN),.DEFAULT_RMS_GAIN(DEFAULT_RMS_GAIN),
-            .DEFAULT_FFT_GAIN(DEFAULT_FFT_GAIN)) u_runtime_calibration(
+            .DEFAULT_FFT_GAIN(DEFAULT_FFT_GAIN),.EXTERNAL_BANK(ENABLE_FLASH_PERSISTENCE)) u_runtime_calibration(
             .clk(clk_algo),.rst(rst_algo),.request_toggle(request),.staging_valid(staged_valid),
             .staging_vpp_gain(staged_vpp),.staging_rms_gain(staged_rms),.staging_fft_gain(staged_fft),
             .sample_valid(measurement_valid),.signal_valid(measurement_signal_valid),
@@ -307,7 +350,10 @@ module G_FPGA_Top #(
             .ack_toggle(ack),.epoch(epoch),.result_epoch(result_epoch),.result_count(count),
             .active_vpp_gain(active_vpp),.active_rms_gain(active_rms),.active_fft_gain(active_fft),
             .active_valid(active_valid),.vpp_uv(vpp_uv),.rms_uv(rms_uv),.peak_uv(peak_uv),
-            .valid(valid),.overflow(overflow),.busy(busy),.done(done),.overrun(overrun));
+            .valid(valid),.overflow(overflow),.busy(busy),.done(done),.overrun(overrun),
+            .restore_valid(store_restore_valid),.restore_bank(store_restore_bank),.restore_ready(store_restore_ready),
+            .request_block(store_apply_block),.packet_busy(capture_busy || calc_busy || fft_busy || peak_busy || hmi_busy),
+            .commit_rejected(runtime_commit_rejected));
         // VIO reads are live, NOT atomic packets. Host validates count/epoch
         // before/after reading, and rejects busy or stale/overflow results.
         vio_calibration u_vio_calibration(
@@ -319,6 +365,8 @@ module G_FPGA_Top #(
             .probe_in5(vpp_uv),.probe_in6(rms_uv),.probe_in7(peak_uv),
             .probe_in8(active_vpp),.probe_in9(active_rms),.probe_in10(active_fft));
     end else begin:g_no_runtime_debug
+        assign runtime_commit_pending=1'b0;assign runtime_convert_busy=1'b0;assign runtime_commit_rejected=1'b0;
+        assign store_restore_ready=1'b0;
         assign calibration_epoch=32'd0;
         assign calibration_enabled=DEFAULT_CALIBRATION_ENABLED && DEFAULT_VPP_GAIN!=0 &&
             DEFAULT_RMS_GAIN!=0 && DEFAULT_FFT_GAIN!=0;

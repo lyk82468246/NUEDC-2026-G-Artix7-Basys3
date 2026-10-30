@@ -1,6 +1,6 @@
 """Offline NOR semantics and power-cut reference model; never opens hardware.
 
-The model profile is fictional, with 256B pages and 64KiB erase units. It is
+The model profile is fictional, with 256B pages and 4KiB erase units. It is
 NOT a supported-device declaration for the unknown physical Basys 3 flash.
 """
 from calibration_record import (SLOT_A, SLOT_B, SLOT_SIZE, COMMIT_OFFSET, COMMIT_SIZE,
@@ -14,7 +14,7 @@ class PowerCut(RuntimeError):
 
 class NorModel:
     page_size = 256
-    erase_size = SLOT_SIZE
+    erase_size = 4096
 
     def __init__(self, image=None):
         self.memory = bytearray(b'\xff' * 0x400000) if image is None else bytearray(image)

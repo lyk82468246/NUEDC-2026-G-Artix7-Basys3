@@ -4,7 +4,7 @@ if {[llength $argv]<3} {error "Expected output, LTX, action"}
 set rc_output [file normalize [lindex $argv 0]]
 set rc_ltx [file normalize [lindex $argv 1]]
 set rc_action [lindex $argv 2]
-if {$rc_action ni {inspect read apply}} {error "Unsupported calibration operation"}
+if {$rc_action ni {inspect read apply flash_status flash_probe store_status store_probe store_save store_reload store_export}} {error "Unsupported calibration operation"}
 if {[file exists $rc_output] || ![file exists $rc_ltx]} {error "Output exists or LTX missing"}
 if {($rc_action eq "apply" && [llength $argv]!=7) || ($rc_action ne "apply" && [llength $argv]!=3)} {
     error "Incorrect argument count"
@@ -25,6 +25,21 @@ try {
     set_property PROBES.FILE $rc_ltx $rc_device
     refresh_hw_device $rc_device
     source [file join [file dirname [info script]] runtime_calibration_vio.tcl]
+    if {$rc_action in {flash_status flash_probe}} {
+        source [file join [file dirname [info script]] flash_readonly_vio.tcl]
+        set rc_result [dict create action $rc_action]
+        dict set rc_result flash [expr {$rc_action eq "flash_probe" ? [rc_store_probe] : [rc_store_status]}]
+    } elseif {[string match store_* $rc_action]} {
+        source [file join [file dirname [info script]] flash_store_vio.tcl]
+        set rc_result [dict create action $rc_action]
+        switch -- $rc_action {
+            store_status {dict set rc_result flash [rc_store_status]}
+            store_probe {dict set rc_result flash [rc_store_probe]}
+            store_save {dict set rc_result flash [rc_save]}
+            store_reload {dict set rc_result flash [rc_reload]}
+            store_export {dict set rc_result flash [rc_export "${rc_output}.json"]}
+        }
+    } else {
     set rc_core [rc::core]
     refresh_hw_vio -update_output_values $rc_core
     puts "RC_CORE $rc_core"
@@ -57,6 +72,7 @@ try {
         dict set rc_result first $rc_first
         dict set rc_result result $rc_next
         dict set rc_result fresh 1
+    }
     }
     set rc_stream [open $rc_output {WRONLY CREAT EXCL}]
     puts $rc_stream $rc_result

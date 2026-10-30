@@ -120,7 +120,7 @@ class TestCalibrationRecord(unittest.TestCase):
         class BadReadback(NorModel):
             def read(self, address, count):
                 result = super().read(address, count)
-                if address == SLOT_B and count == 64 and self.steps > 256:
+                if address == SLOT_B and count == 64 and self.steps > self.erase_size // 256 + 64:
                     return bytes([result[0] ^ 1]) + result[1:]
                 return result
         nor = ready(); save_applied(nor, A, 1)

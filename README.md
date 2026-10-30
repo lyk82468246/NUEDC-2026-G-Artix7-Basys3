@@ -11,15 +11,15 @@
 | 层次 | 当前结论 |
 | --- | --- |
 | RTL | 已集成采集、Vpp/RMS、8192点FFT、最多三分量分析、默认幅值系数、双页显示及板载控制 |
-| 最近通过的实现 | 用户13:12版本：**WNS +0.061 ns、WHS +0.017 ns、TNS/THS均0**；本轮实屏反馈修订尚未重新构建 |
-| 最近通过的产物 | 磁盘13:12:55 bit；用户已报告烧写并测试屏幕。本轮方向/文字/kHz修订不包含在该bit内 |
-| 最近构建资源 | 13:12版本BRAM47.5/50、DSP90/90、LUT17267/20800；本轮修订需重新确认占用及时序 |
+| 最近通过的实现 | 用户15:39版本：**WNS +0.092 ns、WHS +0.025 ns、TNS/THS均0**；新增Flash持久化P2尚未构建 |
+| 最近通过的产物 | 磁盘15:39:25 bit及匹配LTX；用户已报告烧写，已成功读取P1 Flash诊断 |
+| 最近构建资源 | 15:39版本BRAM48/50、DSP90/90、LUT19163/20800；P2需重新确认占用及时序 |
 | 实板基线 | 此前版本已验证单音、部分三分量/非整频组合和板载交互；这些结果不能代替新显示版本的回归 |
-| 显示 | 用户确认整页闪烁消失；本轮修订FFT发送方向、逐文字ref及一位小数kHz，离线回归通过，修订后实屏待确认 |
-| Flash持久化进度 | 已加入默认关闭的只读JEDEC/SR/A/B诊断、记录协议及NOR离线模型；真实save和启动应用尚未实现，现有标定仍易失 |
+| 显示 | 已加入FFT方向修正、逐文字ref、一位小数kHz及16抽头带限波形插值；离线验证通过，最新实屏效果仍需验收 |
+| Flash持久化进度 | 实板已读JEDEC C22016、SR00、无有效记录；P2显式save、A/B回读验证和自动应用恢复已实现并通过离线回归，尚未构建下载或实板写入 |
 | 尚未完成的验收 | 独立绝对电压精度、完整C模式干扰测试、外部ADC时序/CDC边界、任意组合波稳定完整周期、端到端两秒响应 |
 
-13:12报告摘要及新修订边界见[实屏适配记录](docs/screen_axis_refresh_20261030.md)；此前09:06构建详情见[历史核对记录](docs/build_verification_20261030.md)。此前WNS为−4.383 ns的08:43构建已被本次通过结果取代，[失败定位记录](reports/display_timing_20261030/README.md)仅用于追溯。
+最新Flash实板信息、P2构建入口和验收步骤见[标定保存与恢复](docs/flash_calibration_persistence_20261030.md)。13:12报告见[实屏适配记录](docs/screen_axis_refresh_20261030.md)，09:06报告见[历史核对记录](docs/build_verification_20261030.md)；这些均为历史构建，不能替代P2实现检查。
 
 ## 阅读导航
 
@@ -278,7 +278,7 @@ PMOD 5/11为GND，6/12为3.3 V。屏幕TX不接FPGA；本设计无UART RX。板�
 | 现场验收操作 | [完整操作手册](docs/contest_acceptance_runbook.md)、[空白记录表](docs/contest_acceptance_record_template.md)、[A/B彩排向量](docs/acceptance_vectors/README.md) |
 | AFG1022验收信号 | [A/B/C波形配方、离线制表与负载核验](docs/afg1022_acceptance_waveforms.md) |
 | 显示接口/参数 | [显示集成契约](docs/display_integration_20261029.md)、[屏幕spec](docs/TJC_UART_FORMAT.md) |
-| Flash标定持久化 | [方案](docs/flash_calibration_plan.md)、[记录格式与P1只读上机](docs/flash_calibration_format_v1.md)；尚未支持保存 |
+| Flash标定持久化 | [P2实施与手动上机步骤](docs/flash_calibration_persistence_20261030.md)、[格式1](docs/flash_calibration_format_v1.md)；RTL/离线回归完成，P2实板待验收 |
 | 高频绘图修订 | [两点折线原因、16抽头重建、数值验证和上机](docs/waveform_interpolation_20261030.md)；尚未构建实测 |
 | 最新实屏反馈修订 | [频谱方向、文字刷新、kHz格式及标定顺序](docs/screen_axis_refresh_20261030.md) |
 | 显示稳定性修订 | [同页刷新、复合采样相位对齐、验证与手动构建](docs/display_stability_20261030.md) |

@@ -60,11 +60,16 @@ def main():
     parser.add_argument('mcs', type=Path)
     parser.add_argument('--erase-size', type=int, required=True)
     parser.add_argument('--report', type=Path, required=True)
+    parser.add_argument('--bit', type=Path)
     args = parser.parse_args()
     raw = args.mcs.read_bytes()
     result = audit(raw.decode('ascii'), args.erase_size)
     result['mcs_sha256'] = hashlib.sha256(raw).hexdigest()
-    args.report.write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')
+    if args.bit:
+        result['bit_sha256'] = hashlib.sha256(args.bit.read_bytes()).hexdigest()
+    result['flash_profile'] = 'MX25L3233F candidate, JEDEC C22016; verify hardware identity and erase policy'
+    with args.report.open('x', encoding='utf-8') as report:
+        report.write(json.dumps(result, indent=2) + '\n')
 
 
 if __name__ == '__main__':
