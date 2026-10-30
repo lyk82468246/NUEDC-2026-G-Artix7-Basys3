@@ -187,6 +187,8 @@ PMOD 5/11为GND，6/12为3.3 V。屏幕TX不接FPGA；本设计无UART RX。板�
 
 ## 构建与下载
 
+**工程已打开时更新代码**：外部修改XPR不会自动同步Vivado内存里的源列表。新增显示RTL后务必在当前GUI执行下列注册脚本，确认9条REGISTERED后再综合；否则旧窗口保存还会覆盖磁盘登记。遇到模块找不到见[源文件登记修复](docs/synthesis_source_registration_20261030.md)。
+
 ### 使用现有工程
 
 1. 在Vivado打开仓库根目录的`G_FPGA.xpr`，确认top为`G_FPGA_Top`、器件为`xc7a35tcpg236-1`。有Basys 3 board定义可使用，但自定义ADC/串口接线仍由XDC决定。
