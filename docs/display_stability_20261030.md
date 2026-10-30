@@ -100,7 +100,7 @@ HOLD可在下一安全边界重绘同一帧。内部扩展状态为6-bit，ILA�
 | scripts/run_display_hmi_sim.ps1 | PASS：5个顶层；四组原协议回归及完整8192点新对齐链路，实际UART解码，检查page/刷新序列、全部像素、标定快照、HOLD、无信号、reset/STOP释放 |
 | scripts/run_display_prepare_sim.ps1 | PASS：240×160、200×128、17×256三组旧计算路径回归 |
 | scripts/run_measurement_debug_sim.ps1 | PASS：原子快照及实际顶层接口/采集许可契约；DSP IP为黑盒，不代表整机数值仿真 |
-| 主机unittest discover | PASS：116项；无仪器访问 |
+| 主机unittest discover | PASS：原116项；合并远端工具后新增3项另测通过，合计119项；无仪器访问 |
 
 新UART端到端案例以20.37 bin（名义10185Hz）复合信号为输入，验证1T中点49.1us、右端98.2us，
 3T中点147.3us、右端294.6us；两帧不同初相，只发送一次page，合计480个原始采样插值点。
