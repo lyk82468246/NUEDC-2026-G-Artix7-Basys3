@@ -15,8 +15,11 @@ module Display_Unsigned_Divider #(parameter integer WIDTH=48)(
     reg [WIDTH-1:0] dividend,divisor,q;
     reg [WIDTH:0] r;
     wire [WIDTH:0] trial={r[WIDTH-1:0],dividend[WIDTH-1]};
-    wire subtract=(trial>={1'b0,divisor});
-    wire [WIDTH:0] next_r=subtract?trial-{1'b0,divisor}:trial;
+    // One subtractor supplies both the difference and unsigned borrow; avoid
+    // a separate wide comparator in front of a second wide carry chain.
+    wire [WIDTH+1:0] difference={1'b0,trial}-{2'b0,divisor};
+    wire subtract=!difference[WIDTH+1];
+    wire [WIDTH:0] next_r=subtract?difference[WIDTH:0]:trial;
     wire [WIDTH-1:0] next_q={q[WIDTH-2:0],subtract};
     assign in_ready=!rst && !running && !out_valid;
     always @(posedge clk) begin

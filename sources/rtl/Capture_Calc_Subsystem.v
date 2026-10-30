@@ -81,6 +81,11 @@ module Capture_Calc_Subsystem #(
 );
 
     wire                    bram_wr_en;
+    // One equal-latency synchronous reset replica per consumer. Preserve the
+    // replicas so synthesis cannot merge them back into the routed high-fanout
+    // global reset net. No clock gating or reset timing exceptions are used.
+    (* DONT_TOUCH="TRUE" *) reg [5:0] reset_local;
+    always @(posedge calc_clk) reset_local<={6{rst}};
     wire [12:0]             bram_wr_addr;
     wire signed [15:0]      bram_wr_data;
     wire                    frame_done_toggle;
@@ -151,7 +156,7 @@ module Capture_Calc_Subsystem #(
         .rst_adc           (rst_adc),
         .adc_data          (adc_data),
         .calc_clk          (calc_clk),
-        .rst_calc          (rst),
+        .rst_calc          (reset_local[1]),
         .sample_valid_calc(adc_sample_valid_calc),
         .adc_data_calc     (adc_data_calc)
     );
@@ -160,7 +165,7 @@ module Capture_Calc_Subsystem #(
     // valid pulse preserves the original ADC sample cadence.
     AFE_Capture #(.CONTROLLED_CAPTURE(CONTROLLED_CAPTURE)) u_afe_capture (
         .adc_clk          (calc_clk),
-        .rst              (rst),
+        .rst              (reset_local[0]),
         .adc_data         (adc_data_calc),
         .sample_valid     (adc_sample_valid_calc),
         .frame_release    (frame_release),
@@ -197,7 +202,7 @@ module Capture_Calc_Subsystem #(
 
     Time_Domain_Calc u_time_domain_calc (
         .calc_clk        (calc_clk),
-        .rst             (rst),
+        .rst             (reset_local[2]),
         .frame_done_toggle(frame_done_toggle),
         .bram_rd_addr    (bram_rd_addr),
         .bram_rd_en      (bram_rd_en),
@@ -211,7 +216,7 @@ module Capture_Calc_Subsystem #(
 
     FFT_Processor u_fft_processor (
         .calc_clk                (calc_clk),
-        .rst                     (rst),
+        .rst                     (reset_local[3]),
         .frame_done_toggle       (frame_done_toggle),
         .time_rd_addr            (fft_time_rd_addr),
         .time_rd_en              (fft_time_rd_en),
@@ -254,7 +259,7 @@ module Capture_Calc_Subsystem #(
 
     generate if(CONTROLLED_CAPTURE) begin:g_components
         Component_Analyzer u_components(
-            .clk(calc_clk),.rst(rst),.frame_done_toggle(freq_frame_done_toggle),.mode(mode_active),
+            .clk(calc_clk),.rst(reset_local[4]),.frame_done_toggle(freq_frame_done_toggle),.mode(mode_active),
             .rd_addr(freq_rd_addr),.rd_en(freq_rd_en),.rd_data(freq_rd_data),
             .component_count(analyzed_count),.component_bins(analyzed_bins),
             .component_magnitudes(analyzed_magnitudes),.fundamental_bin(analyzed_index),
@@ -266,7 +271,7 @@ module Capture_Calc_Subsystem #(
     assign analyzed_count=0;assign analyzed_bins=0;assign analyzed_magnitudes=0;assign noise_mean_out=0;
     Peak_Search u_peak_search (
         .calc_clk          (calc_clk),
-        .rst               (rst),
+        .rst               (reset_local[4]),
         .frame_done_toggle (freq_frame_done_toggle),
         .search_start_in   ((mode_active==3)?12'd10:12'd20),
         .search_end_in     ((mode_active==0)?12'd400:((mode_active==3)?12'd4000:12'd1000)),
@@ -286,7 +291,7 @@ module Capture_Calc_Subsystem #(
             .ENABLE_STATUS(DISPLAY_STATUS),.STARTUP_CYCLES(DISPLAY_STARTUP_CYCLES),
             .PAGE_REFRESH_FRAMES(DISPLAY_PAGE_REFRESH),.COMMAND_GAP_CYCLES(DISPLAY_COMMAND_GAP),
             .PAGE_GAP_CYCLES(DISPLAY_PAGE_GAP),.CURVE_ID(DISPLAY_CURVE_ID),.CHANNEL_ID(DISPLAY_CHANNEL)) u_display(
-            .clk(calc_clk),.rst(rst),.capture_start(frame_start_pulse),
+            .clk(calc_clk),.rst(reset_local[5]),.capture_start(frame_start_pulse),
             .allow_redraw(!capture_enable && !capture_busy && CONTROLLED_CAPTURE),
             .time_result_valid(result_valid),.peak_result_valid(peak_result_valid),
             .vpp_raw(vpp_out),.rms_raw(vrms_out),.signal_valid(qualified),
@@ -314,7 +319,7 @@ module Capture_Calc_Subsystem #(
         .MIN_SIGNAL_RMS  (MIN_SIGNAL_RMS)
     ) u_hmi_uart_ctrl (
         .clk               (calc_clk),
-        .rst               (rst),
+        .rst               (reset_local[5]),
         .time_result_valid (result_valid),
         .vpp_in            (vpp_out),
         .vrms_in           (vrms_out),

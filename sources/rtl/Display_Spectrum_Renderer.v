@@ -15,8 +15,9 @@ module Display_Spectrum_Renderer #(parameter integer W=240,H=160)(
     output reg [15:0] pixel_index,output reg [7:0] pixel_y,
     output reg done,output wire busy
 );
-    localparam IDLE=0,VALIDATE=1,AXIS=2,X_START=3,X_WAIT=4,Y_START=5,Y_WAIT=6,
-        NEXT_SLOT=7,PREPARE=8,EMIT=9,WAIT_PIXEL=10;
+    localparam IDLE=0,VALIDATE=1,AXIS=2,SELECT_SLOT=3,X_DIFF=4,MULTIPLY=5,
+        JOIN_PRODUCT=6,ROUND_NUM=7,DIV_START=8,DIV_WAIT=9,Y_PREP=10,
+        NEXT_SLOT=11,PREPARE=12,EMIT=13,WAIT_PIXEL=14;
     reg [3:0] state;
     reg [1:0] count,slot;
     reg source_valid,range_valid;
@@ -26,16 +27,19 @@ module Display_Spectrum_Renderer #(parameter integer W=240,H=160)(
     reg [7:0] ypos[0:2],level;
     wire div_ready,div_valid,div_zero;
     wire [47:0] q;
-    wire [47:0] range_span={16'd0,fmax}-{16'd0,fmin};
-    wire [47:0] nx=({16'd0,freq[slot]}-{16'd0,fmin})*(W-1)+(range_span>>1);
-    wire [47:0] ny={16'd0,mag[slot]}*(H-1)+({16'd0,scale_raw}>>1);
-    wire div_request=(state==X_START && used[slot]) || state==Y_START;
+    // Register every arithmetic boundary: select -> subtract -> 16x16 partial
+    // products -> join -> rounding -> divider. No mux/subtract/DSP/carry chain
+    // is allowed to span the full 10ns clock budget in one cycle.
+    reg [31:0] selected_freq,selected_mag,operand,product_lo,product_hi;
+    reg [15:0] factor;
+    reg [47:0] range_span,product,numerator_reg,denominator_reg;
+    reg calculating_y;
+    wire div_request=state==DIV_START;
     integer i,j;
     Display_Unsigned_Divider #(.WIDTH(48)) u_div(
         .clk(clk),.rst(rst),.in_valid(div_request),.in_ready(div_ready),
-        .numerator((state==X_START)?nx:ny),
-        .denominator((state==X_START)?range_span:{16'd0,scale_raw}),
-        .out_valid(div_valid),.out_ready(state==X_WAIT || state==Y_WAIT),
+        .numerator(numerator_reg),.denominator(denominator_reg),
+        .out_valid(div_valid),.out_ready(state==DIV_WAIT),
         .quotient(q),.remainder(),.divide_by_zero(div_zero));
     assign in_ready=!rst && state==IDLE && !pixel_valid;
     assign busy=(state!=IDLE) || pixel_valid;
@@ -53,6 +57,8 @@ module Display_Spectrum_Renderer #(parameter integer W=240,H=160)(
             fmin<=0;fmax<=0;used<=0;point<=0;scale_raw<=0;frame_id_out<=0;
             axis_valid<=0;plot_valid<=0;collision<=0;out_of_range<=0;
             pixel_valid<=0;pixel_index<=0;pixel_y<=0;done<=0;
+            selected_freq<=0;selected_mag<=0;operand<=0;product_lo<=0;product_hi<=0;
+            factor<=0;range_span<=0;product<=0;numerator_reg<=0;denominator_reg<=0;calculating_y<=0;
             for(i=0;i<3;i=i+1) begin freq[i]<=0;mag[i]<=0;xpos[i]<=0;ypos[i]<=0;end
         end else begin
             axis_valid<=0;done<=0;
@@ -77,15 +83,34 @@ module Display_Spectrum_Renderer #(parameter integer W=240,H=160)(
                     end
                     if(slot==2) begin slot<=0;state<=AXIS;end else slot<=slot+1'b1;
                 end
-                AXIS:begin axis_valid<=1;plot_valid<=scale_raw!=0;state<=X_START;end
-                X_START:if(!used[slot]) state<=NEXT_SLOT;else if(div_ready) state<=X_WAIT;
-                X_WAIT:if(div_valid) begin
-                    xpos[slot]<=(q>W-1)?W-1:q;state<=Y_START;
+                AXIS:begin
+                    axis_valid<=1;plot_valid<=scale_raw!=0;
+                    range_span<={16'd0,fmax}-{16'd0,fmin};state<=SELECT_SLOT;
+                end
+                SELECT_SLOT:if(!used[slot]) state<=NEXT_SLOT;else begin
+                    selected_freq<=freq[slot];selected_mag<=mag[slot];state<=X_DIFF;
+                end
+                X_DIFF:begin
+                    operand<=selected_freq-fmin;factor<=W-1;denominator_reg<=range_span;
+                    calculating_y<=0;state<=MULTIPLY;
+                end
+                MULTIPLY:begin
+                    product_lo<=operand[15:0]*factor;product_hi<=operand[31:16]*factor;
+                    state<=JOIN_PRODUCT;
+                end
+                JOIN_PRODUCT:begin product<={16'd0,product_lo}+{product_hi,16'd0};state<=ROUND_NUM;end
+                ROUND_NUM:begin numerator_reg<=product+(denominator_reg>>1);state<=DIV_START;end
+                DIV_START:if(div_ready) state<=DIV_WAIT;
+                DIV_WAIT:if(div_valid) begin
+                    if(calculating_y) begin ypos[slot]<=(q>H-1)?H-1:q;state<=NEXT_SLOT;end
+                    else begin xpos[slot]<=(q>W-1)?W-1:q;state<=Y_PREP;end
                     if(div_zero) out_of_range<=1;
                 end
-                Y_START:if(div_ready) state<=Y_WAIT;
-                Y_WAIT:if(div_valid) begin ypos[slot]<=(q>H-1)?H-1:q;state<=NEXT_SLOT;end
-                NEXT_SLOT:if(slot==2) state<=PREPARE;else begin slot<=slot+1'b1;state<=X_START;end
+                Y_PREP:begin
+                    operand<=selected_mag;factor<=H-1;denominator_reg<={16'd0,scale_raw};
+                    calculating_y<=1;state<=MULTIPLY;
+                end
+                NEXT_SLOT:if(slot==2) state<=PREPARE;else begin slot<=slot+1'b1;state<=SELECT_SLOT;end
                 PREPARE:begin
                     collision<=(used[0] && used[1] && xpos[0]==xpos[1]) ||
                         (used[0] && used[2] && xpos[0]==xpos[2]) ||
