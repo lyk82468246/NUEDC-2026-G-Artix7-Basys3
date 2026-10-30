@@ -27,6 +27,7 @@
 - [操作与预期显示](#操作与预期显示)：开关、按钮、LED、数码管和屏幕。
 - [构建与下载](#构建与下载)：Windows/Vivado手动流程与产物位置。
 - [首次上机测试](#首次上机测试)：100 kHz基线、ILA和验收边界。
+- [比赛验收现场手册](docs/contest_acceptance_runbook.md)：接线核对、仪器设置、A/B/C十二项操作、计时与收尾；配套[空白记录表](docs/contest_acceptance_record_template.md)。
 - [仿真与自动化](#仿真与自动化)：回归入口和仪器控制。
 - [资料索引](#资料索引)：专项说明与历史证据。
 
@@ -269,6 +270,7 @@ PMOD 5/11为GND，6/12为3.3 V。屏幕TX不接FPGA；本设计无UART RX。板�
 | 主题 | 文档 |
 | --- | --- |
 | 本轮通过的构建 | [2026-10-30构建核对](docs/build_verification_20261030.md) |
+| 现场验收操作 | [完整操作手册](docs/contest_acceptance_runbook.md)、[空白记录表](docs/contest_acceptance_record_template.md)、[A/B彩排向量](docs/acceptance_vectors/README.md) |
 | 显示接口/参数 | [显示集成契约](docs/display_integration_20261029.md)、[屏幕spec草案](docs/TJC_UART_FORMAT.md) |
 | 默认/在线标定 | [标定与VIO](docs/runtime_calibration.md)、[默认bank回归](reports/boot_calibration_20261030/README.md) |
 | 时序修订/仿真证据 | [时序定位与回归](reports/display_timing_20261030/README.md)、[双页集成回归](reports/display_integration_20261030/README.md) |
