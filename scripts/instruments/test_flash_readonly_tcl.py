@@ -40,7 +40,9 @@ class TestFlashReadOnlyTcl(unittest.TestCase):
         files = project.findall("./FileSets/FileSet[@Name='sources_1']/File")
         for name in NAMES:
             self.assertEqual(sum(f.get('Path', '').endswith('/' + name + '.v') for f in files), 1)
-        self.assertNotIn('ENABLE_FLASH_READONLY_PROBE=1', (ROOT / 'G_FPGA.xpr').read_text(encoding='utf-8'))
+        # GUI users may explicitly enable the probe; check the RTL default only.
+        self.assertIn('parameter integer ENABLE_FLASH_READONLY_PROBE = 0',
+                      (ROOT / 'sources/rtl/G_FPGA_Top.v').read_text(encoding='utf-8'))
 
     def test_setup_no_build_and_preserves_generics(self):
         t = tkinter.Tcl(); t.setvar('root_path', ROOT.as_posix())

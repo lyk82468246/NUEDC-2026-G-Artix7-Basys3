@@ -9,7 +9,7 @@ $env:PATH="$VivadoRoot\lib\win64.o;$VivadoRoot\bin;$VivadoRoot\bin\unwrapped\win
 New-Item -ItemType Directory -Path $prepRun -Force | Out-Null
 Push-Location -LiteralPath $prepRun
 try {
-    $prepFiles=@('BIN2BCD.v','Display_Unsigned_Divider.v','Display_Frame_Calibrator.v','Display_Sine_ROM.v','Display_Fundamental_Aligner.v','Display_Wave_Renderer.v','Display_Spectrum_Renderer.v','Display_mV_Formatter.v') |
+    $prepFiles=@('BIN2BCD.v','Display_Unsigned_Divider.v','Display_Frame_Calibrator.v','Display_Sine_ROM.v','Display_Fundamental_Aligner.v','Display_Interpolation_ROM.v','Display_Bandlimited_Interpolator.v','Display_Wave_Renderer.v','Display_Spectrum_Renderer.v','Display_mV_Formatter.v') |
         ForEach-Object {Join-Path "$prepRoot\sources\rtl" $_}
     & "$VivadoRoot\bin\xvlog.bat" -sv -work xil_defaultlib @prepFiles "$prepRoot\sim\tb_display_alignment.sv"
     if($LASTEXITCODE -ne 0){throw 'Display alignment compile failed'}

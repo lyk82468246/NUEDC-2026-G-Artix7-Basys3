@@ -1,0 +1,72 @@
+XSim 2025.2 waveform interpolation, 2026-10-30
+Behavioral simulation only. No build or hardware access.
+
+[tb_display_bandlimited]
+case PASS f=10000.000000 three=0 composite=0 amax= 9999 max_error=2.145107 rms_error=0.810274
+case PASS f=100000.000000 three=1 composite=0 amax= 9999 max_error=13.012695 rms_error=5.000232
+case PASS f=200000.000000 three=0 composite=0 amax= 9999 max_error=24.140688 rms_error=10.049005
+case PASS f=409600.000000 three=0 composite=0 amax= 9998 max_error=47.076558 rms_error=20.050524
+case PASS f=500000.000000 three=0 composite=0 amax=10001 max_error=59.587341 rms_error=24.767859
+case PASS f=500000.000000 three=1 composite=0 amax=10000 max_error=59.117575 rms_error=24.627615
+case PASS f=100000.000000 three=1 composite=1 amax= 6797 max_error=22.829623 rms_error=7.221295
+PASS: bandlimited interpolation against continuous sine/composite, high-band/coherent sampling, extrema and 240 pixels
+$finish called at time : 14602510 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_bandlimited.sv" Line 80
+
+[tb_display_interpolator_contract]
+PASS: interpolation signed full-scale, DC normalization, phase carry, edge clamp, saturation, output stall and reset
+$finish called at time : 4990 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_bandlimited.sv" Line 130
+
+[tb_display_hmi]
+PASS: UART spec including us/FFT midpoint labels, zero-origin plot, page policy, atomic gains, all pixels, HOLD, invalid/CAL, reset/STOP drain
+$finish called at time : 10358030 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_hmi.sv" Line 277
+
+[tb_display_hmi_full]
+PASS: UART spec including us/FFT midpoint labels, zero-origin plot, page policy, atomic gains, all pixels, HOLD, invalid/CAL, reset/STOP drain
+$finish called at time : 70287110 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_hmi.sv" Line 277
+
+[tb_display_hmi_inverted]
+PASS: UART spec including us/FFT midpoint labels, zero-origin plot, page policy, atomic gains, all pixels, HOLD, invalid/CAL, reset/STOP drain
+$finish called at time : 10468580 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_hmi.sv" Line 277
+
+[tb_display_hmi_no_guard]
+PASS: UART spec including us/FFT midpoint labels, zero-origin plot, page policy, atomic gains, all pixels, HOLD, invalid/CAL, reset/STOP drain
+$finish called at time : 6780850 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_hmi.sv" Line 277
+
+[tb_display_aligned_hmi]
+PASS: full-size aligned composite HMI, actual UART fine-period labels, same-page suppression and refresh transaction
+$finish called at time : 11011570 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_aligned_hmi.sv" Line 81
+
+[tb_display_hmi_forward]
+PASS: UART spec including us/FFT midpoint labels, zero-origin plot, page policy, atomic gains, all pixels, HOLD, invalid/CAL, reset/STOP drain
+$finish called at time : 10358030 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_hmi.sv" Line 277
+
+[tb_display_prepare]
+PASS: display preparation 240x160 divider/calibration/wave/spectrum/mV, backpressure and invalid/reset
+$finish called at time : 1514890 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_prepare.sv" Line 228
+
+[tb_display_prepare_compact]
+PASS: display preparation 200x128 divider/calibration/wave/spectrum/mV, backpressure and invalid/reset
+$finish called at time : 1375890 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_prepare.sv" Line 228
+
+[tb_display_prepare_full_y]
+PASS: display preparation 17x256 divider/calibration/wave/spectrum/mV, backpressure and invalid/reset
+$finish called at time : 739990 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_prepare.sv" Line 228
+
+[measurement_debug]
+PASS: atomic debug snapshot widths/slots/invalid/reset/epoch collision
+$finish called at time : 540 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_measurement_debug_snapshot.sv" Line 72
+
+[debug_top_contract]
+PASS: top port contract VIO on/off, legacy/new HMI, real capture permit blocked during replay (black-box DSP IP)
+$finish called at time : 3 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_debug_top_contract.sv" Line 37
+
+[tb_display_alignment]
+case PASS bin=20.000000 phase=0.000000 harmonics=17 three=0 lock=1
+case PASS bin=20.370000 phase=1.700000 harmonics=17 three=1 lock=1
+case PASS bin=20.370000 phase=4.600000 harmonics=17 three=1 lock=1
+case PASS bin=200.400000 phase=5.900000 harmonics=5 three=0 lock=1
+case PASS bin=999.700000 phase=2.800000 harmonics=2 three=1 lock=1
+case PASS bin=20.200000 phase=3.100000 harmonics=17 three=1 lock=1
+case PASS bin=20.000000 phase=0.900000 harmonics=17 three=0 lock=0
+PASS: fundamental phase/period, off-grid and strong harmonics, exact original-frame pixels, backpressure, confidence fallback
+$finish called at time : 12957370 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_alignment.sv" Line 99

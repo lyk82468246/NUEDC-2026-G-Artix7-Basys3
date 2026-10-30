@@ -8,7 +8,7 @@
 // Y is a LOGICAL positive-up level; the final screen adapter chooses inversion.
 module Display_Wave_Renderer #(
     parameter integer FRAME_LENGTH=8192,ADDR_WIDTH=13,W=240,H=160,F=12,
-    parameter integer ENABLE_ALIGNMENT=0
+    parameter integer ENABLE_ALIGNMENT=0,BANDLIMITED=0
 )(
     input wire clk,rst,input wire in_valid,output wire in_ready,
     input wire signal_valid,three_cycles,input wire [11:0] fundamental_bin,
@@ -24,12 +24,14 @@ module Display_Wave_Renderer #(
 );
     localparam IDLE=0,SCAN_REQ=1,SCAN_READ=2,ADDR_START=3,ADDR_WAIT=4,
         READ0_REQ=5,READ0=6,READ1_REQ=7,READ1=8,INTERPOLATE=9,
-        Y_START=10,Y_WAIT=11,EMIT=12,WAIT_PIXEL=13,ALIGN_START=14,ALIGN_WAIT=15;
+        Y_START=10,Y_WAIT=11,EMIT=12,WAIT_PIXEL=13,ALIGN_START=14,ALIGN_WAIT=15,
+        FIR_START=16,FIR_WAIT=17;
     localparam integer MID=H/2,YSPAN=(H-1)/2;
     localparam [ADDR_WIDTH-1:0] LAST=FRAME_LENGTH-1;
     localparam [47:0] MAXQ=(FRAME_LENGTH-1)*(48'd1<<F);
     localparam [47:0] PIXEL_INTERVALS=W-1;
-    reg [3:0] state;
+    reg [4:0] state;
+    reg preparing;
     reg [ADDR_WIDTH-1:0] scan_addr;
     reg [11:0] bin;
     reg [1:0] cycles;
@@ -40,6 +42,20 @@ module Display_Wave_Renderer #(
     wire align_ready,align_valid,align_locked,align_rd_en;
     wire [ADDR_WIDTH-1:0] align_rd_addr;
     wire [31:0] align_bin,align_period,align_origin;
+    wire fir_ready,fir_valid,fir_rd_en,fir_edge,fir_overflow;
+    wire [ADDR_WIDTH-1:0] fir_rd_addr;
+    wire signed [15:0] fir_sample;
+    wire [16:0] fir_absolute=fir_sample[15]?-$signed({fir_sample[15],fir_sample}):{1'b0,fir_sample};
+    generate if(BANDLIMITED)begin:g_interpolate
+        Display_Bandlimited_Interpolator #(.FRAME_LENGTH(FRAME_LENGTH),.ADDR_WIDTH(ADDR_WIDTH)) u_interp(
+            .clk(clk),.rst(rst),.in_valid(state==FIR_START),.in_ready(fir_ready),.coordinate(coord),
+            .rd_en(fir_rd_en),.rd_addr(fir_rd_addr),.rd_data(rd_data),
+            .out_valid(fir_valid),.out_ready(state==FIR_WAIT),.sample(fir_sample),
+            .edge_clamped(fir_edge),.overflow(fir_overflow));
+    end else begin:g_linear
+        assign fir_ready=0;assign fir_valid=0;assign fir_rd_en=0;assign fir_rd_addr=0;
+        assign fir_sample=0;assign fir_edge=0;assign fir_overflow=0;
+    end endgenerate
     generate if(ENABLE_ALIGNMENT) begin:g_align
         Display_Fundamental_Aligner #(.FRAME_LENGTH(FRAME_LENGTH),.ADDR_WIDTH(ADDR_WIDTH)) u_align(
             .clk(clk),.rst(rst),.in_valid(state==ALIGN_START),.in_ready(align_ready),
@@ -58,7 +74,9 @@ module Display_Wave_Renderer #(
     wire [16:0] abs_read=rd_data[15]?-$signed({rd_data[15],rd_data}):{1'b0,rd_data};
     wire [15:0] max_candidate=(abs_read>{1'b0,amax_raw})?abs_read[15:0]:amax_raw;
     wire signed [16:0] delta=$signed({sample1[15],sample1})-$signed({sample0[15],sample0});
-    wire signed [47:0] delta_q=delta*$signed({1'b0,coord[F-1:0]});
+    // Compile out the legacy multiplier explicitly when the shared FIR DSP
+    // is selected; do not rely on unreachable-state optimization to save DSPs.
+    wire signed [47:0] delta_q=BANDLIMITED?48'sd0:delta*$signed({1'b0,coord[F-1:0]});
     wire signed [47:0] base_q=$signed({{32{sample0[15]}},sample0})<<<F;
     wire signed [47:0] interpolated_q=base_q+delta_q;
     wire [16:0] abs_sample=interpolated_sample[15]?
@@ -78,12 +96,14 @@ module Display_Wave_Renderer #(
     assign in_ready=!rst && state==IDLE && !pixel_valid;
     assign busy=(state!=IDLE) || pixel_valid;
     assign rd_en=(state==ALIGN_START || state==ALIGN_WAIT)?align_rd_en:
-        (state==SCAN_REQ || state==READ0_REQ || state==READ1_REQ);
+        ((state==FIR_START || state==FIR_WAIT)?fir_rd_en:
+        (state==SCAN_REQ || state==READ0_REQ || state==READ1_REQ));
     assign rd_addr=(state==ALIGN_START || state==ALIGN_WAIT)?align_rd_addr:
-        ((state==SCAN_REQ)?scan_addr:((state==READ1_REQ)?address1:address0));
+        ((state==FIR_START || state==FIR_WAIT)?fir_rd_addr:
+        ((state==SCAN_REQ)?scan_addr:((state==READ1_REQ)?address1:address0)));
     // synthesis translate_off
     initial if(W<2 || W>65535 || H<3 || H>256 || F<1 || F>16 || FRAME_LENGTH<2 ||
-               FRAME_LENGTH>(1<<ADDR_WIDTH) || (ENABLE_ALIGNMENT && F!=12)) $fatal(1,"Invalid wave renderer parameters");
+               FRAME_LENGTH>(1<<ADDR_WIDTH) || ((ENABLE_ALIGNMENT || BANDLIMITED) && F!=12)) $fatal(1,"Invalid wave renderer parameters");
     // synthesis translate_on
     always @(posedge clk) begin
         if(rst) begin
@@ -91,6 +111,7 @@ module Display_Wave_Renderer #(
             sample0<=0;sample1<=0;interpolated_sample<=0;pending_y<=MID;
             axis_valid<=0;amax_raw<=0;plot_valid<=0;window_clamped<=0;
             alignment_locked<=0;refined_bin_q20<=0;origin_q12<=0;span_q12<=0;phase_numerator<=0;
+            preparing<=0;
             pixel_valid<=0;pixel_index<=0;pixel_y<=0;frame_id_out<=0;done<=0;
         end else begin
             axis_valid<=0;done<=0;
@@ -99,7 +120,7 @@ module Display_Wave_Renderer #(
                     frame_id_out<=frame_id;bin<=fundamental_bin;cycles<=three_cycles?3:1;
                     point<=0;scan_addr<=0;amax_raw<=0;window_clamped<=0;pending_y<=MID;
                     alignment_locked<=0;refined_bin_q20<={fundamental_bin,20'd0};
-                    phase_numerator<=0;origin_q12<=0;
+                    phase_numerator<=0;origin_q12<=BANDLIMITED?(48'd16<<F):0;preparing<=BANDLIMITED;
                     plot_valid<=signal_valid && fundamental_bin!=0;
                     if(signal_valid && fundamental_bin!=0) state<=SCAN_REQ;
                     else begin axis_valid<=1;state<=EMIT;end
@@ -110,22 +131,38 @@ module Display_Wave_Renderer #(
                     if(scan_addr==LAST) begin
                         plot_valid<=max_candidate!=0;
                         if(ENABLE_ALIGNMENT && max_candidate!=0)state<=ALIGN_START;
-                        else begin axis_valid<=1;state<=ADDR_START;end
+                        else begin axis_valid<=!BANDLIMITED;state<=ADDR_START;end
                     end else begin scan_addr<=scan_addr+1'b1;state<=SCAN_REQ;end
                 end
                 ALIGN_START:if(align_ready)state<=ALIGN_WAIT;
                 ALIGN_WAIT:if(align_valid)begin
                     alignment_locked<=align_locked;refined_bin_q20<=align_bin;
-                    origin_q12<=align_origin;
+                    // Four complete periods leave the 16-tap kernel prehistory
+                    // inside the frozen frame, without changing trigger phase.
+                    origin_q12<=align_locked?(align_origin+(BANDLIMITED?(align_period<<2):32'd0)):
+                        (BANDLIMITED?(32'd16<<F):32'd0);
                     span_q12<=(cycles==3)?((align_period<<1)+align_period):align_period;
-                    axis_valid<=1;state<=ADDR_START;
+                    axis_valid<=!BANDLIMITED;state<=ADDR_START;
                 end
                 ADDR_START:if(div_ready) state<=ADDR_WAIT;
                 ADDR_WAIT:if(div_valid) begin
-                    if(quotient+(alignment_locked?{16'd0,origin_q12}:48'd0)>MAXQ || div_zero)
+                    if(quotient+((alignment_locked || BANDLIMITED)?{16'd0,origin_q12}:48'd0)>MAXQ || div_zero)
                         begin coord<=MAXQ;window_clamped<=1;end
-                    else coord<=quotient+(alignment_locked?{16'd0,origin_q12}:48'd0);
-                    state<=READ0_REQ;
+                    else coord<=quotient+((alignment_locked || BANDLIMITED)?{16'd0,origin_q12}:48'd0);
+                    state<=BANDLIMITED?FIR_START:READ0_REQ;
+                end
+                FIR_START:if(fir_ready)state<=FIR_WAIT;
+                FIR_WAIT:if(fir_valid)begin
+                    if(fir_edge)window_clamped<=1;
+                    if(preparing)begin
+                        // Include reconstructed between-sample extrema in the
+                        // axis BEFORE calibration/plotting; no flat clipped peaks.
+                        if(fir_absolute>{1'b0,amax_raw})amax_raw<=fir_absolute[15:0];
+                        if(point==W-1)begin
+                            preparing<=0;axis_valid<=1;point<=0;phase_numerator<=0;
+                        end else begin point<=point+1'b1;phase_numerator<=phase_numerator+span_q12;end
+                        state<=ADDR_START;
+                    end else begin interpolated_sample<=fir_sample;state<=Y_START;end
                 end
                 READ0_REQ:state<=READ0;
                 READ0:begin sample0<=rd_data;state<=READ1_REQ;end

@@ -22,7 +22,7 @@ module tb_display_hmi #(parameter N=64,W=8,YINV=0,PERIODIC=0,GUARD=1,REV=1);
     reg [511:0] received=0;
     integer ff_count=0;
     Display_HMI #(.CLK_FREQ_HZ(1152000),.BAUD_RATE(115200),.FRAME_LENGTH(N),
-        .W(W),.H(H),.INVERT_Y(YINV),.WAVE_ALIGNMENT(0),.FFT_REVERSE_X(REV),.REFRESH_GUARD(GUARD),.PAGE_REFRESH_FRAMES(PERIODIC),.ENABLE_STATUS(1),.STARTUP_CYCLES(1000),
+        .W(W),.H(H),.INVERT_Y(YINV),.WAVE_ALIGNMENT(0),.WAVE_BANDLIMITED(0),.FFT_REVERSE_X(REV),.REFRESH_GUARD(GUARD),.PAGE_REFRESH_FRAMES(PERIODIC),.ENABLE_STATUS(1),.STARTUP_CYCLES(1000),
         .COMMAND_GAP_CYCLES(3),.PAGE_GAP_CYCLES(20)) dut(
         .clk(clk),.rst(rst),.capture_start(capture_start),.allow_redraw(allow_redraw),
         .time_result_valid(tv),.peak_result_valid(pv),.vpp_raw(vpp),.rms_raw(rms),

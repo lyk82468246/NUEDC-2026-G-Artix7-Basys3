@@ -16,7 +16,7 @@ module Display_HMI #(
     // Refresh guard requires the screen firmware's ref_stop/ref_star support.
     // Set to zero for firmware without this command pair; no RX port is assumed.
     parameter integer REFRESH_GUARD=1,WAVE_ALIGNMENT=1,
-    parameter integer FFT_REVERSE_X=1,
+    parameter integer FFT_REVERSE_X=1,WAVE_BANDLIMITED=1,
     // Right-aligned ASCII names; changing layout does not change the FSM.
     parameter [127:0] PAGE_WAVE="wave",PAGE_FFT="fft",
     parameter [127:0] NAME_VPP="tUpp",NAME_RMS="tUrms",
@@ -204,7 +204,7 @@ module Display_HMI #(
         .command(command),.length(command_length),.is_page(command_page),
         .uart_tx(uart_tx),.tx_idle(tx_idle),.done(command_done));
     Display_Wave_Renderer #(.FRAME_LENGTH(FRAME_LENGTH),.ADDR_WIDTH(ADDR_WIDTH),.W(W),.H(H),
-        .ENABLE_ALIGNMENT(WAVE_ALIGNMENT)) u_wave(
+        .ENABLE_ALIGNMENT(WAVE_ALIGNMENT),.BANDLIMITED(WAVE_BANDLIMITED)) u_wave(
         .clk(clk),.rst(reset_local[2]),.in_valid(state==WAVE_START),.in_ready(wave_ready),
         .signal_valid(source_valid),.three_cycles(three_cycles),.fundamental_bin(active_bins[11:0]),.frame_id(id),
         .rd_en(time_rd_en),.rd_addr(time_rd_addr),.rd_data(time_rd_data),

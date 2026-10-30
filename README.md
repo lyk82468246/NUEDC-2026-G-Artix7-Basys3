@@ -92,7 +92,7 @@ flowchart TD
 
 - **采集/时域**：12-bit码默认减2048、左移4位后进入FIR；带小数状态的IIR跟踪残余DC，预热后检测非正到正过零。Vpp为unsigned 17-bit，RMS为unsigned 16-bit；RMS由未加窗样本平方平均后开方，不由Vpp推算，也不是逐帧精确去均值。
 - **频域**：平顶窗ROM为signed Q1.15。FFT/CORDIC幅值是raw；分析器排除同一主瓣、估计谱底，再按频率排序并检查谐波一致性。最多输出三分量，仍可能漏检弱基频；不支持亚bin估计。`MIN_SIGNAL_RMS=64 raw`为当前默认门限，不是64 mV。
-- **波形**：默认通过两半帧Hann加权基波投影，细化显示周期并确定基波相位起点，再对原始AFE复合采样作Q12分数地址插值，保留谐波畸变；按全帧Amax设置对称纵轴。低置信度回退格点跨度；此细化仅用于显示，不改变测量结果，任意组合及实屏稳定性仍待验收。
+- **波形**：默认通过两半帧Hann加权基波投影，细化显示周期并确定基波相位起点，再对原始AFE复合采样作16抽头/64相位带限插值，保留谐波畸变；按全帧Amax与预计算绘图点最大值设置对称纵轴。低置信度回退格点跨度；此细化仅用于显示，不改变测量结果，任意组合及实屏稳定性仍待验收。
 - **谱图**：绘制已检测三分量的定性谱线；不是完整噪声底。共用像素的峰取最大值，精确频率/幅值看文本列表。
 - **时序/CDC**：ADC输入延迟目前仍采用min 0 ns / max 8 ns占位假设；bundled-data CDC依赖总线保持窗口。内部实现通过不代表这些外部接口假设已经实测验收。
 
@@ -188,7 +188,7 @@ PMOD 5/11为GND，6/12为3.3 V。屏幕TX不接FPGA；本设计无UART RX。板�
 
 ## 构建与下载
 
-**工程已打开时更新代码**：外部修改XPR不会自动同步Vivado内存里的源列表。新增显示RTL后务必在当前GUI执行下列注册脚本，确认9条REGISTERED后再综合；否则旧窗口保存还会覆盖磁盘登记。遇到模块找不到见[源文件登记修复](docs/synthesis_source_registration_20261030.md)。
+**工程已打开时更新代码**：外部修改XPR不会自动同步Vivado内存里的源列表。新增显示RTL后务必在当前GUI执行下列注册脚本，确认11条REGISTERED后再综合；否则旧窗口保存还会覆盖磁盘登记。遇到模块找不到见[源文件登记修复](docs/synthesis_source_registration_20261030.md)。
 
 ### 使用现有工程
 
@@ -259,6 +259,7 @@ PMOD 5/11为GND，6/12为3.3 V。屏幕TX不接FPGA；本设计无UART RX。板�
 .\scripts\run_display_hmi_sim.ps1
 .\scripts\run_display_prepare_sim.ps1
 .\scripts\run_display_alignment_sim.ps1
+.\scripts\run_display_bandlimited_sim.ps1
 .\scripts\run_runtime_calibration_sim.ps1
 .\scripts\run_measurement_debug_sim.ps1
 .\scripts\run_contest_sim.ps1
@@ -278,6 +279,7 @@ PMOD 5/11为GND，6/12为3.3 V。屏幕TX不接FPGA；本设计无UART RX。板�
 | AFG1022验收信号 | [A/B/C波形配方、离线制表与负载核验](docs/afg1022_acceptance_waveforms.md) |
 | 显示接口/参数 | [显示集成契约](docs/display_integration_20261029.md)、[屏幕spec](docs/TJC_UART_FORMAT.md) |
 | Flash标定持久化 | [方案](docs/flash_calibration_plan.md)、[记录格式与P1只读上机](docs/flash_calibration_format_v1.md)；尚未支持保存 |
+| 高频绘图修订 | [两点折线原因、16抽头重建、数值验证和上机](docs/waveform_interpolation_20261030.md)；尚未构建实测 |
 | 最新实屏反馈修订 | [频谱方向、文字刷新、kHz格式及标定顺序](docs/screen_axis_refresh_20261030.md) |
 | 显示稳定性修订 | [同页刷新、复合采样相位对齐、验证与手动构建](docs/display_stability_20261030.md) |
 | 前次刻度适配 | [us时间/FFT中点适配记录](docs/screen_spec_alignment_20261030.md)（刷新策略已被上项取代） |
