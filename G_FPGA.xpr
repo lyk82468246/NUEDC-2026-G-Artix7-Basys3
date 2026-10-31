@@ -174,7 +174,21 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
+      <File Path="$PPRDIR/sources/rtl/Calibration_Record_Encoder.v">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
       <File Path="$PPRDIR/sources/rtl/Calibration_Record_Select.v">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/sources/rtl/Calibration_Store.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
@@ -279,6 +293,13 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
+      <File Path="$PPRDIR/sources/rtl/Flash_Command_Engine.v">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
       <File Path="$PPRDIR/sources/rtl/Flash_Read_Engine.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -377,27 +398,6 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/sources/rtl/Flash_Command_Engine.v">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/sources/rtl/Calibration_Record_Encoder.v">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/sources/rtl/Calibration_Store.v">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
       <File Path="$PPRDIR/sources/rtl/G_FPGA_Top.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -409,18 +409,12 @@
         <Option Name="DesignMode" Val="RTL"/>
         <Option Name="TopModule" Val="G_FPGA_Top"/>
         <Generic Name="ENABLE_RUNTIME_CALIBRATION" Val="1"/>
-        <Generic Name="ENABLE_FLASH_READONLY_PROBE" Val="1"/>
+        <Generic Name="ENABLE_FLASH_PERSISTENCE" Val="1"/>
+        <Generic Name="ENABLE_FLASH_READONLY_PROBE" Val="0"/>
       </Config>
     </FileSet>
     <FileSet Name="constrs_1" Type="Constrs" RelSrcDir="$PSRCDIR/constrs_1" RelGenDir="$PGENDIR/constrs_1">
       <Filter Type="Constrs"/>
-      <File Path="$PPRDIR/sources/constraints/Flash_Store_Timing.xdc">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="ProcessingOrder" Val="LATE"/>
-        </FileInfo>
-      </File>
       <File Path="$PPRDIR/sources/constraints/Basys3_Pinout.xdc">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -428,6 +422,13 @@
         </FileInfo>
       </File>
       <File Path="$PPRDIR/sources/constraints/Flash_Readonly_Timing.xdc">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="ProcessingOrder" Val="LATE"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/sources/constraints/Flash_Store_Timing.xdc">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
@@ -593,6 +594,22 @@
         <Generic Name="ENABLE_FLASH_READONLY_PROBE" Val="1"/>
       </Config>
     </FileSet>
+    <FileSet Name="vio_flash_store" Type="BlockSrcs" RelSrcDir="$PSRCDIR/vio_flash_store" RelGenDir="$PGENDIR/vio_flash_store">
+      <File Path="$PPRDIR/sources/ip/vio_flash_store/vio_flash_store.xci">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <Config>
+        <Option Name="TopModule" Val="vio_flash_store"/>
+        <Option Name="UseBlackboxStub" Val="1"/>
+        <Generic Name="ENABLE_RUNTIME_CALIBRATION" Val="1"/>
+        <Generic Name="ENABLE_FLASH_PERSISTENCE" Val="1"/>
+        <Generic Name="ENABLE_FLASH_READONLY_PROBE" Val="0"/>
+      </Config>
+    </FileSet>
   </FileSets>
   <Simulators>
     <Simulator Name="XSim">
@@ -704,6 +721,18 @@
       <RQSFiles/>
     </Run>
     <Run Id="vio_flash_calibration_synth_1" Type="Ft3:Synth" SrcSet="vio_flash_calibration" Part="xc7a35tcpg236-1" ConstrsSet="vio_flash_calibration" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/vio_flash_calibration_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/vio_flash_calibration_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/vio_flash_calibration_synth_1" ParallelReportGen="true">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2025">
+          <Desc>Vivado Synthesis Defaults</Desc>
+        </StratHandle>
+        <Step Id="synth_design"/>
+      </Strategy>
+      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
+      <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2025"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+      <RQSFiles/>
+    </Run>
+    <Run Id="vio_flash_store_synth_1" Type="Ft3:Synth" SrcSet="vio_flash_store" Part="xc7a35tcpg236-1" ConstrsSet="vio_flash_store" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/vio_flash_store_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/vio_flash_store_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/vio_flash_store_synth_1" ParallelReportGen="true">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2025">
           <Desc>Vivado Synthesis Defaults</Desc>
@@ -870,6 +899,25 @@
       <RQSFiles/>
     </Run>
     <Run Id="vio_flash_calibration_impl_1" Type="Ft2:EntireDesign" Part="xc7a35tcpg236-1" ConstrsSet="vio_flash_calibration" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="vio_flash_calibration_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/vio_flash_calibration_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/vio_flash_calibration_impl_1" ParallelReportGen="true">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2025">
+          <Desc>Default settings for Implementation.</Desc>
+        </StratHandle>
+        <Step Id="init_design"/>
+        <Step Id="opt_design"/>
+        <Step Id="power_opt_design"/>
+        <Step Id="place_design"/>
+        <Step Id="post_place_power_opt_design"/>
+        <Step Id="phys_opt_design"/>
+        <Step Id="route_design"/>
+        <Step Id="post_route_phys_opt_design"/>
+        <Step Id="write_bitstream"/>
+      </Strategy>
+      <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2025"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+      <RQSFiles/>
+    </Run>
+    <Run Id="vio_flash_store_impl_1" Type="Ft2:EntireDesign" Part="xc7a35tcpg236-1" ConstrsSet="vio_flash_store" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="vio_flash_store_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/vio_flash_store_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/vio_flash_store_impl_1" ParallelReportGen="true">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2025">
           <Desc>Default settings for Implementation.</Desc>
