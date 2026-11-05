@@ -1,0 +1,96 @@
+{
+  "baseline": "66632a3",
+  "current": "63c1688",
+  "files": [
+    {
+      "path": "sources/rtl/Component_Analyzer.v",
+      "baseline_blob": "badbbff946d605332e68f4229a97431bea820a8d",
+      "current_blob": "badbbff946d605332e68f4229a97431bea820a8d",
+      "identical": true
+    },
+    {
+      "path": "sources/rtl/FFT_Processor.v",
+      "baseline_blob": "a4ab6e4063beedb1035bea0a0e301723c81890ce",
+      "current_blob": "a4ab6e4063beedb1035bea0a0e301723c81890ce",
+      "identical": true
+    },
+    {
+      "path": "sources/rtl/AFE_Capture.v",
+      "baseline_blob": "a5fce30e95db9839308204a2cf3be429bd845d65",
+      "current_blob": "a5fce30e95db9839308204a2cf3be429bd845d65",
+      "identical": true
+    },
+    {
+      "path": "sources/rtl/ADC_Input_CDC.v",
+      "baseline_blob": "510588115bb03bdaff62d768e8fd2efd3295798b",
+      "current_blob": "510588115bb03bdaff62d768e8fd2efd3295798b",
+      "identical": true
+    },
+    {
+      "path": "sources/rtl/Time_Domain_Calc.v",
+      "baseline_blob": "b634300fdcf40517186b6dfef200173cd20f6e4d",
+      "current_blob": "b634300fdcf40517186b6dfef200173cd20f6e4d",
+      "identical": true
+    },
+    {
+      "path": "sources/rtl/BRAM_TimeDomain.v",
+      "baseline_blob": "7026ade6ce80c5d6267c0f99c135d5efeea3409c",
+      "current_blob": "7026ade6ce80c5d6267c0f99c135d5efeea3409c",
+      "identical": true
+    },
+    {
+      "path": "sources/rtl/BRAM_FreqDomain.v",
+      "baseline_blob": "1eca19553798eb990324775c40a710b1ce881ccc",
+      "current_blob": "1eca19553798eb990324775c40a710b1ce881ccc",
+      "identical": true
+    },
+    {
+      "path": "sources/rtl/FlatTop_Window_ROM.v",
+      "baseline_blob": "56ba64f9110165948ce33b8887dd07c05b6fcf11",
+      "current_blob": "56ba64f9110165948ce33b8887dd07c05b6fcf11",
+      "identical": true
+    },
+    {
+      "path": "sources/ip/cordic_sqrt_rms/cordic_sqrt_rms.xci",
+      "baseline_blob": "a86def7b339f8218192e2460474cc3e3165d55b4",
+      "current_blob": "a86def7b339f8218192e2460474cc3e3165d55b4",
+      "identical": true
+    },
+    {
+      "path": "sources/ip/cordic_translate_mag/cordic_translate_mag.xci",
+      "baseline_blob": "e5c32550fde096cad4dea0e494af87f79025a698",
+      "current_blob": "e5c32550fde096cad4dea0e494af87f79025a698",
+      "identical": true
+    },
+    {
+      "path": "sources/ip/fir_compiler_lp_600k/fir_compiler_lp_600k.xci",
+      "baseline_blob": "27d0de0e6074b4bf007e94d126e3201a21cb3c2f",
+      "current_blob": "27d0de0e6074b4bf007e94d126e3201a21cb3c2f",
+      "identical": true
+    },
+    {
+      "path": "sources/ip/flat_top_window_rom/flat_top_window_rom.xci",
+      "baseline_blob": "7a7ab968942c27bbed61905a759bc1ee222035aa",
+      "current_blob": "7a7ab968942c27bbed61905a759bc1ee222035aa",
+      "identical": true
+    },
+    {
+      "path": "sources/ip/mmcm_top_wiz/mmcm_top_wiz.xci",
+      "baseline_blob": "737b9a52c70633490fcf09a8c142896662afe46d",
+      "current_blob": "737b9a52c70633490fcf09a8c142896662afe46d",
+      "identical": true
+    },
+    {
+      "path": "sources/ip/vio_calibration/vio_calibration.xci",
+      "baseline_blob": "26eb1883c9bb92f6abd443e42e5e07acf553f5fd",
+      "current_blob": "26eb1883c9bb92f6abd443e42e5e07acf553f5fd",
+      "identical": true
+    },
+    {
+      "path": "sources/ip/xfft_8192/xfft_8192.xci",
+      "baseline_blob": "e225c8c4b8f1d0d4e4d9a2edbddbb4577c10de7b",
+      "current_blob": "e225c8c4b8f1d0d4e4d9a2edbddbb4577c10de7b",
+      "identical": true
+    }
+  ]
+}
