@@ -25,7 +25,7 @@ module Display_Wave_Renderer #(
     localparam IDLE=0,SCAN_REQ=1,SCAN_READ=2,ADDR_START=3,ADDR_WAIT=4,
         READ0_REQ=5,READ0=6,READ1_REQ=7,READ1=8,INTERPOLATE=9,
         Y_START=10,Y_WAIT=11,EMIT=12,WAIT_PIXEL=13,ALIGN_START=14,ALIGN_WAIT=15,
-        FIR_START=16,FIR_WAIT=17;
+        FIR_START=16,FIR_WAIT=17,SCAN_ABS=18;
     localparam integer MID=H/2,YSPAN=(H-1)/2;
     localparam [ADDR_WIDTH-1:0] LAST=FRAME_LENGTH-1;
     localparam [47:0] MAXQ=(FRAME_LENGTH-1)*(48'd1<<F);
@@ -72,7 +72,10 @@ module Display_Wave_Renderer #(
     wire [ADDR_WIDTH-1:0] address0=coord[F+:ADDR_WIDTH];
     wire [ADDR_WIDTH-1:0] address1=(address0==LAST)?LAST:address0+1'b1;
     wire [16:0] abs_read=rd_data[15]?-$signed({rd_data[15],rd_data}):{1'b0,rd_data};
-    wire [15:0] max_candidate=(abs_read>{1'b0,amax_raw})?abs_read[15:0]:amax_raw;
+    // Break BRAM -> signed absolute -> maximum -> state/valid feedback.
+    // Keep the 17-bit absolute value so -32768 remains +32768.
+    reg [16:0] scan_absolute;
+    wire [15:0] max_candidate=(scan_absolute>{1'b0,amax_raw})?scan_absolute[15:0]:amax_raw;
     wire signed [16:0] delta=$signed({sample1[15],sample1})-$signed({sample0[15],sample0});
     // Compile out the legacy multiplier explicitly when the shared FIR DSP
     // is selected; do not rely on unreachable-state optimization to save DSPs.
@@ -112,6 +115,7 @@ module Display_Wave_Renderer #(
             axis_valid<=0;amax_raw<=0;plot_valid<=0;window_clamped<=0;
             alignment_locked<=0;refined_bin_q20<=0;origin_q12<=0;span_q12<=0;phase_numerator<=0;
             preparing<=0;
+            scan_absolute<=0;
             pixel_valid<=0;pixel_index<=0;pixel_y<=0;frame_id_out<=0;done<=0;
         end else begin
             axis_valid<=0;done<=0;
@@ -125,7 +129,8 @@ module Display_Wave_Renderer #(
                     if(signal_valid && fundamental_bin!=0) state<=SCAN_REQ;
                     else begin axis_valid<=1;state<=EMIT;end
                 end
-                SCAN_REQ:state<=SCAN_READ;
+                SCAN_REQ:state<=SCAN_ABS;
+                SCAN_ABS:begin scan_absolute<=abs_read;state<=SCAN_READ;end
                 SCAN_READ: begin
                     amax_raw<=max_candidate;
                     if(scan_addr==LAST) begin
