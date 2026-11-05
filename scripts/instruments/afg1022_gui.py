@@ -14,8 +14,8 @@ class App:
     def __init__(self, root):
         self.root = root
         root.title('AFG1022 · 周期信号测试台')
-        root.geometry('1120x950')
-        root.minsize(1000, 850)
+        root.geometry('1120x720')
+        root.minsize(1060, 720)
         self.events = queue.Queue()
         self.stop = threading.Event()
         self.busy = False
@@ -23,72 +23,107 @@ class App:
         self.vars = {}
         self.latest = None
         self.status = tk.StringVar(value='未查询仪器；启动程序不会改变当前输出')
-        viewport=tk.Canvas(root,highlightthickness=0)
-        scrollbar=ttk.Scrollbar(root,orient='vertical',command=viewport.yview)
-        scrollbar.pack(side='right',fill='y')
-        viewport.pack(side='left',fill='both',expand=True)
-        viewport.configure(yscrollcommand=scrollbar.set)
-        main = ttk.Frame(viewport, padding=14)
-        content=viewport.create_window((0,0),window=main,anchor='nw')
-        main.bind('<Configure>',lambda e:viewport.configure(scrollregion=viewport.bbox('all')))
-        viewport.bind('<Configure>',lambda e:viewport.itemconfigure(content,width=e.width))
-        root.bind('<MouseWheel>',lambda e:viewport.yview_scroll(-int(e.delta/120),'units')
-                  if not isinstance(e.widget,(tk.Text,ttk.Combobox)) else None)
-        connection = ttk.LabelFrame(main, text='仪器', padding=8)
-        connection.pack(fill='x')
-        ttk.Label(connection, text='VISA 资源').pack(side='left')
-        self.resource = ttk.Combobox(connection, width=52)
-        self.resource.pack(side='left', padx=8)
-        self.button(connection, '扫描设备', self.scan).pack(side='left', padx=3)
-        self.button(connection, '查询状态', self.read_status).pack(side='left', padx=3)
-        ttk.Label(main, textvariable=self.status, wraplength=1050).pack(fill='x', pady=8)
-        panel = ttk.LabelFrame(main, text='参数（分量幅度为峰值 mV；干扰为峰峰值 mVpp）', padding=10)
-        panel.pack(fill='x')
+        main=ttk.Frame(root,padding=12)
+        main.pack(fill='both',expand=True)
+        main.columnconfigure(0,weight=1)
+        main.rowconfigure(1,weight=1)
+        menu=tk.Menu(root)
+        files=tk.Menu(menu,tearoff=False)
+        for label,command in [('保存参数…',self.save_profile),('载入参数…',self.load_profile),('导出波形 JSON…',self.export)]:
+            files.add_command(label=label,command=command)
+        menu.add_cascade(label='文件',menu=files)
+        menu.add_command(label='模式说明',command=self.show_help)
+        menu.add_command(label='通信日志',command=self.show_log)
+        root.configure(menu=menu)
+        connection=ttk.Frame(main)
+        connection.grid(row=0,column=0,sticky='ew',pady=(0,10))
+        ttk.Label(connection,text='VISA 资源').pack(side='left')
+        self.resource=ttk.Combobox(connection,width=48)
+        self.resource.pack(side='left',padx=8,fill='x',expand=True)
+        self.button(connection,'扫描设备',self.scan).pack(side='left',padx=3)
+        self.button(connection,'查询状态',self.read_status).pack(side='left',padx=3)
+        body=ttk.Frame(main)
+        body.grid(row=1,column=0,sticky='nsew')
+        body.columnconfigure(0,weight=1)
+        body.columnconfigure(1,minsize=410)
+        body.rowconfigure(0,weight=1)
+        left=ttk.Frame(body)
+        left.grid(row=0,column=0,sticky='nsew',padx=(0,12))
+        left.columnconfigure(0,weight=1)
+        left.rowconfigure(1,weight=1)
+        panel=ttk.LabelFrame(left,text='公共设置 · 分量幅度为峰值 mV',padding=10)
+        panel.grid(row=0,column=0,sticky='ew',pady=(0,10))
+        self.common_panel=panel
+        for col in (1,3,5):panel.columnconfigure(col,weight=1)
         for col, (key, label, choices) in enumerate([
             ('mode', '题目模式', ('A', 'B', 'C')),
             ('points', '表长', (256,512,1000,1024,2048,4096,8192)),
             ('load', '负载显示', ('HIGHZ','50')),
-            ('channel', '输出通道', (1,2)),
         ]):
             ttk.Label(panel, text=label).grid(row=0,column=col*2, padx=4)
-            var = tk.StringVar(value='1' if key=='channel' else '')
+            var = tk.StringVar()
             self.vars[key] = var
-            ttk.Combobox(panel, textvariable=var, values=choices, state='readonly', width=10).grid(row=0,column=col*2+1,padx=4)
-        self.button(panel, '载入该模式示例', self.load_preset).grid(row=0,column=8,padx=8)
-        self.field(panel,'f0_khz','基频 kHz',1,0)
+            ttk.Combobox(panel, textvariable=var, values=choices, state='readonly', width=8).grid(row=0,column=col*2+1,padx=4,sticky='ew')
+        self.vars['channel']=tk.StringVar(value='1')
+        ttk.Label(panel,text='输出通道').grid(row=1,column=0,padx=4)
+        ttk.Combobox(panel,textvariable=self.vars['channel'],values=(1,2),state='readonly',width=8).grid(row=1,column=1,padx=4,sticky='ew')
+        self.field(panel,'f0_khz','基频 kHz',1,2)
         self.count = tk.StringVar(value='3')
-        ttk.Label(panel,text='分量数').grid(row=1,column=2,pady=8)
-        ttk.Combobox(panel,textvariable=self.count,values=('2','3'),state='readonly',width=10).grid(row=1,column=3)
+        ttk.Label(panel,text='分量数').grid(row=1,column=4,pady=8)
+        ttk.Combobox(panel,textvariable=self.count,values=('2','3'),state='readonly',width=8).grid(row=1,column=5,padx=4,sticky='ew')
+        self.button(panel, '载入该模式示例', self.load_preset).grid(row=2,column=0,columnspan=6,sticky='e',pady=(2,12))
+        harmonics=ttk.Frame(panel)
+        harmonics.grid(row=3,column=0,columnspan=6,sticky='ew')
+        for col,title in enumerate(('分量','谐波阶数','峰值 / mV','相位 / °')):
+            ttk.Label(harmonics,text=title,anchor='w').grid(row=0,column=col,sticky='ew',padx=6,pady=(0,6))
+            harmonics.columnconfigure(col,weight=0 if col==0 else 1)
         self.rows=[]
         for i in range(3):
             row=[]
-            ttk.Label(panel,text=f'分量 {i+1}').grid(row=2+i,column=0,pady=4)
-            for col,label,key in [(1,'谐波阶数','order'),(3,'峰值 mV','peak_mv'),(5,'相位 °','phase_deg')]:
-                ttk.Label(panel,text=label).grid(row=2+i,column=col)
+            ttk.Label(harmonics,text=f'F{i+1}').grid(row=1+i,column=0,padx=6,pady=5,sticky='w')
+            for col,key in enumerate(('order','peak_mv','phase_deg'),start=1):
                 v=tk.StringVar()
-                ttk.Entry(panel,textvariable=v,width=11).grid(row=2+i,column=col+1,padx=4)
+                ttk.Entry(harmonics,textvariable=v,width=10).grid(row=1+i,column=col,padx=6,pady=5,sticky='ew')
                 row.append((key,v))
             self.rows.append(dict(row))
-        self.field(panel,'interference_khz','C 干扰 kHz',5,0)
-        self.field(panel,'interference_vpp_mv','干扰 mVpp',5,2)
-        self.field(panel,'interference_phase_deg','干扰相位 °',5,4)
+        sidebar=ttk.Frame(body)
+        sidebar.grid(row=0,column=1,sticky='nsew')
+        sidebar.columnconfigure(0,weight=1)
+        self.parameter_sidebar=sidebar
+        c_panel=ttk.LabelFrame(sidebar,text='C 专属设置',padding=8)
+        c_panel.grid(row=0,column=0,sticky='ew')
+        c_panel.columnconfigure(1,weight=1)
+        self.field(c_panel,'interference_khz','干扰频率 kHz',0,0)
+        self.field(c_panel,'interference_vpp_mv','干扰 mVpp',1,0)
+        self.field(c_panel,'interference_phase_deg','干扰相位 °',2,0)
         self.vars['part']=tk.StringVar()
-        ttk.Label(panel,text='C 输出组成').grid(row=6,column=0,pady=6)
-        ttk.Combobox(panel,textvariable=self.vars['part'],values=('混合信号','仅被测信号','仅干扰'),state='readonly',width=16).grid(row=6,column=1,columnspan=2)
-        ttk.Label(panel,text='A：10～200 kHz / 100～250 mVpp；B、C：10～500 kHz / 50～250 mVpp').grid(row=7,column=0,columnspan=9,sticky='w',pady=5)
-        ttk.Label(panel,text='C：单频干扰 ≥1 MHz，标准 200 mVpp。本工具支持 1～10 MHz；偏离标准幅度会标记为扩展测试。').grid(row=8,column=0,columnspan=9,sticky='w')
-        actions=ttk.Frame(main)
-        actions.pack(fill='x',pady=10)
-        for label,fn in [('预览 / 校验',self.preview),('上传（保持 OFF）',lambda:self.apply(False)),('上传并开启',lambda:self.apply(True)),('保存参数',self.save_profile),('载入参数',self.load_profile),('导出波形 JSON',self.export)]:
-            self.button(actions,label,fn).pack(side='left',padx=3)
-        ttk.Button(actions,text='关闭两路输出',command=self.off).pack(side='right',padx=3)
-        self.create_results(main)
-        self.canvas=tk.Canvas(main,height=190,bg='#101c2b',highlightthickness=0)
-        self.canvas.pack(fill='x',pady=8)
+        ttk.Label(c_panel,text='输出组成').grid(row=3,column=0,pady=2,sticky='w')
+        ttk.Combobox(c_panel,textvariable=self.vars['part'],values=('混合信号','仅被测信号','仅干扰'),state='readonly',width=14).grid(row=3,column=1,padx=4,sticky='ew')
+        results=ttk.Frame(sidebar)
+        results.grid(row=1,column=0,sticky='ew',pady=(10,0))
+        self.create_results(results)
+        self.canvas=tk.Canvas(left,height=180,bg='#101c2b',highlightthickness=0)
+        self.canvas.grid(row=1,column=0,sticky='nsew')
         self.canvas.bind('<Configure>',lambda e:self.draw())
-        self.log=tk.Text(main,height=4,wrap='word',state='disabled')
+        self.log_window=tk.Toplevel(root)
+        self.log_window.title('AFG1022 · 通信日志')
+        self.log_window.geometry('800x400')
+        self.log_window.withdraw()
+        self.log_window.protocol('WM_DELETE_WINDOW',self.log_window.withdraw)
+        self.log=tk.Text(self.log_window,wrap='word',state='disabled')
+        log_scroll=ttk.Scrollbar(self.log_window,command=self.log.yview)
+        log_scroll.pack(side='right',fill='y')
         self.log.pack(fill='both',expand=True)
-        ttk.Label(main,text='上传覆盖共享 EMEM 并关闭两路；开启总是重新上传当前参数。关闭窗口会保留仪器输出，请按“关闭两路输出”停止。').pack(fill='x',pady=(6,0))
+        self.log.configure(yscrollcommand=log_scroll.set)
+        actions=ttk.Frame(main)
+        actions.grid(row=2,column=0,sticky='ew',pady=(10,6))
+        for label,fn in [('预览 / 校验',self.preview),('上传（保持 OFF）',lambda:self.apply(False)),('上传并开启',lambda:self.apply(True))]:
+            self.button(actions,label,fn).pack(side='left',padx=(0,6))
+        ttk.Button(actions,text='关闭两路输出',command=self.off).pack(side='right')
+        ttk.Button(actions,text='通信日志',command=self.show_log).pack(side='right',padx=6)
+        status_label=ttk.Label(main,textvariable=self.status,foreground='#475569',wraplength=1050)
+        status_label.grid(row=3,column=0,sticky='ew')
+        ttk.Label(main,text='上传覆盖共享 EMEM；关闭窗口会保留输出。停止信号请点“关闭两路输出”。',foreground='#64748b').grid(row=4,column=0,sticky='w',pady=(3,0))
         self.set_profile(preset('A'))
         root.after(100,self.poll)
         root.protocol('WM_DELETE_WINDOW',self.close)
@@ -99,7 +134,7 @@ class App:
         return b
 
     def field(self,parent,key,label,row,col):
-        ttk.Label(parent,text=label).grid(row=row,column=col,pady=6)
+        ttk.Label(parent,text=label).grid(row=row,column=col,pady=2)
         self.vars[key]=tk.StringVar()
         ttk.Entry(parent,textvariable=self.vars[key],width=11).grid(row=row,column=col+1,padx=4)
 
@@ -131,12 +166,11 @@ class App:
         style.configure('ResultWarning.TLabel',foreground='#a65a00')
         area=ttk.Frame(parent)
         area.pack(fill='x')
-        area.columnconfigure(0,weight=1,uniform='results')
-        area.columnconfigure(1,weight=1,uniform='results')
-        signal=ttk.LabelFrame(area,text='被测信号 · 理论值',padding=(12,8))
-        signal.grid(row=0,column=0,sticky='nsew',padx=(0,6))
-        output=ttk.LabelFrame(area,text='输出设置',padding=(12,8))
-        output.grid(row=0,column=1,sticky='nsew',padx=(6,0))
+        area.columnconfigure(0,weight=1)
+        signal=ttk.LabelFrame(area,text='被测信号 · 理论值',padding=(10,6))
+        signal.grid(row=0,column=0,sticky='ew')
+        output=ttk.LabelFrame(area,text='输出设置',padding=(10,6))
+        output.grid(row=1,column=0,sticky='ew',pady=(8,0))
         self.result_vars={}
         for col,key,label in [(0,'upp','Upp'),(3,'rms','RMS')]:
             ttk.Label(signal,text=label,style='ResultCaption.TLabel').grid(row=0,column=col,sticky='w')
@@ -156,17 +190,17 @@ class App:
         for row,(key,label,unit) in enumerate([
             ('repeat','整表频率','Hz'),('rate','等效采样率','MSa/s'),
             ('scale','满量程','mVpp'),('part','输出组成','')]):
-            ttk.Label(output,text=label,style='ResultCaption.TLabel').grid(row=row,column=0,sticky='w',pady=4)
+            ttk.Label(output,text=label,style='ResultCaption.TLabel').grid(row=row,column=0,sticky='w',pady=1)
             v=tk.StringVar(value='—'); self.result_vars[key]=v
-            ttk.Label(output,textvariable=v,anchor='e',width=18).grid(row=row,column=1,sticky='ew',padx=(18,8),pady=4)
+            ttk.Label(output,textvariable=v,anchor='e',width=12).grid(row=row,column=1,sticky='ew',padx=(18,8),pady=1)
             ttk.Label(output,text=unit,style='ResultCaption.TLabel',width=7).grid(row=row,column=2,sticky='w')
         output.columnconfigure(1,weight=1)
         self.result_note=tk.StringVar()
         self.result_warning=tk.StringVar()
         self.note_label=ttk.Label(area,textvariable=self.result_note,style='ResultNote.TLabel',wraplength=1000)
-        self.note_label.grid(row=1,column=0,columnspan=2,sticky='w',pady=(6,0))
+        self.note_label.grid(row=2,column=0,sticky='w',pady=(6,0))
         self.warning_label=ttk.Label(area,textvariable=self.result_warning,style='ResultWarning.TLabel',wraplength=1000)
-        self.warning_label.grid(row=2,column=0,columnspan=2,sticky='w',pady=(4,0))
+        self.warning_label.grid(row=3,column=0,sticky='w',pady=(4,0))
         area.bind('<Configure>',lambda e:[label.configure(wraplength=max(200,e.width-8)) for label in (self.note_label,self.warning_label)])
 
     def update_results(self, data=None):
@@ -210,20 +244,32 @@ class App:
     def draw(self):
         self.canvas.delete('all')
         if not self.latest:return
-        d=self.latest; w=max(self.canvas.winfo_width(),900); h=190
+        d=self.latest
+        w=max(self.canvas.winfo_width(),100); h=max(self.canvas.winfo_height(),100)
         clean=d['preview_clean']; top=max(abs(v) for v in clean) or 1
-        self.canvas.create_line(20,100,w-20,100,fill='#41536a')
-        self.canvas.create_text(20,15,anchor='w',text='被测信号 1 周期（不含干扰）',fill='#e5ecf6')
+        center=(h+24)/2; amplitude=max(12,(h-70)/2)
+        self.canvas.create_text(16,18,anchor='w',text='被测信号 1 周期（不含干扰）',fill='#e5ecf6')
+        for fraction in (.25,.5,.75):
+            x=20+(w-40)*fraction
+            self.canvas.create_line(x,38,x,h-20,fill='#213249')
+        self.canvas.create_line(20,center,w-20,center,fill='#41536a')
+        self.canvas.create_text(w-16,18,anchor='e',text=f"Upp {d['clean_vpp_mv']:.3f} mV",fill='#9cb1c9')
         coords=[]
-        for i,v in enumerate(clean):coords.extend((20+i/(len(clean)-1)*(w*.68-30),100-v/top*65))
+        for i,v in enumerate(clean):coords.extend((20+i/(len(clean)-1)*(w-40),center-v/top*amplitude))
         self.canvas.create_line(*coords,fill='#4ed5c5',width=2)
-        self.canvas.create_text(w*.72,15,anchor='w',text='分量峰值 mV',fill='#e5ecf6')
-        peak=max(t['peak_v'] for t in d['tones'])
-        for i,t in enumerate(d['tones']):
-            x=w*.75+i*75; y=155-100*t['peak_v']/peak
-            self.canvas.create_rectangle(x,y,x+25,155,fill='#6ea7ff',outline='')
-            self.canvas.create_text(x+12,y-12,text=f"{t['peak_v']*1000:g}",fill='white')
-            self.canvas.create_text(x+12,172,text=f"{t['hz']/1000:g}k",fill='white')
+
+    def show_help(self):
+        messagebox.showinfo('A / B / C 模式说明',
+            'A：所有分量 10～200 kHz，被测 Upp 100～250 mV。\n\n'
+            'B：所有分量 10～500 kHz，被测 Upp 50～250 mV。\n\n'
+            'C：B 信号 + 单频干扰，干扰 ≥1 MHz，标准 200 mVpp。\n'
+            '本工具干扰范围 1～10 MHz；非标准幅度标记为扩展测试。\n\n'
+            '分量幅度为峰值 mV，相位为度。预览显示被测信号，不含干扰。\n'
+            '切换 C 的输出组成可分别检查被测信号、干扰及混合波。',parent=self.root)
+
+    def show_log(self):
+        self.log_window.deiconify()
+        self.log_window.lift()
 
     def write_log(self,text):
         self.log.configure(state='normal'); self.log.insert('end',text+'\n'); self.log.see('end'); self.log.configure(state='disabled')
