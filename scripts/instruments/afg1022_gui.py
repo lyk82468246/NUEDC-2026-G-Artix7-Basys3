@@ -14,8 +14,8 @@ class App:
     def __init__(self, root):
         self.root = root
         root.title('AFG1022 · 周期信号测试台')
-        root.geometry('1120x850')
-        root.minsize(1000, 760)
+        root.geometry('1120x950')
+        root.minsize(1000, 850)
         self.events = queue.Queue()
         self.stop = threading.Event()
         self.busy = False
@@ -23,8 +23,17 @@ class App:
         self.vars = {}
         self.latest = None
         self.status = tk.StringVar(value='未查询仪器；启动程序不会改变当前输出')
-        main = ttk.Frame(root, padding=14)
-        main.pack(fill='both', expand=True)
+        viewport=tk.Canvas(root,highlightthickness=0)
+        scrollbar=ttk.Scrollbar(root,orient='vertical',command=viewport.yview)
+        scrollbar.pack(side='right',fill='y')
+        viewport.pack(side='left',fill='both',expand=True)
+        viewport.configure(yscrollcommand=scrollbar.set)
+        main = ttk.Frame(viewport, padding=14)
+        content=viewport.create_window((0,0),window=main,anchor='nw')
+        main.bind('<Configure>',lambda e:viewport.configure(scrollregion=viewport.bbox('all')))
+        viewport.bind('<Configure>',lambda e:viewport.itemconfigure(content,width=e.width))
+        root.bind('<MouseWheel>',lambda e:viewport.yview_scroll(-int(e.delta/120),'units')
+                  if not isinstance(e.widget,(tk.Text,ttk.Combobox)) else None)
         connection = ttk.LabelFrame(main, text='仪器', padding=8)
         connection.pack(fill='x')
         ttk.Label(connection, text='VISA 资源').pack(side='left')
@@ -73,12 +82,11 @@ class App:
         for label,fn in [('预览 / 校验',self.preview),('上传（保持 OFF）',lambda:self.apply(False)),('上传并开启',lambda:self.apply(True)),('保存参数',self.save_profile),('载入参数',self.load_profile),('导出波形 JSON',self.export)]:
             self.button(actions,label,fn).pack(side='left',padx=3)
         ttk.Button(actions,text='关闭两路输出',command=self.off).pack(side='right',padx=3)
-        self.summary=tk.StringVar()
-        ttk.Label(main,textvariable=self.summary,wraplength=1050,justify='left').pack(fill='x')
+        self.create_results(main)
         self.canvas=tk.Canvas(main,height=190,bg='#101c2b',highlightthickness=0)
         self.canvas.pack(fill='x',pady=8)
         self.canvas.bind('<Configure>',lambda e:self.draw())
-        self.log=tk.Text(main,height=8,wrap='word',state='disabled')
+        self.log=tk.Text(main,height=4,wrap='word',state='disabled')
         self.log.pack(fill='both',expand=True)
         ttk.Label(main,text='上传覆盖共享 EMEM 并关闭两路；开启总是重新上传当前参数。关闭窗口会保留仪器输出，请按“关闭两路输出”停止。').pack(fill='x',pady=(6,0))
         self.set_profile(preset('A'))
@@ -115,18 +123,88 @@ class App:
     def load_preset(self):
         self.set_profile(preset(self.vars['mode'].get()))
 
+    def create_results(self, parent):
+        style=ttk.Style(self.root)
+        style.configure('ResultCaption.TLabel',foreground='#64748b')
+        style.configure('ResultValue.TLabel',font=('Segoe UI',11,'bold'),foreground='#18324e')
+        style.configure('ResultNote.TLabel',foreground='#64748b')
+        style.configure('ResultWarning.TLabel',foreground='#a65a00')
+        area=ttk.Frame(parent)
+        area.pack(fill='x')
+        area.columnconfigure(0,weight=1,uniform='results')
+        area.columnconfigure(1,weight=1,uniform='results')
+        signal=ttk.LabelFrame(area,text='被测信号 · 理论值',padding=(12,8))
+        signal.grid(row=0,column=0,sticky='nsew',padx=(0,6))
+        output=ttk.LabelFrame(area,text='输出设置',padding=(12,8))
+        output.grid(row=0,column=1,sticky='nsew',padx=(6,0))
+        self.result_vars={}
+        for col,key,label in [(0,'upp','Upp'),(3,'rms','RMS')]:
+            ttk.Label(signal,text=label,style='ResultCaption.TLabel').grid(row=0,column=col,sticky='w')
+            v=tk.StringVar(value='—'); self.result_vars[key]=v
+            ttk.Label(signal,textvariable=v,anchor='e',style='ResultValue.TLabel',width=9).grid(row=0,column=col+1,sticky='e',padx=(6,4))
+            ttk.Label(signal,text='mV',style='ResultCaption.TLabel').grid(row=0,column=col+2,sticky='w')
+        ttk.Separator(signal).grid(row=1,column=0,columnspan=6,sticky='ew',pady=7)
+        for col,text in [(0,'分量'),(1,'频率 / kHz'),(3,'峰值 / mV'),(5,'相位 / °')]:
+            ttk.Label(signal,text=text,anchor='e' if col else 'w',style='ResultCaption.TLabel').grid(row=2,column=col, columnspan=2 if col in (1,3) else 1,sticky='ew',padx=(0,6))
+        self.component_vars=[]
+        for i in range(3):
+            values=[tk.StringVar(value='—') for _ in range(3)]
+            self.component_vars.append(values)
+            ttk.Label(signal,text=f'F{i+1}',style='ResultCaption.TLabel').grid(row=3+i,column=0,sticky='w',pady=2)
+            for v,col,span in zip(values,(1,3,5),(2,2,1)):
+                ttk.Label(signal,textvariable=v,anchor='e').grid(row=3+i,column=col,columnspan=span,sticky='ew',padx=(0,6),pady=2)
+        for row,(key,label,unit) in enumerate([
+            ('repeat','整表频率','Hz'),('rate','等效采样率','MSa/s'),
+            ('scale','满量程','mVpp'),('part','输出组成','')]):
+            ttk.Label(output,text=label,style='ResultCaption.TLabel').grid(row=row,column=0,sticky='w',pady=4)
+            v=tk.StringVar(value='—'); self.result_vars[key]=v
+            ttk.Label(output,textvariable=v,anchor='e',width=18).grid(row=row,column=1,sticky='ew',padx=(18,8),pady=4)
+            ttk.Label(output,text=unit,style='ResultCaption.TLabel',width=7).grid(row=row,column=2,sticky='w')
+        output.columnconfigure(1,weight=1)
+        self.result_note=tk.StringVar()
+        self.result_warning=tk.StringVar()
+        self.note_label=ttk.Label(area,textvariable=self.result_note,style='ResultNote.TLabel',wraplength=1000)
+        self.note_label.grid(row=1,column=0,columnspan=2,sticky='w',pady=(6,0))
+        self.warning_label=ttk.Label(area,textvariable=self.result_warning,style='ResultWarning.TLabel',wraplength=1000)
+        self.warning_label.grid(row=2,column=0,columnspan=2,sticky='w',pady=(4,0))
+        area.bind('<Configure>',lambda e:[label.configure(wraplength=max(200,e.width-8)) for label in (self.note_label,self.warning_label)])
+
+    def update_results(self, data=None):
+        for var in self.result_vars.values():var.set('—')
+        for row in self.component_vars:
+            for var in row:var.set('—')
+        if data is None:
+            self.result_note.set('')
+            self.result_warning.set('参数无效；请修正后重新预览。')
+            self.warning_label.grid()
+            return
+        for key,value in dict(upp=f"{data['clean_vpp_mv']:.3f}",rms=f"{data['clean_rms_mv']:.3f}",
+                              repeat=f"{data['repeat_hz']:,.2f}",rate=f"{data['table_sample_rate_hz']/1e6:,.3f}",
+                              scale=f"{data['config']['vpp']*1000:,.3f}",part=data['part']).items():
+            self.result_vars[key].set(value)
+        for row,tone in zip(self.component_vars,data['tones']):
+            for var,value in zip(row,(tone['hz']/1000,tone['peak_v']*1000,tone['phase_deg'])):
+                var.set(f'{value:,.3f}')
+        notes=[w for w in data['warnings'] if w.startswith('HIGHZ')]
+        warnings=[w for w in data['warnings'] if not w.startswith('HIGHZ')]
+        self.result_note.set('\n'.join(notes))
+        self.result_warning.set('\n'.join(warnings))
+        if notes:self.note_label.grid()
+        else:self.note_label.grid_remove()
+        if warnings:self.warning_label.grid()
+        else:self.warning_label.grid_remove()
+
     def preview(self):
         try:
             self.latest=build(self.profile())
             d=self.latest
-            components='；'.join(f"{t['hz']/1000:g} kHz / {t['peak_v']*1000:g} mV peak" for t in d['tones'])
-            self.summary.set(f"被测信号：Upp {d['clean_vpp_mv']:.3f} mV，RMS {d['clean_rms_mv']:.3f} mV\n{components}\n整表 {d['repeat_hz']:g} Hz，等效采样 {d['table_sample_rate_hz']/1e6:g} MSa/s，满量程 {d['config']['vpp']*1000:g} mVpp；输出组成：{d['part']}\n"+'\n'.join(d['warnings']))
+            self.update_results(d)
             self.draw()
             return d
         except Exception as e:
             self.latest=None
             self.canvas.delete('all')
-            self.summary.set('参数无效；未改变仪器')
+            self.update_results()
             messagebox.showerror('参数检查',str(e))
 
     def draw(self):
