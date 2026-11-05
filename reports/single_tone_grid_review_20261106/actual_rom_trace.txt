@@ -1,0 +1,20 @@
+TEST tb_flattop_rom_latency_review
+ROM_DOUBLE_ENABLE=0 address=512 captured=0000 correct=ff53
+ROM_DOUBLE_ENABLE=0 address=1280 captured=ff53 correct=fa3f
+ROM_DOUBLE_ENABLE=0 address=2048 captured=fa3f correct=f8ff
+ROM_DOUBLE_ENABLE=0 address=2816 captured=f8ff correct=208d
+ROM_DOUBLE_ENABLE=0 address=3584 captured=208d correct=6a16
+ROM_DOUBLE_ENABLE=0 address=4352 captured=6a16 correct=7a30
+ROM_DOUBLE_ENABLE=0 address=5120 captured=7a30 correct=38c9
+ROM_DOUBLE_ENABLE=0 address=5888 captured=38c9 correct=ffde
+PASS: actual ROM DOUBLE_ENABLE=0; 0 reproduces stale request, 1 validates proposed sequencing
+TEST tb_flattop_rom_double_enable_review
+ROM_DOUBLE_ENABLE=1 address=512 captured=ff53 correct=ff53
+ROM_DOUBLE_ENABLE=1 address=1280 captured=fa3f correct=fa3f
+ROM_DOUBLE_ENABLE=1 address=2048 captured=f8ff correct=f8ff
+ROM_DOUBLE_ENABLE=1 address=2816 captured=208d correct=208d
+ROM_DOUBLE_ENABLE=1 address=3584 captured=6a16 correct=6a16
+ROM_DOUBLE_ENABLE=1 address=4352 captured=7a30 correct=7a30
+ROM_DOUBLE_ENABLE=1 address=5120 captured=38c9 correct=38c9
+ROM_DOUBLE_ENABLE=1 address=5888 captured=ffde correct=ffde
+PASS: actual ROM DOUBLE_ENABLE=1; 0 reproduces stale request, 1 validates proposed sequencing
