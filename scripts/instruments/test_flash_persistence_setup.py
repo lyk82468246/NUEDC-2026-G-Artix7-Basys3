@@ -60,6 +60,27 @@ class TestPersistenceSetup(unittest.TestCase):
                     proc open_hw_target {args} {error "HARDWARE FORBIDDEN"}
                 ''')
                 t.call('source', str(ROOT / 'scripts/create_boot_mcs.tcl'))
+                # Reproduce launch from Vivado: a foreign Python runtime in
+                # the environment must not contaminate the project venv.
+                t.setvar('foreign_python', str(d / 'foreign-python-home'))
+                t.eval('''
+                    set saved_python_env {}
+                    foreach key {PYTHONHOME PYTHONPATH} {
+                        if {[info exists ::env($key)]} {dict set saved_python_env $key $::env($key)}
+                        set ::env($key) $foreign_python
+                    }
+                    rename exec actual_exec
+                    proc exec {args} {
+                        if {[lindex $args 1] ne "-E"} {error "Project Python must ignore Vivado environment"}
+                        try {actual_exec {*}$args} finally {
+                            foreach key {PYTHONHOME PYTHONPATH} {
+                                if {[dict exists $::saved_python_env $key]} {
+                                    set ::env($key) [dict get $::saved_python_env $key]
+                                } else {unset -nocomplain ::env($key)}
+                            }
+                        }
+                    }
+                ''')
                 if safe:
                     report_path = t.call('rc_create_boot_mcs', str(bit), str(target))
                     report = json.loads(Path(str(report_path)).read_text())

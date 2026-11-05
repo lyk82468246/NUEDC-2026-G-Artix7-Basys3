@@ -25,3 +25,9 @@
 本轮4组脚本、共12个仿真顶层全部PASS。原有黄金结果无需修改，−32768边界和BRAM请求数检查均通过。本地完整日志位于`test_results/display_*_sim/`；没有新增仅镜像实现的测试。
 
 源码修订后的正WNS必须由下一次用户手动综合/实现报告确认。11月5日21:59:58磁盘bit对应违例实现，不能作为修复后的产物。该轮操作没有运行综合、布局布线或烧写。
+
+## 后续用户实现确认
+
+11月5日22:26:09新报告：WNS +0.317 ns、TNS 0、setup违例0；WHS +0.027 ns、THS 0、hold违例0。新bit为22:27:16，匹配LTX为22:27:17。用户报告已下载，P2状态为busy0/ready1/initialized1/saved_valid0/error3、ID C22016、SR00、安全寄存器00，符合首次尚无有效记录的状态。尚未完成save/reload实板验收。
+
+用户生成的MCS因Vivado PYTHONHOME污染而审计中断，修复脚本使用`python -E`后，现有临时镜像通过审计并发布为`test_results/p2_boot_01.mcs`。镜像结束（exclusive）1829168=0x1BE930，按64KiB擦除覆盖到1835008=0x1C0000，小于参数起点0x3E0000。此过程仅离线审计/文件改名，没有Flash写入。清单见[p2_boot_01.audit.json](p2_boot_01.audit.json)。

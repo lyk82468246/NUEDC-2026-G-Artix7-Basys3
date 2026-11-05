@@ -1,0 +1,11 @@
+{
+  "image_end_exclusive": 1829168,
+  "erase_end_exclusive": 1835008,
+  "erase_size": 65536,
+  "parameter_start": 4063232,
+  "data_records": 114323,
+  "scope": "address audit only; does NOT certify a programmer erase algorithm",
+  "mcs_sha256": "14591d24250cd32a13a2eba9ccb51beb28857e0e28e27cc7787e9248b8763455",
+  "bit_sha256": "7aa1a182202df4ac1a00724c0bce5859e73785b5092d711ebb93cca45e1c01fb",
+  "flash_profile": "MX25L3233F candidate, JEDEC C22016; verify hardware identity and erase policy"
+}

@@ -10,7 +10,9 @@ proc rc_create_boot_mcs {bit output} {
     # UG908/UG835: size is MiB, NOT Mbit. 32Mbit chip => 4MiB.
     # Standard SPI x1 boot image, from address zero only. No parameter payload.
     write_cfgmem -format mcs -interface SPIx1 -size 4 -loadbit [list up 0x0 $bit] -file $pending
-    exec $python [file join $::rc_mcs_root scripts instruments audit_flash_mcs.py] \
+    # Vivado exports its own PYTHONHOME/PYTHONPATH. Ignore those for the project
+    # interpreter, while keeping script-directory imports (do not use -I).
+    exec $python -E [file join $::rc_mcs_root scripts instruments audit_flash_mcs.py] \
         $pending --erase-size 65536 --report $report --bit $bit
     file rename $pending $output
     puts "AUDITED IMAGE: $output; manifest: $report"

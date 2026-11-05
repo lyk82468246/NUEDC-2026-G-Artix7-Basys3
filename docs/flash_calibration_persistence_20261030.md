@@ -2,6 +2,8 @@
 
 2026-10-30初稿。11月5日更新：P2首次手动实现出现4个显示Amax扫描setup违例，WNS −0.409 ns；已修订扫描流水线，待用户重新实现，见[定位记录](../reports/display_scan_timing_20261105/README.md)。P2实板写入尚未验收。下文旧构建数字属于10月30日基线，记录格式仍遵循[格式1](flash_calibration_format_v1.md)。
 
+后续11月5日22:26实现已通过：WNS +0.317 ns、WHS +0.027 ns、TNS/THS 0，用户已下载22:27版本并读出P2就绪状态，无有效保存记录。`p2_boot_01.mcs`已离线审计通过，尚未写入配置Flash。Vivado导出的Python环境曾导致SRE module mismatch，镜像脚本现使用项目Python的`-E`参数隔离；这不需要重建bit。首次save及恢复仍待实板验收。
+
 ## 已取得的实板信息
 
 用户15:39:25构建并下载的bit支持P1只读诊断。通过独占JTAG会话读取状态，再显式触发一次新的SPI查询，两次均得到：
