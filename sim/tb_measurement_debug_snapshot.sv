@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-module tb_measurement_debug_snapshot;
+module tb_measurement_debug_snapshot #(parameter integer RAW=0);
     reg clk=0;always #5 clk=~clk;
     reg rst=1,commit=0,sig=1,request=0;
     reg [16:0] pp=17'h1ffff;
@@ -16,7 +16,7 @@ module tb_measurement_debug_snapshot;
     wire [31:0] outmag,outid,outepoch;
     wire [11:0] outbin;wire [1:0] outcount;
     wire [35:0] outbins;wire [95:0] outmags;wire [7:0] metadata;
-    Measurement_Debug_Snapshot dut(.clk(clk),.rst(rst),.commit(commit),.signal_valid(sig),
+    Measurement_Debug_Snapshot #(.RAW_CANDIDATES(RAW)) dut(.clk(clk),.rst(rst),.commit(commit),.signal_valid(sig),
         .vpp_raw(pp),.rms_raw(rms),.fundamental_raw(mag),.fundamental_bin(bin),
         .component_count(count),.component_bins(bin_values),.component_magnitudes(mags),
         .frame_id(id),.calibration_epoch(epoch),.calibration_enabled(enabled),
@@ -41,7 +41,7 @@ module tb_measurement_debug_snapshot;
         assert(valid && outepoch==1 && result_epoch==1 && epoch==1)
             else $fatal(1,"Commit/sample epoch collision");
         assert(outpp==17'h1ffff && outrms==16'hffff && outmag==32'h80000001 &&
-               outbins==bin_values && outmags==mags && outcount==3 && metadata==8'h4f)
+               outbins==bin_values && outmags==mags && outcount==3 && metadata==(RAW?8'hcf:8'h4f))
             else $fatal(1,"Atomic fields or unsigned MSB lost");
         // Changing live inputs cannot alter the held debug packet.
         pp=1;rms=2;mag=3;id=2;bin_values=0;mags=0;tick();
@@ -63,13 +63,17 @@ module tb_measurement_debug_snapshot;
         id=0;sample();assert(outid==0 && outcount==2) else $fatal(1,"Frame ID wrap");
         repeat(9)tick();
         sig=0;count=3;sample();
-        assert(valid && outcount==0 && outbins==0 && outmags==0 && outbin==0 && outmag==0 &&
+        assert(valid && outcount==(RAW?3:0) && outbins==(RAW?bin_values:36'd0) &&
+               outmags==(RAW?mags:96'd0) && outbin==0 && outmag==0 && metadata[7]==RAW &&
                outpp==1 && outrms==2 && !metadata[0]) else $fatal(1,"Invalid packet not masked");
         tick();sig=1;present=0;count=0;sample();
         assert(outepoch==0 && metadata[2:1]==2'b01 && outcount==0 && outmags==0)
             else $fatal(1,"Static calibration without VIO lost its enabled flag");
         rst=1;tick();assert(!valid && outpp==0 && outmags==0 && metadata==0) else $fatal(1,"Reset active");
-        $display("PASS: atomic debug snapshot widths/slots/invalid/reset/epoch collision");$finish;
+        $display("PASS: atomic debug snapshot RAW=%0d widths/slots/invalid/reset/epoch collision",RAW);$finish;
     end
     initial begin #100000;$fatal(1,"Snapshot timeout");end
+endmodule
+module tb_measurement_debug_raw;
+    tb_measurement_debug_snapshot #(.RAW(1)) test();
 endmodule

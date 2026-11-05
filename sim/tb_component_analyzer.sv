@@ -71,7 +71,19 @@ module tb_component_analyzer;
         mem[10]=1000000;mem[4000]=500000;mode=3;run_case();
         assert(count==2 && consistent && fundamental==10 && frequency==5000 && bin_list[23:12]==4000)
             else $fatal(1,"Debug boundaries or high harmonic order");
-        $display("PASS: tb_component_analyzer seven composite FFT fixtures, strong harmonics, off-bin, silence and inconsistent peaks");
+        // A single ideal peak is supported. Small isolated nonharmonic spurs
+        // above both gates can instead veto the whole packet; raw observation
+        // must retain these candidates even though fundamental is cleared.
+        for(k=0;k<4096;k=k+1)mem[k]=100;
+        mem[200]=1600000;mode=0;run_case();
+        assert(count==1 && consistent && fundamental==200 && amplitude==1600000)
+            else $fatal(1,"Ideal single tone rejected");
+        mem[193]=10000;mem[207]=8000;run_case();
+        assert(count==3 && !consistent && fundamental==0 && amplitude==0 &&
+            bin_list=={12'd207,12'd200,12'd193} &&
+            magnitudes=={32'd8000,32'd1600000,32'd10000})
+            else $fatal(1,"Raw inconsistent candidates lost");
+        $display("PASS: tb_component_analyzer composite fixtures, ideal single tone, raw inconsistent spurs, strong harmonics, off-bin and silence");
         $finish;
     end
 endmodule

@@ -20,6 +20,13 @@ try {
     if($LASTEXITCODE -ne 0 -or $debugText -match 'Fatal:|ERROR:|FAIL:' -or $debugText -notmatch 'PASS:'){
         throw 'Debug snapshot assertions failed'
     }
+    & "$VivadoRoot\bin\xelab.bat" xil_defaultlib.tb_measurement_debug_raw -s measurement_debug_raw
+    if($LASTEXITCODE -ne 0){throw 'Raw candidate snapshot elaboration failed'}
+    & "$VivadoRoot\bin\xsim.bat" measurement_debug_raw -runall -log measurement_debug_raw.log
+    $debugText=Get-Content measurement_debug_raw.log -Raw
+    if($LASTEXITCODE -ne 0 -or $debugText -match 'Fatal:|ERROR:|FAIL:' -or $debugText -notmatch 'PASS:'){
+        throw 'Raw candidate snapshot assertions failed'
+    }
     # Separate top connection check; real generated IP products remain untouched.
     $debugRTL=Get-ChildItem -LiteralPath "$debugRoot\sources\rtl" -Filter '*.v' | ForEach-Object {$_.FullName}
     $debugStubs=Get-ChildItem -LiteralPath "$debugRoot\sources\ip" -Recurse -Filter '*_stub.v' |

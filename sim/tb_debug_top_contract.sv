@@ -34,6 +34,21 @@ module tb_debug_top_contract;
         #1;assert(plain.u_capture_calc_subsystem.u_afe_capture.capture_enable===1)
             else $fatal(1,"Arm did not resume after display");
         release plain.capture_enable;release plain.hmi_busy;
+        // Rejected analyzer candidates reach ONLY the diagnostic sidecar.
+        // Functional consumers must still see a zero qualified component count.
+        force plain.u_capture_calc_subsystem.g_components.u_components.component_count=3;
+        force plain.u_capture_calc_subsystem.g_components.u_components.component_bins={12'd207,12'd200,12'd193};
+        force plain.u_capture_calc_subsystem.g_components.u_components.component_magnitudes={32'd8000,32'd1600000,32'd10000};
+        force plain.u_capture_calc_subsystem.g_components.u_components.harmonics_consistent=0;
+        #1;
+        assert(plain.component_count===0 && plain.u_debug_snapshot.component_count===3 &&
+            plain.u_debug_snapshot.component_bins==={12'd207,12'd200,12'd193} &&
+            plain.u_debug_snapshot.component_magnitudes==={32'd8000,32'd1600000,32'd10000})
+            else $fatal(1,"Raw diagnostic tap altered qualified consumers or lost rejected candidates");
+        release plain.u_capture_calc_subsystem.g_components.u_components.component_count;
+        release plain.u_capture_calc_subsystem.g_components.u_components.component_bins;
+        release plain.u_capture_calc_subsystem.g_components.u_components.component_magnitudes;
+        release plain.u_capture_calc_subsystem.g_components.u_components.harmonics_consistent;
         $display("PASS: top port contract VIO on/off, legacy/new HMI, real capture permit blocked during replay (black-box DSP IP)");$finish;
     end
 endmodule

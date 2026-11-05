@@ -5,7 +5,11 @@
 // ILA must trigger on measurement_valid_out, NOT the original commit signal.
 // Epoch is the active bank sampled on the same edge as Runtime_Calibration's
 // sample_valid. A bank request on that edge is deferred by that module.
-module Measurement_Debug_Snapshot(
+module Measurement_Debug_Snapshot #(
+    // Diagnostics only: preserve analyzer candidates even when qualification
+    // rejects the packet. Fundamental outputs always remain qualified.
+    parameter integer RAW_CANDIDATES=0
+)(
     input wire clk, rst, commit,
     input wire signal_valid,
     input wire [16:0] vpp_raw,
@@ -29,7 +33,7 @@ module Measurement_Debug_Snapshot(
     output reg [95:0] component_magnitudes_out,
     output reg [31:0] frame_id_out, calibration_epoch_out,
     // bit0 valid signal, bit1 enabled calibration, bit2 VIO present,
-    // bits4:3 mode, bit5 single, bit6 three cycles, bit7 reserved zero.
+    // bits4:3 mode, bit5 single, bit6 three cycles, bit7 raw-candidate schema.
     output reg [7:0] metadata_out
 );
     integer slot;
@@ -45,18 +49,18 @@ module Measurement_Debug_Snapshot(
                 vpp_out<=vpp_raw;rms_out<=rms_raw;
                 frame_id_out<=frame_id;
                 calibration_epoch_out<=calibration_present?calibration_epoch:32'd0;
-                metadata_out<={1'b0,three_cycles,single_mode,mode,
+                metadata_out<={(RAW_CANDIDATES!=0),three_cycles,single_mode,mode,
                                calibration_present,calibration_enabled,signal_valid};
                 fundamental_out<=signal_valid?fundamental_raw:32'd0;
                 fundamental_bin_out<=signal_valid?fundamental_bin:12'd0;
-                component_count_out<=signal_valid?component_count:2'd0;
+                component_count_out<=(RAW_CANDIDATES || signal_valid)?component_count:2'd0;
                 // Packed order is low slot first: bins[11:0], mags[31:0].
                 // Mask unused slots even if an upstream register retained data.
                 for(slot=0;slot<3;slot=slot+1) begin
                     component_bins_out[slot*12+:12]<=
-                        (signal_valid && slot<component_count)?component_bins[slot*12+:12]:12'd0;
+                        ((RAW_CANDIDATES || signal_valid) && slot<component_count)?component_bins[slot*12+:12]:12'd0;
                     component_magnitudes_out[slot*32+:32]<=
-                        (signal_valid && slot<component_count)?component_magnitudes[slot*32+:32]:32'd0;
+                        ((RAW_CANDIDATES || signal_valid) && slot<component_count)?component_magnitudes[slot*32+:32]:32'd0;
                 end
             end
         end

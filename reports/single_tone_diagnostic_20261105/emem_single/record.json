@@ -1,0 +1,160 @@
+{
+  "identity": "TEKTRONIX,AFG1022,1931131,SCPI:99.0 FV:V1.2.4",
+  "case": "emem_single",
+  "requested": {
+    "waveform": "arb",
+    "hz": 1562.5,
+    "vpp": 0.2,
+    "offset_v": 0,
+    "load": "HIGHZ"
+  },
+  "upload": {
+    "points": 8192,
+    "memory": "EMEM",
+    "verification": "all DAC codes matched",
+    "outputs": "OFF"
+  },
+  "configured": {
+    "channel": 1,
+    "output": true,
+    "waveform": "EMEM",
+    "hz": 1562.5,
+    "amplitude": 0.2,
+    "offset_v": 0.0,
+    "load_ohm": 9.9e+37,
+    "concurrent": false,
+    "mode": "CW",
+    "modulation": {
+      "AM": false,
+      "FM": false,
+      "PM": false,
+      "FSK": false,
+      "BURS": false
+    }
+  },
+  "before": {
+    "channel": 1,
+    "output": true,
+    "waveform": "EMEM",
+    "hz": 1562.5,
+    "amplitude": 0.2,
+    "offset_v": 0.0,
+    "load_ohm": 9.9e+37,
+    "concurrent": false,
+    "mode": "CW",
+    "modulation": {
+      "AM": false,
+      "FM": false,
+      "PM": false,
+      "FSK": false,
+      "BURS": false
+    }
+  },
+  "fpga": {
+    "vpp_out": 3692,
+    "vrms_out": 1286,
+    "amp_f1_out": 0,
+    "max_index_out": 0,
+    "frequency_hz": 0
+  },
+  "inspection": {
+    "samples": 1024,
+    "completed_packet_samples": 1,
+    "last_registers": {
+      "Sample in Buffer": 1023,
+      "Sample in Window": 1023,
+      "TRIGGER": 0,
+      "measurement_valid": 0,
+      "vpp_out": 3692,
+      "vrms_out": 1286,
+      "amp_f1_out": 0,
+      "max_index_out": 0,
+      "uart_state": 14,
+      "diagnostic_status": 102760607,
+      "diagnostic_adc": 1826,
+      "diagnostic_bins": 0,
+      "diagnostic_noise": 242,
+      "component_magnitudes": 0,
+      "component_count": 0,
+      "frame_id": 395,
+      "calibration_epoch": 1,
+      "snapshot_metadata": 6
+    },
+    "diagnostic": {
+      "error_code": 0,
+      "run_state": 3,
+      "controls": 2,
+      "capture_enable": false,
+      "controller_release": false,
+      "capture_start": false,
+      "frame_valid": false,
+      "time_result_valid": false,
+      "fft_result_valid": false,
+      "peak_result_valid": false,
+      "signal_valid": false,
+      "capture_busy": false,
+      "calc_busy": false,
+      "fft_busy": false,
+      "peak_busy": false,
+      "hmi_busy": true,
+      "packet_finished": false,
+      "acquisition_fault": false,
+      "events_since_frame_start": {
+        "frame_complete": true,
+        "time_complete": true,
+        "fft_complete": true,
+        "peak_complete": true,
+        "measurement_snapshot": true
+      }
+    },
+    "adc_window": {
+      "min": 1795,
+      "max": 2251
+    },
+    "candidate_bins": [
+      0,
+      0,
+      0
+    ],
+    "component_snapshot": {
+      "schema": 2,
+      "frame_id": 395,
+      "calibration_epoch": 1,
+      "signal_valid": false,
+      "calibration_enabled": true,
+      "calibration_present": true,
+      "mode": 0,
+      "single": false,
+      "three_cycles": false,
+      "count": 0,
+      "bins": [
+        0,
+        0,
+        0
+      ],
+      "magnitudes_raw": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "after": {
+    "channel": 1,
+    "output": true,
+    "waveform": "EMEM",
+    "hz": 1562.5,
+    "amplitude": 0.2,
+    "offset_v": 0.0,
+    "load_ohm": 9.9e+37,
+    "concurrent": false,
+    "mode": "CW",
+    "modulation": {
+      "AM": false,
+      "FM": false,
+      "PM": false,
+      "FSK": false,
+      "BURS": false
+    }
+  }
+}

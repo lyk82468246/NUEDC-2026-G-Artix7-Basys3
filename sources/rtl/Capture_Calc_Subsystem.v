@@ -78,7 +78,9 @@ module Capture_Calc_Subsystem #(
     output wire [31:0]      noise_mean_out,
     // Read-only diagnostic taps. Raw candidates remain visible when invalid.
     output wire [11:0]      diagnostic_adc,
-    output wire [35:0]      diagnostic_bins
+    output wire [35:0]      diagnostic_bins,
+    output wire [1:0]       diagnostic_component_count,
+    output wire [95:0]      diagnostic_component_magnitudes
 );
 
     wire                    bram_wr_en;
@@ -248,6 +250,8 @@ module Capture_Calc_Subsystem #(
     wire [35:0] analyzed_bins;
     assign diagnostic_bins=analyzed_bins;
     wire [95:0] analyzed_magnitudes;
+    assign diagnostic_component_count=analyzed_count;
+    assign diagnostic_component_magnitudes=analyzed_magnitudes;
     // Time statistics complete before the FFT's serial input loading ends in
     // this architecture. HMI separately snapshots BOTH qualifiers atomically.
     wire qualified=!CONTROLLED_CAPTURE || (spectral_valid && vrms_out>=MIN_SIGNAL_RMS);

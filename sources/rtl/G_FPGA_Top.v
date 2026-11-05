@@ -47,7 +47,8 @@ module G_FPGA_Top #(
     // P1 diagnostic only: never writes flash and does not apply restored banks.
     // Requires setup_flash_readonly.tcl (VIO + source + pin/timing registration).
     parameter integer ENABLE_FLASH_READONLY_PROBE = 0,
-    parameter integer ENABLE_FLASH_PERSISTENCE = 0
+    parameter integer ENABLE_FLASH_PERSISTENCE = 0,
+    parameter integer DEBUG_RAW_CANDIDATES = 1
 )(
     input  wire       sys_clk,
     input  wire       sys_rst_n,
@@ -192,6 +193,8 @@ module G_FPGA_Top #(
     wire measurement_signal_valid;
     wire [11:0] diagnostic_adc;
     wire [35:0] diagnostic_bins;
+    wire [1:0] diagnostic_component_count;
+    wire [95:0] diagnostic_component_magnitudes;
     wire [31:0] diagnostic_noise;
     wire [1:0] component_count;
     wire [35:0] component_bins;
@@ -301,6 +304,8 @@ module G_FPGA_Top #(
         .acquisition_fault(acquisition_fault),
         .signal_valid_out(measurement_signal_valid),
         .diagnostic_adc(diagnostic_adc),.diagnostic_bins(diagnostic_bins),
+        .diagnostic_component_count(diagnostic_component_count),
+        .diagnostic_component_magnitudes(diagnostic_component_magnitudes),
         .noise_mean_out(diagnostic_noise),
         .component_count_out(component_count),.component_bins_out(component_bins),
         .component_magnitudes_out(component_magnitudes),
@@ -385,12 +390,13 @@ module G_FPGA_Top #(
     wire [95:0] debug_component_magnitudes;
     wire [31:0] debug_frame_id,debug_calibration_epoch;
     wire [7:0] debug_metadata;
-    Measurement_Debug_Snapshot u_debug_snapshot(
+    Measurement_Debug_Snapshot #(.RAW_CANDIDATES(DEBUG_RAW_CANDIDATES)) u_debug_snapshot(
         .clk(clk_algo),.rst(rst_algo),.commit(measurement_valid),
         .signal_valid(measurement_signal_valid),.vpp_raw(vpp_out),.rms_raw(vrms_out),
         .fundamental_raw(amp_f1_out),.fundamental_bin(max_index_out),
-        .component_count(component_count),.component_bins(component_bins),
-        .component_magnitudes(component_magnitudes),.frame_id(frame_id),
+        .component_count(DEBUG_RAW_CANDIDATES?diagnostic_component_count:component_count),
+        .component_bins(DEBUG_RAW_CANDIDATES?diagnostic_bins:component_bins),
+        .component_magnitudes(DEBUG_RAW_CANDIDATES?diagnostic_component_magnitudes:component_magnitudes),.frame_id(frame_id),
         .calibration_epoch(calibration_epoch),.calibration_enabled(calibration_enabled),
         .calibration_present(ENABLE_RUNTIME_CALIBRATION!=0),.mode(mode_active),
         .single_mode(single_active),.three_cycles(display_three_cycles),
@@ -400,8 +406,9 @@ module G_FPGA_Top #(
         .component_magnitudes_out(debug_component_magnitudes),.frame_id_out(debug_frame_id),
         .calibration_epoch_out(debug_calibration_epoch),.metadata_out(debug_metadata));
 
-    // Schema 2: full 17/32-bit values; qualified slots and metadata latched
-    // together. probe0 is delayed to align with the snapshot's NBA update.
+    // Schema 3 (metadata bit7): rejected candidates remain visible. Setting
+    // DEBUG_RAW_CANDIDATES=0 restores schema 2's qualified slots. Fields are
+    // latched together; probe0 aligns with the snapshot's NBA update.
     // Original functional consumers keep the undelayed measurement_valid.
     // Probes 5/6/7/9 remain LIVE diagnostics, not atomic packet metadata.
     ila_system u_ila_system (
