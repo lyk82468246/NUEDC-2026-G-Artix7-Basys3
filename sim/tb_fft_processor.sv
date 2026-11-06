@@ -39,6 +39,11 @@ module tb_fft_processor;
     wire                        busy;
 
     reg signed [DATA_WIDTH-1:0] sample_mem [0:FRAME_LENGTH-1];
+    reg signed [15:0] coefficient_mem [0:FRAME_LENGTH-1];
+    integer coe_fd,coe_rc,coe_value,input_accept_count=0,all_input_checks=0,score_index;
+    string coe_line;
+    reg signed [31:0] golden_product,golden_shift;
+    reg signed [15:0] golden_sample;
 
     integer i;
     integer sample_value;
@@ -113,6 +118,7 @@ module tb_fft_processor;
             input_halt_events    <= 0;
             output_halt_events   <= 0;
             previous_frame_valid <= 1'b0;
+            input_accept_count   <= 0;
         end
         else begin
             if (time_rd_en) begin
@@ -128,7 +134,7 @@ module tb_fft_processor;
             end
 
             if (freq_wr_en) begin
-                assert (freq_wr_addr == freq_write_count)
+                assert (freq_wr_addr == freq_write_count % FREQ_DEPTH)
                     else $fatal(1,
                         "Freq BRAM address error: got %0d expected %0d",
                         freq_wr_addr, freq_write_count);
@@ -144,7 +150,7 @@ module tb_fft_processor;
 
             if (freq_frame_done_pulse) begin
                 frame_done_count <= frame_done_count + 1;
-                assert (freq_write_count == FREQ_DEPTH)
+                assert (freq_write_count == (frame_done_count+1)*FREQ_DEPTH)
                     else $fatal(1, "Completion after %0d frequency writes",
                                 freq_write_count);
             end
@@ -164,6 +170,28 @@ module tb_fft_processor;
                 input_halt_events <= input_halt_events + 1;
             if (dut.event_data_out_channel_halt)
                 output_halt_events <= output_halt_events + 1;
+
+            // Check the actual generated ROM, not just request/output counts.
+            // This catches an i / (i-1) coefficient mismatch even when the
+            // product rounds to the same 16-bit value for adjacent entries.
+            if(dut.state==dut.ST_WINDOW_MULT)begin
+                assert(dut.window_coeff_reg===coefficient_mem[dut.sample_count] &&
+                       dut.window_sample_reg===sample_mem[dut.sample_count])
+                    else $fatal(1,"Window pairing mismatch at index %0d: coeff %0d expected %0d",
+                        dut.sample_count,dut.window_coeff_reg,coefficient_mem[dut.sample_count]);
+            end
+            if(dut.fft_s_axis_tvalid && dut.fft_s_axis_tready)begin
+                score_index=input_accept_count%FRAME_LENGTH;
+                golden_product=$signed(sample_mem[score_index])*$signed(coefficient_mem[score_index]);
+                golden_shift=golden_product>>>15;
+                golden_sample=(golden_shift>32767)?16'sh7fff:
+                    ((golden_shift< -32768)?16'sh8000:golden_shift[15:0]);
+                assert(dut.fft_s_axis_tdata==={16'd0,golden_sample} &&
+                       dut.fft_s_axis_tlast===(score_index==FRAME_LENGTH-1))
+                    else $fatal(1,"AXI windowed sample mismatch at index %0d",score_index);
+                input_accept_count<=input_accept_count+1;
+                all_input_checks=all_input_checks+1;
+            end
         end
     end
 
@@ -204,6 +232,27 @@ module tb_fft_processor;
         end
     end
 
+    task run_frame(input integer pattern);
+        integer target;
+        begin
+            repeat(4)@(negedge calc_clk);
+            for(i=0;i<FRAME_LENGTH;i=i+1)begin
+                if(pattern==0)sample_mem[i]=(((i*37)%2048)-1024)/8;
+                else sample_mem[i]=((i*7919+pattern*17)%65536)-32768;
+            end
+            sample_mem[0]=16'sh8000;sample_mem[FRAME_LENGTH-1]=16'sh7fff;
+            target=frame_done_count+1;test_done=0;
+            frame_done_toggle=~frame_done_toggle;
+            for(timeout_cycles=0;timeout_cycles<2000000;timeout_cycles=timeout_cycles+1)begin
+                @(negedge calc_clk);
+                if(frame_done_count==target)begin test_done=1;timeout_cycles=2000000;end
+            end
+            assert(test_done && sample_request_count==target*FRAME_LENGTH &&
+                input_accept_count==target*FRAME_LENGTH && freq_write_count==target*FREQ_DEPTH)
+                else $fatal(1,"Frame progress/count mismatch pattern=%0d",pattern);
+        end
+    endtask
+
     initial begin
         sample_request_count = 0;
         expected_sample_addr = 0;
@@ -219,6 +268,20 @@ module tb_fft_processor;
         frame_done_toggle    = 1'b0;
         rst                  = 1'b1;
 
+        // Independent decimal COE reference, separate from the generated IP's
+        // internal initialization representation. Existing root runner and the
+        // focused runner both provide this relative source-file path.
+        coe_fd=$fopen("sources/coeffs/flat_top_window_8192.coe","r");
+        assert(coe_fd!=0)else $fatal(1,"Missing COE reference");
+        coe_rc=$fgets(coe_line,coe_fd);coe_rc=$fgets(coe_line,coe_fd);
+        for(i=0;i<FRAME_LENGTH;i=i+1)begin
+            if(i==FRAME_LENGTH-1)coe_rc=$fscanf(coe_fd,"%d;",coe_value);
+            else coe_rc=$fscanf(coe_fd,"%d,",coe_value);
+            assert(coe_rc==1)else $fatal(1,"Bad COE reference at %0d",i);
+            coefficient_mem[i]=coe_value;
+        end
+        $fclose(coe_fd);
+
         // A small deterministic signed waveform.  The values stay far below
         // the 16-bit limit, while both signs exercise sign extension in the
         // FFT and CORDIC input packing.
@@ -230,34 +293,14 @@ module tb_fft_processor;
         repeat (8) @(negedge calc_clk);
         rst = 1'b0;
         repeat (8) @(negedge calc_clk);
-        frame_done_toggle = 1'b1;
-
-        // The XFFT burst model plus CORDIC pipeline normally completes well
-        // below this bound.  A finite bound makes a bad handshake fail fast.
-        for (timeout_cycles = 0; timeout_cycles < 2000000;
-             timeout_cycles = timeout_cycles + 1) begin
-            @(negedge calc_clk);
-            if (frame_done_count == 1) begin
-                test_done = 1'b1;
-                timeout_cycles = 2000000;
-            end
-        end
-
-        assert (test_done)
-            else $fatal(1, "Timeout: FFT_Processor did not complete");
-        assert (sample_request_count == FRAME_LENGTH)
-            else $fatal(1, "Expected %0d time reads, got %0d",
-                        FRAME_LENGTH, sample_request_count);
-        assert (freq_write_count == FREQ_DEPTH)
-            else $fatal(1, "Expected %0d frequency writes, got %0d",
-                        FREQ_DEPTH, freq_write_count);
-        assert (frame_done_count == 1)
-            else $fatal(1, "Expected one frequency completion, got %0d",
-                        frame_done_count);
-
-        $display("PASS: tb_fft_processor completed: %0d input reads, %0d freq writes, input_halt_events=%0d, output_halt_events=%0d.",
-                 sample_request_count, freq_write_count,
-                 input_halt_events, output_halt_events);
+        run_frame(0);
+        run_frame(1); // no reset: ROM retains its last enabled request
+        repeat(4)@(negedge calc_clk);
+        rst=1;frame_done_toggle=0;repeat(8)@(negedge calc_clk);
+        rst=0;repeat(8)@(negedge calc_clk);
+        run_frame(2); // IP reset does not reset the ROM output stage
+        assert(all_input_checks==3*FRAME_LENGTH)else $fatal(1,"Missing golden input checks");
+        $display("PASS: tb_fft_processor real IPs, 3 frames / %0d golden window pairs and AXI inputs, reset/no-reset, 4096 writes/frame, TLAST and backpressure",all_input_checks);
         $finish;
     end
 

@@ -1,0 +1,4 @@
+PASS: tb_fft_processor real IPs, 3 frames / 24576 golden window pairs and AXI inputs, reset/no-reset, 4096 writes/frame, TLAST and backpressure
+$finish called at time : 1911510 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_fft_processor.sv" Line 304
+run: Time (s): cpu = 00:00:00 ; elapsed = 00:16:06 . Memory (MB): peak = 196.223 ; gain = 0.039
+INFO: xsimkernel Simulation Memory Usage: 104536 KB (Peak: 104536 KB), Simulation CPU Usage: 951359 ms

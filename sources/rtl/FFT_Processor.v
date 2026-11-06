@@ -101,6 +101,7 @@ module FFT_Processor #(
     localparam [3:0] ST_SEND         = 4'd5;
     localparam [3:0] ST_OUTPUT       = 4'd6;
     localparam [3:0] ST_DONE         = 4'd7;
+    localparam [3:0] ST_READ_WAIT    = 4'd8;
 
     reg [3:0] state;
     reg [ADDR_WIDTH-1:0] sample_count;
@@ -115,13 +116,17 @@ module FFT_Processor #(
     wire [ADDR_WIDTH-1:0]                 window_rom_addr;
     wire signed [DATA_WIDTH-1:0]          window_rom_data;
 
+    // The generated ROM has a primitive output register whose enable follows
+    // ENA. Request the SAME address on two consecutive edges, then capture.
+    // A disabled wait edge alone does not advance that output register.
+    // The time BRAM is requested once and retains its matching sample.
     // Capture both synchronous memory outputs before the window multiplier.
     // This keeps the BRAM/ROM output-to-DSP path out of the 100 MHz critical
     // path while preserving the one-sample-per-handshake AXI stream rate.
     reg signed [DATA_WIDTH-1:0]            window_sample_reg;
     reg signed [DATA_WIDTH-1:0]            window_coeff_reg;
 
-    assign window_rom_en   = (state == ST_READ_REQUEST);
+    assign window_rom_en   = (state == ST_READ_REQUEST) || (state == ST_READ_WAIT);
     assign window_rom_addr = time_rd_addr;
 
     FlatTop_Window_ROM #(
@@ -340,7 +345,14 @@ module FFT_Processor #(
                 ST_READ_REQUEST: begin
                     busy  <= 1'b1;
                     // time_rd_en and window_rom_en are high in this state.
-                    // Both memories update their output registers at this edge.
+                    // Time BRAM updates; ROM's internal read stage advances.
+                    state <= ST_READ_WAIT;
+                end
+
+                ST_READ_WAIT: begin
+                    busy <= 1'b1;
+                    // Keep ROM ENA/address asserted for its output stage.
+                    // time_rd_en stays low, so the corresponding sample holds.
                     state <= ST_PREPARE;
                 end
 

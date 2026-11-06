@@ -7,10 +7,11 @@
 //
 // 实际存储体由 Vivado Block Memory Generator IP 完成，IP 名称固定为
 // flat_top_window_rom。该 IP 配置为 Single Port ROM、8192 x 16 bit、
-// COE 初始化、ENA 使能以及 1 个时钟周期的同步读延迟。
+// COE 初始化、ENA 使能，且启用了原语输出寄存器。
 //
 // data 是有符号 Q1.15 系数。FFT_Processor 与同步读时域 BRAM 同时发出
-// en/address，下一拍同时得到采样值与窗系数。
+// 请求同一地址时需要连续两个使能沿，随后才能锁存正确窗系数。
+// 不能只插入 ENA=0 的等待拍；FFT_Processor 保持时域样本直到系数就绪。
 //==============================================================================
 module FlatTop_Window_ROM #(
     parameter integer ADDR_WIDTH = 13,

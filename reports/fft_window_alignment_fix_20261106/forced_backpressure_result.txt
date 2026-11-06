@@ -1,0 +1,2 @@
+PASS: FFT window input-only real-ROM golden checks=24576 forced-stall cycles=98295
+$finish called at time : 2212630 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_fft_window_backpressure.sv" Line 50
