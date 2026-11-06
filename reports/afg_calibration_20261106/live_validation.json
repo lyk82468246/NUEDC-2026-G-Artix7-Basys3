@@ -1,0 +1,57 @@
+{
+  "reference": {
+    "vpp_uv": 175000,
+    "rms_uv": 61871.84335382291,
+    "peak_uv": 87500
+  },
+  "readback": {
+    "vpp_uv": 175193,
+    "rms_uv": 61881,
+    "peak_uv": 87518,
+    "flags": 131,
+    "result_count": 1695,
+    "epoch": 2,
+    "valid": 1
+  },
+  "errors_uv": {
+    "vpp_uv": 193,
+    "rms_uv": 9.156646177092625,
+    "peak_uv": 18
+  },
+  "source_before": {
+    "channel": 1,
+    "output": true,
+    "waveform": "SIN",
+    "hz": 100000.0,
+    "amplitude": 0.175,
+    "offset_v": 0.0,
+    "load_ohm": 9.9e+37,
+    "concurrent": false,
+    "mode": "CW",
+    "modulation": {
+      "AM": false,
+      "FM": false,
+      "PM": false,
+      "FSK": false,
+      "BURS": false
+    }
+  },
+  "source_after": {
+    "channel": 1,
+    "output": true,
+    "waveform": "SIN",
+    "hz": 100000.0,
+    "amplitude": 0.175,
+    "offset_v": 0.0,
+    "load_ohm": 9.9e+37,
+    "concurrent": false,
+    "mode": "CW",
+    "modulation": {
+      "AM": false,
+      "FM": false,
+      "PM": false,
+      "FSK": false,
+      "BURS": false
+    }
+  }
+}

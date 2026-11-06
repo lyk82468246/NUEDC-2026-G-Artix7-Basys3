@@ -1,0 +1,1 @@
+action read first {vpp_uv 175193 rms_uv 61881 peak_uv 87498 flags 131 result_count 1694 epoch 2 valid 1} result {vpp_uv 175193 rms_uv 61881 peak_uv 87518 flags 131 result_count 1695 epoch 2 valid 1} fresh 1

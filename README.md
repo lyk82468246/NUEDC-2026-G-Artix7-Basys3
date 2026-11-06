@@ -11,14 +11,15 @@
 | 层次 | 当前结论 |
 | --- | --- |
 | RTL | 已集成采集、Vpp/RMS、8192点FFT、最多三分量分析、默认幅值系数、双页显示及板载控制 |
-| 最新实现 | 11月5日22:26 P2扫描流水线修订版：**WNS +0.317 ns、WHS +0.027 ns、TNS/THS 0**；此前21:58违例构建已被取代 |
-| 最近通过的实现/产物 | 11月5日22:27 bit及配套LTX；用户已烧写审计通过的MCS并重新上电，自启动后识别到1个ILA及2个VIO |
+| 最新实现 | 11月6日08:32 ROM读取修订版：**WNS +0.280 ns、WHS +0.011 ns、TNS/THS 0**，见[镜像记录](reports/boot_mcs_20261106/README.md) |
+| 最近通过的实现/产物 | 11月6日08:33 bit及配套LTX；新MCS为p2_boot_20261106_romfix_e733a9e.mcs，用户已确认烧写并成功加载 |
 | 最近构建资源 | 11月5日21:58旧实现BRAM48.5/50、DSP90/90、LUT19987/20800；该资源数字属于流水线修订前版本 |
 | 实板基线 | 此前版本已验证单音、部分三分量/非整频组合和板载交互；这些结果不能代替新显示版本的回归 |
 | 显示 | 已加入FFT方向修正、逐文字ref、一位小数kHz及16抽头带限波形插值；离线验证通过，最新实屏效果仍需验收 |
-| 当前调试阻点 | 已复现HIGHZ原生SIN与EMEM单音被判无效、GUI三分量正常；标定未改写。新增schema3候选谱峰观测源码待用户手动构建，见[对照与诊断记录](reports/single_tone_diagnostic_20261105/README.md) |
-| FFT窗读取修订 | 已将ROM双次使能/等待落实到生产RTL，修复样本与前一地址系数错配；离线验证及边界见[修复记录](reports/fft_window_alignment_fix_20261106/README.md)，待用户重新实现和实板验证 |
-| Flash持久化进度 | A槽首次保存、相同bank免擦写、reload、BtnC、重新配置、断电及配置镜像升级后恢复均通过交互实测；B槽轮换及写中断电仅离线验证，见[实板记录](reports/flash_persistence_20261105/README.md) |
+| 单音识别 | 重新插紧BNC/SMA后11/12/42/100kHz均恢复单峰有效；189kHz弱候选造成的失效已解除，见[接触恢复复测](reports/single_tone_reseat_20261106/README.md) |
+| FFT窗读取修订 | ROM双次使能修订已进入当前程序；真实IP三帧仿真通过，实板单音完成，见[独立缺陷修复记录](reports/fft_window_alignment_fix_20261106/README.md)。单音失效恢复与BNC/SMA重新连接相关 |
+| Flash持久化进度 | A槽首次保存、相同bank免擦写、reload、BtnC、重新配置、断电及配置镜像升级后恢复均通过交互实测；11月6日B槽轮换保存也已通过；写中断电仍仅离线验证，见[实板记录](reports/flash_persistence_20261105/README.md) |
+| 最新在线标定 | AFG1022 HIGHZ设定参考，新活动/保存bank **3576768 / 3601627 / 4079**；B槽sequence1保存核对通过。100kHz四点拟合、125/175/225mV独立验证与10/200kHz检查见[标定报告](reports/afg_calibration_20261106/README.md)，不是独立绝对电压认证 |
 | 尚未完成的验收 | 独立绝对电压精度、完整C模式干扰测试、外部ADC时序/CDC边界、任意组合波稳定完整周期、端到端两秒响应 |
 
 最新违例定位与源码修复见[波形扫描时序记录](reports/display_scan_timing_20261105/README.md)。Flash实板信息、P2构建入口和验收步骤见[标定保存与恢复](docs/flash_calibration_persistence_20261030.md)。10月30日13:12报告见[实屏适配记录](docs/screen_axis_refresh_20261030.md)，09:06报告见[历史核对记录](docs/build_verification_20261030.md)；历史通过结果不能替代新实现检查。
@@ -100,7 +101,7 @@ flowchart TD
 
 ### 默认幅值系数
 
-新RTL上电/复位启用下列实测参考bank，`epoch=0`。系数集中在`G_FPGA_Top.v`参数区，格式为unsigned Q16.16的**发生器设定参考µV/raw**：
+下表为RTL回退默认bank；未启用Flash持久化或没有有效保存记录时使用，`epoch=0`。P2持久化启用且保存记录有效时，启动/复位优先恢复Flash记录，活动系数可能与此表不同。参数位于`G_FPGA_Top.v`，格式为unsigned Q16.16的**发生器设定参考µV/raw**：
 
 | 项目 | 默认整数系数 | 显示定义 |
 | --- | --- | --- |
@@ -110,7 +111,9 @@ flowchart TD
 
 换算为`µV = saturate_uint32((raw × gain + 32768) >> 16)`，屏幕以一位小数mV显示。该bank曾用于现有HIGHZ设置和接线条件下的单音/多音验证，尚非独立绝对输入电压标定。
 
-VIO可原子覆盖或禁用活动bank；复位恢复RTL默认值，不保留在线修改。复位后不会重放VIO保留的旧提交。关闭VIO时仍可用静态默认bank；设置`DEFAULT_CALIBRATION_ENABLED=0`可禁用默认值。更新系数后应取新测量帧，保持态重绘仍沿用原帧系数。[在线调参说明](docs/runtime_calibration.md)包含提交和回读方法。
+2026-11-06最新AFG1022参考标定已在线应用并保存：Vpp=3576768、RMS=3601627、FFT=4079，详见[数据与验证](reports/afg_calibration_20261106/README.md)。这是Flash中的活动记录；上表RTL回退值未修改，无需为此重新生成bit/MCS。
+
+VIO可原子覆盖或禁用活动bank。未保存的在线修改在复位后丢失；P2持久化启用时恢复有效保存记录，否则回退RTL默认值。复位后不会重放VIO保留的旧提交。关闭VIO时仍可用静态默认bank；设置`DEFAULT_CALIBRATION_ENABLED=0`可禁用默认值。更新系数后应取新测量帧，保持态重绘仍沿用原帧系数。[在线调参说明](docs/runtime_calibration.md)包含提交和回读方法。
 
 ## 硬件连接
 
@@ -280,7 +283,7 @@ PMOD 5/11为GND，6/12为3.3 V。屏幕TX不接FPGA；本设计无UART RX。板�
 | 现场验收操作 | [完整操作手册](docs/contest_acceptance_runbook.md)、[空白记录表](docs/contest_acceptance_record_template.md)、[A/B彩排向量](docs/acceptance_vectors/README.md) |
 | AFG1022验收信号 | [A/B/C波形配方、离线制表与负载核验](docs/afg1022_acceptance_waveforms.md) |
 | 显示接口/参数 | [显示集成契约](docs/display_integration_20261029.md)、[屏幕spec](docs/TJC_UART_FORMAT.md) |
-| Flash标定持久化 | [P2实施与手动上机步骤](docs/flash_calibration_persistence_20261030.md)、[格式1](docs/flash_calibration_format_v1.md)；RTL/离线回归完成，P2实板待验收 |
+| Flash标定持久化 | [P2实施与手动上机步骤](docs/flash_calibration_persistence_20261030.md)、[格式1](docs/flash_calibration_format_v1.md)；P2保存/恢复已实板验证，最新B槽保存见[11月6日标定记录](reports/afg_calibration_20261106/README.md) |
 | 高频绘图修订 | [两点折线原因、16抽头重建、数值验证和上机](docs/waveform_interpolation_20261030.md)；尚未构建实测 |
 | 最新实屏反馈修订 | [频谱方向、文字刷新、kHz格式及标定顺序](docs/screen_axis_refresh_20261030.md) |
 | 显示稳定性修订 | [同页刷新、复合采样相位对齐、验证与手动构建](docs/display_stability_20261030.md) |

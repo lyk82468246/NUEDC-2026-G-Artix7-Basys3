@@ -1,0 +1,1 @@
+action store_save flash {stage PERSISTENT busy 0 ready 1 saved_valid 1 source 2 error 0 ack 1 initialized 1 dirty 0 saving 0 apply_block 0 rejected 0 panel_pending 0 status_register 0 security_register 0 jedec 12722198 sequence 1 saved_epoch 2 bank 79294142238186840429235802095 disposition SAVED_AND_VERIFIED}
