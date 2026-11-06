@@ -6,23 +6,15 @@
 
 ## 当前状态
 
-核对日期：**2026-11-06**。本表区分源码能力、构建结果和实物验收，历史过程见文末资料索引。
+核对日期：**2026-11-06**。程序版本、活动系数和证据边界统一见[当前状态](docs/project_status.md)；完整文档入口见[文档导航](docs/README.md)。
 
-| 层次 | 当前结论 |
+| 项目 | 当前结论 |
 | --- | --- |
-| RTL | 已集成采集、Vpp/RMS、8192点FFT、最多三分量分析、默认幅值系数、双页显示及板载控制 |
-| 最新实现 | 11月6日08:32 ROM读取修订版：**WNS +0.280 ns、WHS +0.011 ns、TNS/THS 0**，见[镜像记录](reports/boot_mcs_20261106/README.md) |
-| 最近通过的实现/产物 | 11月6日08:33 bit及配套LTX；新MCS为p2_boot_20261106_romfix_e733a9e.mcs，用户已确认烧写并成功加载 |
-| 最近构建资源 | 11月5日21:58旧实现BRAM48.5/50、DSP90/90、LUT19987/20800；该资源数字属于流水线修订前版本 |
-| 实板基线 | 此前版本已验证单音、部分三分量/非整频组合和板载交互；这些结果不能代替新显示版本的回归 |
-| 显示 | 已加入FFT方向修正、逐文字ref、一位小数kHz及16抽头带限波形插值；离线验证通过，最新实屏效果仍需验收 |
-| 单音识别 | 重新插紧BNC/SMA后11/12/42/100kHz均恢复单峰有效；189kHz弱候选造成的失效已解除，见[接触恢复复测](reports/single_tone_reseat_20261106/README.md) |
-| FFT窗读取修订 | ROM双次使能修订已进入当前程序；真实IP三帧仿真通过，实板单音完成，见[独立缺陷修复记录](reports/fft_window_alignment_fix_20261106/README.md)。单音失效恢复与BNC/SMA重新连接相关 |
-| Flash持久化进度 | A槽首次保存、相同bank免擦写、reload、BtnC、重新配置、断电及配置镜像升级后恢复均通过交互实测；11月6日B槽轮换保存也已通过；写中断电仍仅离线验证，见[实板记录](reports/flash_persistence_20261105/README.md) |
-| 最新在线标定 | AFG1022 HIGHZ设定参考，新活动/保存bank **3576768 / 3601627 / 4079**；B槽sequence1保存核对通过。100kHz四点拟合、125/175/225mV独立验证与10/200kHz检查见[标定报告](reports/afg_calibration_20261106/README.md)，不是独立绝对电压认证 |
-| 尚未完成的验收 | 独立绝对电压精度、完整C模式干扰测试、外部ADC时序/CDC边界、任意组合波稳定完整周期、端到端两秒响应 |
-
-最新违例定位与源码修复见[波形扫描时序记录](reports/display_scan_timing_20261105/README.md)。Flash实板信息、P2构建入口和验收步骤见[标定保存与恢复](docs/flash_calibration_persistence_20261030.md)。10月30日13:12报告见[实屏适配记录](docs/screen_axis_refresh_20261030.md)，09:06报告见[历史核对记录](docs/build_verification_20261030.md)；历史通过结果不能替代新实现检查。
+| 程序 | 11月6日08:33 bit，包含窗ROM读取修复与schema3原始候选；对应新MCS已由用户烧写并成功加载 |
+| 实现 | WNS **+0.280 ns**、WHS **+0.011 ns**、TNS/THS 0；[镜像与审计](reports/boot_mcs_20261106/README.md) |
+| 单音识别 | BNC/SMA重新连接后11/12/42/100kHz恢复单峰有效；[前后复测](reports/single_tone_reseat_20261106/README.md) |
+| 标定 | AFG1022 HIGHZ设定参考，活动/保存系数 **3576768 / 3601627 / 4079**；B槽sequence1保存核对通过；[标定证据](reports/afg_calibration_20261106/README.md) |
+| 待验收 | 新B槽断电恢复、独立绝对电压精度、完整多音/C模式干扰、实屏组合波显示、ADC外部时序/CDC及端到端≤2s |
 
 ## 阅读导航
 
@@ -70,7 +62,8 @@ flowchart TD
     RAM --> DISPLAY[Display_HMI：Amax / 插值 / 定性谱线]
     TIME --> DISPLAY
     FREQ --> DISPLAY
-    CAL[默认系数 / VIO在线覆盖] --> DISPLAY
+    FLASH[Flash A/B标定记录] --> CAL[活动系数 / VIO覆盖 / 默认回退]
+    CAL --> DISPLAY
     DISPLAY --> SCREEN[UART / TJC屏幕]
     CONTROLS[开关 / 消抖按键] --> RUN[Run_Controller]
     RUN --> AFE
@@ -99,21 +92,17 @@ flowchart TD
 - **谱图**：绘制已检测三分量的定性谱线；不是完整噪声底。共用像素的峰取最大值，精确频率/幅值看文本列表。
 - **时序/CDC**：ADC输入延迟目前仍采用min 0 ns / max 8 ns占位假设；bundled-data CDC依赖总线保持窗口。内部实现通过不代表这些外部接口假设已经实测验收。
 
-### 默认幅值系数
+### 幅值系数与持久化
 
-下表为RTL回退默认bank；未启用Flash持久化或没有有效保存记录时使用，`epoch=0`。P2持久化启用且保存记录有效时，启动/复位优先恢复Flash记录，活动系数可能与此表不同。参数位于`G_FPGA_Top.v`，格式为unsigned Q16.16的**发生器设定参考µV/raw**：
+unsigned Q16.16 µV/raw，换算为`µV = saturate_uint32((raw × gain + 32768) >> 16)`。屏幕显示换算值；板载Vpp/RMS/谱幅诊断视图仍显示raw。
 
-| 项目 | 默认整数系数 | 显示定义 |
-| --- | --- | --- |
-| Vpp / 波形Amax | 3623460 | 峰峰值 / 波形纵轴范围 |
-| RMS | 3701829 | 真有效值 |
-| FFT | 4194 | 各正弦分量峰值，非Vpp、非RMS |
+| 项目 | 当前活动/Flash保存 | RTL回退默认 |
+| --- | ---: | ---: |
+| Vpp / 波形Amax | 3576768 | 3623460 |
+| RMS | 3601627 | 3701829 |
+| FFT正弦分量峰值 | 4079 | 4194 |
 
-换算为`µV = saturate_uint32((raw × gain + 32768) >> 16)`，屏幕以一位小数mV显示。该bank曾用于现有HIGHZ设置和接线条件下的单音/多音验证，尚非独立绝对输入电压标定。
-
-2026-11-06最新AFG1022参考标定已在线应用并保存：Vpp=3576768、RMS=3601627、FFT=4079，详见[数据与验证](reports/afg_calibration_20261106/README.md)。这是Flash中的活动记录；上表RTL回退值未修改，无需为此重新生成bit/MCS。
-
-VIO可原子覆盖或禁用活动bank。未保存的在线修改在复位后丢失；P2持久化启用时恢复有效保存记录，否则回退RTL默认值。复位后不会重放VIO保留的旧提交。关闭VIO时仍可用静态默认bank；设置`DEFAULT_CALIBRATION_ENABLED=0`可禁用默认值。更新系数后应取新测量帧，保持态重绘仍沿用原帧系数。[在线调参说明](docs/runtime_calibration.md)包含提交和回读方法。
+参考是发生器HIGHZ显示设定值，尚非输入端独立绝对电压认证。P2启动/BtnC优先恢复有效保存记录，没有有效记录才回退RTL默认值。VIO apply仅更新活动值，save才持久化；更新系数不需要重新生成bit/MCS。详见[在线标定与恢复](docs/runtime_calibration.md)。
 
 ## 硬件连接
 
@@ -189,7 +178,7 @@ PMOD 5/11为GND，6/12为3.3 V。屏幕TX不接FPGA；本设计无UART RX。板�
 
 首次显示前同步串口解析器并恢复刷新；默认仅首次/切页发送page，同页不重发。批内依次暂停刷新、cle及240点add、同帧文本/刻度及逐项ref、显式刷新曲线并恢复刷新。暂停指令的具体屏幕固件兼容性待实测，可用DISPLAY_REFRESH_GUARD=0禁用；该选项关闭后仍可能看到cle/add逐点重画。wave横轴为0us、中点、1T/3T对应的右端时间；fft横轴为0～200/500kHz，并更新横/纵轴中点。单向TX无法读取ACK或判断页面是否执行完毕。缺失分量/无效电压显示`--`；已判无效的新帧清除旧曲线并绘中线或零基线。若输入恒定到没有过零，新帧可能无法完成，须区分采集超时和无效帧清除。
 
-**控件、绘图区和Y方向仍待实屏核对。** [新屏幕spec](docs/TJC_UART_FORMAT.md)所需的us时间和中点刻度已在[适配源码](docs/screen_spec_alignment_20261030.md)中补齐并通过UART仿真，尚未构建/烧写。实际行为以所下载bit为准，不能将新源码当作已上机结果。
+**控件、绘图区和Y方向仍需按实际HMI工程核对。** 当前程序已包含[屏幕spec](docs/TJC_UART_FORMAT.md)的时间/中点刻度、FFT方向修正及带限波形插值。UART仿真、代码进入当前bit和实屏最终验收是不同结论；不能仅凭仿真认定所有页面效果通过。
 
 ## 构建与下载
 
@@ -205,7 +194,7 @@ PMOD 5/11为GND，6/12为3.3 V。屏幕TX不接FPGA；本设计无UART RX。板�
    source C:/Users/Joe/Documents/Verilog/G_FPGA/scripts/setup_display_prepare.tcl
    ```
 
-3. 当前工程generic启用`ENABLE_RUNTIME_CALIBRATION=1`，保留已有VIO IP；顶层参数的缺省值与工程generic并非一回事。默认幅值bank不依赖手动JTAG加载。
+3. 当前P2工程generic启用`ENABLE_RUNTIME_CALIBRATION=1`和`ENABLE_FLASH_PERSISTENCE=1`，只读P1探针关闭，保留已有VIO IP；顶层参数的缺省值与工程generic并非一回事。默认幅值bank不依赖手动JTAG加载。
 4. **由用户手动**运行Synthesis、Implementation，检查资源、setup/hold、DRC及未约束路径，再Generate Bitstream。当前仓库保留历史自动构建脚本，日常流程不运行它们。
 5. Hardware Manager连接器件，Program Device选择本轮bit和同轮LTX。烧写后再确认时钟、模式、默认bank及测量结果。
 
@@ -222,11 +211,11 @@ PMOD 5/11为GND，6/12为3.3 V。屏幕TX不接FPGA；本设计无UART RX。板�
 | reports/ | 归档证据；不会随运行目录重建而自动更新 |
 | test_results/ | 本机仿真/实测输出，默认不纳入Git |
 
-“生成bit成功”不代替时序检查；旧正WNS报告也不能签核新源码。JTAG加载的是易失配置，断电后需重新下载，除非已将对应版本正确写入板载配置Flash。已有`.mcs/.prm`不能仅凭文件名当作最新版；本次没有更新或验证这些Flash文件。
+“生成bit成功”不代替时序检查；旧正WNS报告也不能签核新源码。JTAG加载的是易失配置，断电后需重新下载，除非已将对应版本正确写入板载配置Flash。已有`.mcs/.prm`不能仅凭文件名当作最新版。当前已烧写文件为`test_results/p2_boot_20261106_romfix_e733a9e.mcs`，版本与升级步骤见[手动工作流](docs/manual_vivado_workflow.md)。程序镜像与标定记录是两种持久化数据，更新镜像必须保留参数区。
 
 ## 首次上机测试
 
-使用已确认量程内的 **100 kHz、100 mVpp、HIGHZ、0 V偏置正弦**作为现有信号链基线。默认系数参考源的HIGHZ设定值，未经负载核对不要自行把电压乘/除2。
+使用已确认量程内的 **100 kHz、100 mVpp、HIGHZ、0 V偏置正弦**作为现有信号链基线。活动系数参考源的HIGHZ设定值，未经负载核对不要自行把电压乘/除2。
 
 | 步骤 | 操作 | 预期与检查 |
 | --- | --- | --- |
@@ -250,11 +239,11 @@ PMOD 5/11为GND，6/12为3.3 V。屏幕TX不接FPGA；本设计无UART RX。板�
 | 1 / 2 | 17 / 16 | Vpp raw / RMS raw |
 | 3 / 4 | 32 / 12 | 基频分量幅值raw / 基频bin |
 | 5 / 6 / 7 | 5 / 32 / 12 | HMI状态 / 实时诊断状态 / 实时ADC码 |
-| 8 / 9 | 36 / 32 | 三分量bin / 实时谱底均值raw |
-| 10 / 11 | 96 / 2 | 三分量幅值raw / 分量数 |
+| 8 / 9 | 36 / 32 | 原始候选bin / 实时谱底均值raw |
+| 10 / 11 | 96 / 2 | 原始候选幅值raw / 候选数 |
 | 12 / 13 / 14 | 32 / 32 / 8 | frame_id / 校准epoch / 同帧元数据 |
 
-打包槽0在低位，bin每槽12 bit、幅值每槽32 bit；未使用槽清零。probe5/6/7/9为实时诊断，其他结果按事件锁存。元数据bit0为信号有效、bit1为标定bank启用、bit2为VIO存在，bit4:3模式、bit5单次、bit6三周期。默认bank的epoch=0也可以有效；bit1不再受bit2强制门控。
+打包槽0在低位，bin每槽12 bit、幅值每槽32 bit；未使用槽清零。probe5/6/7/9为实时诊断，其他结果按事件锁存。元数据bit0为信号有效、bit1为标定bank启用、bit2为VIO存在，bit4:3模式、bit5单次、bit6三周期、bit7原始候选schema3。schema3无效帧仍保留拒绝前候选，不能当作有效分量；基波结果仍按有效性清零。详见[ILA指南](docs/ila_diagnostics.md)。默认bank的epoch=0也可以有效；bit1不再受bit2强制门控。
 
 ## 仿真与自动化
 
@@ -267,8 +256,10 @@ PMOD 5/11为GND，6/12为3.3 V。屏幕TX不接FPGA；本设计无UART RX。板�
 .\scripts\run_display_bandlimited_sim.ps1
 .\scripts\run_runtime_calibration_sim.ps1
 .\scripts\run_measurement_debug_sim.ps1
+.\scripts\run_fft_window_backpressure_sim.ps1 -CheckLegacy
+.\scripts\run_fft_rom_alignment_sim.ps1
 .\scripts\run_contest_sim.ps1
-.\.venv-hds\Scripts\python.exe -m unittest discover -s scripts/instruments -p 'test_*.py'
+.\.venv-hds\Scripts\python.exe -E -m unittest discover -s scripts/instruments -p 'test_*.py'
 ```
 
 显示测试解码实际UART线，检查每条命令、每个像素、同帧校准、HOLD重绘、无效状态、背压与复位。顶层端口测试使用厂商DSP黑盒，不能据此宣称完整FFT数值链验证。需要生成IP功能模型的专项测试可运行`run_behavioral_sim.ps1`、`run_afe_capture_sim.ps1`和`run_magnitude_scale_sim.ps1`；详细边界见对应说明/归档日志。
@@ -277,24 +268,15 @@ PMOD 5/11为GND，6/12为3.3 V。屏幕TX不接FPGA；本设计无UART RX。板�
 
 ## 资料索引
 
-| 主题 | 文档 |
-| --- | --- |
-| 本轮通过的构建 | [2026-10-30构建核对](docs/build_verification_20261030.md) |
-| 现场验收操作 | [完整操作手册](docs/contest_acceptance_runbook.md)、[空白记录表](docs/contest_acceptance_record_template.md)、[A/B彩排向量](docs/acceptance_vectors/README.md) |
-| AFG1022验收信号 | [A/B/C波形配方、离线制表与负载核验](docs/afg1022_acceptance_waveforms.md) |
-| 显示接口/参数 | [显示集成契约](docs/display_integration_20261029.md)、[屏幕spec](docs/TJC_UART_FORMAT.md) |
-| Flash标定持久化 | [P2实施与手动上机步骤](docs/flash_calibration_persistence_20261030.md)、[格式1](docs/flash_calibration_format_v1.md)；P2保存/恢复已实板验证，最新B槽保存见[11月6日标定记录](reports/afg_calibration_20261106/README.md) |
-| 高频绘图修订 | [两点折线原因、16抽头重建、数值验证和上机](docs/waveform_interpolation_20261030.md)；尚未构建实测 |
-| 最新实屏反馈修订 | [频谱方向、文字刷新、kHz格式及标定顺序](docs/screen_axis_refresh_20261030.md) |
-| 显示稳定性修订 | [同页刷新、复合采样相位对齐、验证与手动构建](docs/display_stability_20261030.md) |
-| 前次刻度适配 | [us时间/FFT中点适配记录](docs/screen_spec_alignment_20261030.md)（刷新策略已被上项取代） |
-| 默认/在线标定 | [标定与VIO](docs/runtime_calibration.md)、[默认bank回归](reports/boot_calibration_20261030/README.md) |
-| 时序修订/仿真证据 | [时序定位与回归](reports/display_timing_20261030/README.md)、[双页集成回归](reports/display_integration_20261030/README.md) |
-| 操作/测量记录 | [板载交互确认](docs/interactive_controls_20261029.md)、[实机记录表](docs/hardware_test_record.md) |
-| IP/定点实现 | [采集与时域](docs/CAPTURE_CALC.md)、[FFT与幅值](docs/FFT_UART.md)、[参考模型与标度](docs/contest_model.md) |
-| 单音/频带实测 | [非整频单音](docs/offbin_hardware_20261023.md)、[均衡后频带](docs/fir_equalization_hardware_20261023.md)、[低端补测](docs/fir_equalization_extension_20261023.md) |
-| 多音与完整幅值实测 | [三分量幅值](docs/component_amplitudes_hardware_20261024.md)、[高频/相位/非整频组合](docs/highband_multitone_hardware_20261024.md) |
-| 仪器控制 | [HDS242S](docs/hds242s_automation.md)、[UTG932](docs/utg932_automation.md)、[服务与API](docs/lab_api.md) |
-| 需求与流程 | [原题归档](docs/requirements/2026年G题.md)、[执行/验收计划](docs/contest_execution_plan.md)、[手动构建背景](docs/manual_vivado_workflow.md) |
+完整分类见[文档导航](docs/README.md)。常用入口：
 
-专题文档中的日期、旧bit、旧探针数、接线现场及“尚未实现”等描述保留历史意义。当前入口以本文核对状态和实际RTL/XDC为准；新增实验过程写入专项记录，不再逐条追加到README开头。
+| 任务 | 文档 |
+| --- | --- |
+| 确认版本与活动系数 | [当前状态](docs/project_status.md) |
+| 比赛验收操作与记录 | [操作手册](docs/contest_acceptance_runbook.md)、[记录表](docs/contest_acceptance_record_template.md) |
+| 构建、bit/LTX、MCS升级 | [手动Vivado工作流](docs/manual_vivado_workflow.md) |
+| 标定与持久化 | [在线标定](docs/runtime_calibration.md)、[AFG实测报告](reports/afg_calibration_20261106/README.md) |
+| ILA与单音横杠排查 | [ILA指南](docs/ila_diagnostics.md)、[BNC/SMA恢复证据](reports/single_tone_reseat_20261106/README.md) |
+| 屏幕与仪器 | [屏幕spec](docs/TJC_UART_FORMAT.md)、[AFG1022](docs/afg1022_automation.md) |
+
+日期型专项文档保留当时构建、接线、探针和实验边界；不作为当前已验证状态的替代。新实验写入独立报告，主入口只维护当前结论及链接。

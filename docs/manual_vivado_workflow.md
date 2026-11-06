@@ -1,45 +1,81 @@
-# Vivado手动构建交接
+# Vivado手动构建、下载与Flash升级
 
-2026-10-23起按用户约定：助手编辑RTL、工程注册、约束及文档并进行约定的离线检查；综合、实现、生成bit及烧写均由用户在Vivado中操作。助手先通知准备状态，等待用户反馈再继续。不因旧阶段曾授权自动构建而重新启动这些操作。
+综合、实现、生成bit及烧写由用户在Vivado中手动执行；助手可编辑源码、做离线仿真和读取产物。仅离线生成MCS时可按用户请求调用既有镜像脚本。当前产物与保存系数见[当前状态](project_status.md)。
 
-## 1. 本次module not found
+## 判断是否需要重建
 
-`Component_Analyzer.v`存在且模块名正确，但用户13:51失败的综合工程没有将它加入源文件列表。检查时磁盘`G_FPGA.xpr`也缺这条注册；已补回并启用synthesis/implementation/simulation。此前工程保存、备份恢复与GUI旧会话没有可靠同步，不能把这个问题归咎于用户改动工具链。
+| 变化 | 需要的操作 |
+| --- | --- |
+| 文档/主机分析脚本 | 不重建FPGA |
+| 在线标定系数 | VIO apply、验证、save；不生成bit/MCS |
+| RTL/约束变化 | 用户重新综合、实现、检查时序/DRC、生成bit |
+| IP配置/探针端口变化 | 先更新对应IP产物/OOC，再完整构建 |
+| 希望断电后仍启动新逻辑 | 从通过验证的bit生成新MCS，由用户烧写配置Flash |
 
-仅修改磁盘XPR不会更新已经打开的GUI内存工程。请在当前Vivado的Tcl Console执行以下**仅注册**命令：
+## 在原GUI工程构建
+
+1. 打开仓库根目录`G_FPGA.xpr`，top为`G_FPGA_Top`，器件为`xc7a35tcpg236-1`。不要另开旧副本。
+2. 外部修改磁盘XPR不会同步已打开的GUI源列表。新增RTL后按需执行注册脚本并保存工程；普通文件内容更新不需要每次重装IP：
 
 ```tcl
-source {C:/Users/Joe/Documents/Verilog/G_FPGA/scripts/setup_contest.tcl}
+source C:/Users/Joe/Documents/Verilog/G_FPGA/scripts/setup_contest.tcl
+source C:/Users/Joe/Documents/Verilog/G_FPGA/scripts/setup_display_prepare.tcl
 ```
 
-应打印`PASS: Component_Analyzer registered, enabled, and included in synthesis compile order.`。脚本会加入必要RTL、启用用途、更新编译顺序并检查Component_Analyzer确实出现在综合编译顺序中；不会关闭工程、重置运行、生成IP、综合、实现或烧写。之后在Sources中应能看到Component_Analyzer，不再是缺失模块。
+当前P2需要generic启用`ENABLE_RUNTIME_CALIBRATION=1`、`ENABLE_FLASH_PERSISTENCE=1`、`ENABLE_FLASH_READONLY_PROBE=0`；顶层参数缺省不等于工程generic。既有工程已具备功能，不应为检查状态反复运行首次IP安装脚本。
 
-本次交接只请先手动Run Synthesis；若提示重置失败运行，由用户确认。完成后告知助手状态或首个报错，尚不自动进入实现。后续用户正常保存工程；若重新打开则打开本仓库根目录的`G_FPGA.xpr`，避免另一个副本或旧GUI会话覆盖源列表。
+3. 用户运行Synthesis → Implementation，检查setup/hold、DRC、资源及未约束路径，再Generate Bitstream。不得用旧报告签核新源码。
+4. 若提示module not found，确认文件在Sources中、模块名正确、USED_IN_SYNTHESIS启用，参见[登记问题](synthesis_source_registration_20261030.md)。
 
-## 2. 为什么以前GUI不显示成功
-
-此前为规避本机Windows Script Host包装器及Vivado路径处理问题，使用临时`SUBST V:`映射本仓库，再在batch中直接调用`synth_design`、`place_design`、`route_design`、`write_bitstream`。这仍是同一个物理仓库，并非另一个工程目录。结果曾写入根目录下`G_FPGA.runs/impl_1`，但直接命令绕过了GUI标准`synth_1/impl_1`运行状态管理，不能据此期待GUI自动显示“Complete”或能直接Open Synthesized Design。
-
-此外，已打开GUI持有内存源列表；脚本修改/恢复磁盘XPR并不能同步它。本次缺源说明这条工作流没有可靠交接，今后以用户GUI工程和标准运行作为构建依据。旧脚本保留为历史工具，助手不自行运行。
-
-## 3. 标准GUI结果位置
-
-| GUI步骤 | 常规结果位置（仓库内） |
+| 产物 | 常规路径 |
 | --- | --- |
-| Run Synthesis | `G_FPGA.runs/synth_1/G_FPGA_Top.dcp`及`runme.log` |
-| Run Implementation | `G_FPGA.runs/impl_1/G_FPGA_Top_routed.dcp`及实现报告 |
-| Generate Bitstream | `G_FPGA.runs/impl_1/G_FPGA_Top.bit`，启用ILA时配套LTX也应核对 |
+| 综合 | `G_FPGA.runs/synth_1/` |
+| 布线时序 | `G_FPGA.runs/impl_1/G_FPGA_Top_timing_summary_routed.rpt` |
+| 程序 | `G_FPGA.runs/impl_1/G_FPGA_Top.bit` |
+| 探针 | `G_FPGA.runs/impl_1/debug_nets.ltx` |
 
-以上是预期路径，不代表文件当前已经存在。13:50本机运行目录重新生成了GUI运行脚本；本次检查时`impl_1`仅有运行辅助文件，没有bit、LTX或routed DCP。重置/重新生成运行可能清理旧结果，不应把历史报告当作本轮手动运行结果。
+SUBST盘符仅可能用于Windows工具路径兼容，不代表另一个物理工程。日常使用GUI标准runs；早期直接调用place/route脚本绕过了GUI运行状态管理，该方式不再作为日常流程。[历史原因](manual_vivado_workflow_history_20261106.md)保留追溯。
 
-`test_results/p3_diagnostic_20261023/G_FPGA_Top.bit/.ltx`是**诊断构建前备份的六探针P3旧版**，不是十探针诊断版。不要因目录名带diagnostic便把它当成最新版。bit与LTX必须成对匹配，使用本轮GUI生成结果并记录散列。
+## JTAG下载和匹配LTX
 
-## 4. 历史记录与当前边界
+Hardware Manager连接板卡后，Program Device选择同一轮bit与LTX。JTAG下载只更新易失配置，不更新启动Flash。若重新上电加载Flash版，必须为该版使用匹配LTX；出现UUID/端口数不匹配应先解决版本对应，不强行忽略。
 
-中断前十探针诊断版曾于13:21完成脚本构建：WNS+0.097ns、WHS+0.026ns、DRC 0错误/14警告，BRAM42/50、DSP75/90；13:22下载成功。bit SHA256=`FE1259F1D9871635ABBDFD8851D8068246533BCC6658F448133549EBA671930F`，LTX SHA256=`5CD7AB9F4D15596F6FDB8F31EF01C4F9281150B8C531FECD96C8DA3FE261B881`。这是历史结果，不能作为修订后GUI综合成功的证明。
+仅给已经运行的当前版关联LTX（不下载程序）：
 
-用户随后确认先前不慎断开过ADC电源，现在已恢复，因此按用户要求停止针对该次超时的RTL排查；仍保留原始日志，不把该次异常当成已证实的RTL缺陷。网络中断期间自动计划未完成有效单音验证，不能补记通过。13:57重新连接仪器、明确关闭OUT并确认成功，随后停止服务。本次源注册修复后没有启动综合、实现、生成bit或烧写；等待用户操作。
+```tcl
+set dev [current_hw_device]
+set_property PROBES.FILE {C:/Users/Joe/Documents/Verilog/G_FPGA/G_FPGA.runs/impl_1/debug_nets.ltx} $dev
+refresh_hw_device $dev
+```
 
-## 5. 用户已完成本轮手动构建
+已存在cfgmem对象时，“Add Configuration Memory Device”灰色不代表故障：`get_hw_cfgmems`及`get_property PROGRAM.HW_CFGMEM $dev`可查询已有对象。
 
-用户随后在GUI成功加入Component_Analyzer，并完成综合、实现、生成bit和烧写。14:24生成的GUI bit（SHA以F92E2892开头）不同于13:21脚本bit；LTX布局相同，但仍需按本轮产物成对使用。GUI报告及实测详见[GUI硬件记录](hardware_gui_20261023.md)。助手后续只读报告和ILA、运行约定的信号源测试，未代替用户执行新的构建或烧写；修复未来RTL后仍须再次通知并等待用户操作。
+## 离线生成新MCS
+
+当前已烧写镜像为`test_results/p2_boot_20261106_romfix_e733a9e.mcs`。以下模板用于未来升级，输出必须用尚不存在的新名称：
+
+```tcl
+source C:/Users/Joe/Documents/Verilog/G_FPGA/scripts/create_boot_mcs.tcl
+rc_create_boot_mcs C:/Users/Joe/Documents/Verilog/G_FPGA/G_FPGA.runs/impl_1/G_FPGA_Top.bit C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/boot_next_unique.mcs
+```
+
+脚本不连接硬件；SPIx1、4MiB，从0地址加载，并以项目Python `-E`审计地址范围和bit/MCS哈希。`-E`避免Vivado的PYTHONHOME污染导致SRE module mismatch。审计通过才发布最终MCS。不要根据文件名或时间单独判定程序版本，保留audit.json。
+
+## 用户手动烧写配置Flash
+
+先导出系数，然后为已有cfgmem对象选择新镜像。以下设置本身不开始擦写：
+
+```tcl
+set dev [current_hw_device]
+set mem [get_property PROGRAM.HW_CFGMEM $dev]
+# 若mem为空，先按板载MX25L3233 / JEDEC C22016选择兼容profile
+set_property PROGRAM.FILES {C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/boot_next_unique.mcs} $mem
+set_property PROGRAM.ADDRESS_RANGE {use_file} $mem
+set_property PROGRAM.ERASE 1 $mem
+set_property PROGRAM.CFG_PROGRAM 1 $mem
+set_property PROGRAM.VERIFY 1 $mem
+set_property PROGRAM.BLANK_CHECK 0 $mem
+puts [get_property PROGRAM.ADDRESS_RANGE $mem]
+```
+
+由用户确认并执行Program Configuration Memory Device。禁止整片擦除，保留参数区`0x3E0000–0x3FFFFF`。地址审计只证明镜像覆盖范围，不能替代编程器擦除策略确认。完成后验证Flash启动、匹配LTX、保存记录与活动系数。USB/JTAG握手曾伴随启动异常，相关机制未定；若DONE不保持，先核对实际配置与供电，不把“Flash文件存在”当作启动成功。

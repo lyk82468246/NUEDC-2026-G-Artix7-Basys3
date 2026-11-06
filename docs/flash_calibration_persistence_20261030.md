@@ -1,5 +1,7 @@
 # 标定参数保存与自动恢复：P2实施及上机步骤
 
+> 当前操作入口：[在线标定与恢复](runtime_calibration.md)、[程序/MCS升级](manual_vivado_workflow.md)、[当前版本](project_status.md)。本篇保留P1→P2实施机制与最初验收过程；日期型数值不代表当前活动系数。11月6日新MCS已由用户烧写加载，新系数已保存到B槽sequence1，见[最新实测](../reports/afg_calibration_20261106/README.md)。
+
 2026-10-30初稿，11月5日实板验收更新。P2扫描流水线修订后实现通过，用户已验证A槽保存、无变化免擦写、显式/BtnC/重新配置/断电恢复，并在写入配置镜像后验证冷启动恢复。[实板记录](../reports/flash_persistence_20261105/README.md)区分已测和待测范围。下文P1旧构建数字属于10月30日基线，记录格式仍遵循[格式1](flash_calibration_format_v1.md)。
 
 11月5日22:26实现：WNS +0.317 ns、WHS +0.027 ns、TNS/THS 0。`p2_boot_01.mcs`已审计并由用户烧写。Vivado导出的Python环境曾导致SRE module mismatch，镜像脚本现使用项目Python的`-E`参数隔离。以下流程仍可复用；标为首次交付尚待的描述属于历史边界，以实板记录为准。
@@ -105,12 +107,12 @@ rc_reload
 
 ```tcl
 source C:/Users/Joe/Documents/Verilog/G_FPGA/scripts/create_boot_mcs.tcl
-rc_create_boot_mcs C:/Users/Joe/Documents/Verilog/G_FPGA/G_FPGA.runs/impl_1/G_FPGA_Top.bit C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/p2_boot_01.mcs
+rc_create_boot_mcs C:/Users/Joe/Documents/Verilog/G_FPGA/G_FPGA.runs/impl_1/G_FPGA_Top.bit C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/boot_next_unique.mcs
 ```
 
 按[AMD write_cfgmem文档](https://docs.amd.com/r/2023.2-English/ug908-vivado-programming-debugging/Creating-a-Configuration-Memory-File-for-FPGA-Devices)，`-size 4`单位为MiB。脚本生成SPIx1镜像并强制审计Intel HEX地址、64KiB擦除覆盖、bit哈希，只有全部位于参数区之前才发布最终MCS及JSON清单。输出禁止覆盖已有文件。
 
-**MCS地址审计不能证明硬件编程器实际擦除策略。**升级配置镜像时不得使用Entire Device/整片擦除，必须只擦除文件涉及区域并保留`3E0000–3FFFFF`；升级前导出系数，升级后读取核对。此轮没有生成真实MCS或编程配置Flash，冷启动尚未验收。
+**MCS地址审计不能证明硬件编程器实际擦除策略。**升级配置镜像时不得使用Entire Device/整片擦除，必须只擦除文件涉及区域并保留`3E0000–3FFFFF`；升级前导出系数，升级后读取核对。此项最初交付时尚未实测；其后旧A槽配置镜像升级/冷启动已通过，当前新MCS用户也已确认烧写加载。11月6日新B槽保存已核对，但该新记录断电恢复未在本轮复测。
 
 ## 状态与错误码
 
@@ -135,4 +137,4 @@ Runtime VIO flags新增7 ready、6 commit_rejected、5 apply_block；低5位保�
 
 主机侧147项测试通过，包含VIO拒绝/未知超时/JSON、MCS审计强制执行、重复注册。NOR Python模型改为与RTL一致的4KiB擦除，三组保存共303个掉电检查点；旧P1文档1023点来自当时64KiB参考模型，不能混用。
 
-尚待用户手动实现确认资源和SPI时序、P2实板save/reload、真正断电恢复及配置镜像升级保留参数。Flash外部时序预算仍需核对实际连线/器件参数；旧bit的正WNS不覆盖新路径。
+后续已完成当前P2实现、旧A槽save/reload/断电恢复及配置镜像升级保留参数、新B槽轮换保存。尚待新B槽冷启动复测、写中断电实板测试及外部SPI时序预算独立核对；不要用旧bit的正WNS签核新源码。

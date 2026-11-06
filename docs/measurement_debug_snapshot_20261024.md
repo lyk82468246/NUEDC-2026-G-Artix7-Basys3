@@ -1,6 +1,6 @@
 # 三分量幅值观测：RTL与仿真交接（2026-10-24）
 
-2026-11-05后续源码已加入[schema3原始候选观测](../reports/single_tone_diagnostic_20261105/README.md)，用于诊断单音拒绝；顶层默认DEBUG_RAW_CANDIDATES=1，metadata bit7标识新语义，ILA端口宽度不变。新版本待用户手动构建。下文schema2的无效槽清零规则仅对应旧模式，主机已兼容两种格式。
+2026-11-05后续源码已加入[schema3原始候选观测](../reports/single_tone_diagnostic_20261105/README.md)，用于诊断单音拒绝；顶层默认DEBUG_RAW_CANDIDATES=1，metadata bit7标识新语义，ILA端口宽度不变。当前schema3已在11月6日程序上读通，操作与探针语义见[当前ILA指南](ila_diagnostics.md)。下文schema2的无效槽清零规则仅对应旧模式，主机已兼容两种格式。
 
 后续：用户已完成00:33的手动构建和烧写，新15探针已实际读通并完成三分量幅值对照，见[首次实板验证](component_amplitudes_hardware_20261024.md)。以下“尚未构建”等表述只记录原修改/仿真交接阶段，不代表最新板上状态。
 

@@ -1,110 +1,80 @@
-# 临时幅值标定与 JTAG 在线调参
+# 在线标定、保存与恢复
 
-2026-10-30源码更新：板级RTL已内置最后实测使用的Q16.16参考系数，Vpp=3623460、RMS=3701829、FFT正弦峰值=4194。新版本上电/复位即启用默认bank（epoch=0），首个有效测量帧无需JTAG写系数即可换算mV。尚未综合/烧写，板上旧bit的行为不变；以下旧实板记录保留历史含义。
+适用当前P2程序；版本与实际系数见[当前状态](project_status.md)。当前已有VIO与参数Flash功能，不需要再次安装IP或重新构建。
 
-默认值集中在 `G_FPGA_Top.v` 的 `DEFAULT_*` 参数中。开启VIO时，`Runtime_Calibration`复位恢复同一默认bank；关闭VIO时仍使用该静态bank。设`DEFAULT_CALIBRATION_ENABLED=0`可禁用默认标定；任一零增益也会使bank无效。VIO仍允许原子覆盖/禁用，在线修改只在当前运行期间有效，复位或重新加载bit后恢复RTL默认值。
+## 系数和参考
 
-板载复位不会复位VIO内部暂存值/request。本次RTL在复位释放后的3拍同步期间，将ack对齐保留下来的request但不提交旧暂存bank（epoch仍为0），避免旧在线系数立即覆盖默认值；之后必须再次显式翻转request才能提交新bank。主机仍先读当前request/ack再翻转，不固定假设request=0。
+| 输出 | 当前活动/保存系数 | RTL回退默认系数 |
+| --- | ---: | ---: |
+| Vpp / 显示Amax | 3576768 | 3623460 |
+| 真RMS | 3601627 | 3701829 |
+| FFT各正弦分量峰值 | 4079 | 4194 |
 
-ILA快照位宽不变：metadata bit1表示活动标定启用，bit2单独表示VIO存在。静态默认bank可出现bit1=1、bit2=0、epoch=0；不再把“无VIO”等同于“无有效标定bank”。这些标志仍不代表已取得独立绝对电压校准。
+单位为unsigned Q16.16 µV/raw：`µV = saturate_uint32((raw × gain + 32768) >> 16)`。RMS由时域平方均值计算，标定实验中的理想正弦参考才使用Vpp/(2√2)。FFT参考为Vpp/2，不能把同一个Vpp系数套给FFT。
 
-日期：2026-10-23。当前板上仍为用户14:24手动生成烧写版本。本轮不综合、不实现、不生成bit、不烧写。
+本次标定以AFG1022 HIGHZ显示设定值为参考，包含负载和模拟链路的等效比例；不是端口独立绝对电压计量。换源负载设置、接线、前端、ADC配置或FIR后需复核。[拟合、独立验证、175mVpp实际输出及保存证据](../reports/afg_calibration_20261106/README.md)已归档。
 
-后续状态更新：用户已手动生成并烧写16:25的新VIO版本。21时段首次硬件验证已在线加载epoch1系数，并通过50/100mVpp新包回读，见[首次VIO实板记录](runtime_vio_hardware_20261023.md)。下面首次构建步骤是复现指南，当前无需再次构建；旧版默认/初版测试状态按记录时间理解。
+## apply、save、reload分别做什么
 
-## 1. 标定参考及限制
+| 操作 | 作用 |
+| --- | --- |
+| `rc_apply` | 原子更新活动bank并增加epoch，不写Flash |
+| `rc_save` | 保存已应用bank；回读验证；相同bank返回UNCHANGED，不重复擦写 |
+| `rc_reload` | 重新读Flash并应用有效记录，覆盖未保存的在线值 |
+| 启动/BtnC | P2先恢复有效保存记录，再放行采集；没有有效记录才回退RTL默认值 |
+| `rc_export` | 导出已解码的活动/保存系数与元数据，不是原始Flash转储 |
 
-用户批准暂按发生器设置值标定。发生器100kHz正弦、HIGHZ、0V偏置；滤波器输入50Ω对地，输出串联50Ω，ADC模块输入50Ω。
-**这里的mV是发生器HIGHZ显示值的等效参考，不是已实测的滤波器输入端mV。** 如果源等效内阻50Ω，实际输入端可能约为显示值一半；本次不擅自乘/除2。改变负载模式、接线、前端、采样配置后必须复核系数。
-RMS参考由正弦Vpp/(2√2)推得，FFT参考为Vpp/2的正弦峰值，不是独立仪表实测。不宣称完成≤5mV精度验收。
+当前B槽sequence1、saved_epoch2已保存核对。本轮未做新B槽断电恢复；恢复后活动epoch不要求等于saved_epoch。VIO的暂存/request可能跨BtnC保留，RTL不会因此自动重新提交旧暂存值。
 
-## 2. 六帧实测与系数
+## 当前GUI连接中的操作
 
-本地原始目录`test_results/lab_2026-10-23T15-42-00.184+08-00_5455dc`。
-计划`c05261c332734165af8068f50aad608e`先完成50mVpp两帧，随后75mVpp被仪器回读为70mVpp，因不匹配自动停止并关闭OUT；没有把70的数据标成75。随后计划`db017df283cc4fb1acb47d3acd78e782`明确测试70/100mVpp各两帧成功并自动OFF。没有降低回读核验标准。
-
-| HIGHZ设定mVpp | 两帧Vpp raw | 两帧RMS raw | 两帧FFT raw |
-| --- | --- | --- | --- |
-| 50 | 913 / 909 | 313 / 313 | 390850 / 390549 |
-| 70 | 1274 / 1266 | 438 / 438 | 547021 / 546994 |
-| 100 | 1803 / 1802 | 626 / 626 | 781105 / 781118 |
-
-所有帧为新measurement_valid，signal_valid=1，仅100kHz候选。15:47:48再次确认OUT OFF，关闭服务。三档均处于既有100mVpp测试上限内，未提高至250mVpp。
-
-通过原点的最小二乘系数，采用独立Vpp/RMS/FFT系数：
-
-| 输出参考 | µV/raw | uint32 Q16.16系数 | 最大拟合残差 |
-| --- | --- | --- | --- |
-| Vpp | 55.289605 | 3623460 | 约479µV |
-| RMS | 56.485435 | 3701829 | 约8.12µV |
-| 正弦FFT峰值 | 0.064000396 | 4194 | 约12.90µV |
-
-公式：`reference_uv = saturate_uint32((raw * gain_q16 + 32768) >> 16)`。
-这些残差是训练数据内的残差，不是独立验证或参考仪器不确定度。Vpp用全帧极值，受噪声偏置影响；其诊断性自由截距约−1.16mV，暂不应用截距修正，不把小信号修正公式泛化到所有组合波形。单一100kHz系数尚不能补偿整带幅相响应，也没有验证多音Vpp/真RMS及非栅格频谱峰值。
-
-可复现拟合：
-
-```powershell
-.\.venv-hds\Scripts\python.exe scripts/instruments/fit_amplitude_calibration.py `
-  test_results/lab_2026-10-23T15-42-00.184+08-00_5455dc/c05261c332734165af8068f50aad608e `
-  test_results/lab_2026-10-23T15-42-00.184+08-00_5455dc/db017df283cc4fb1acb47d3acd78e782 `
-  --output test_results/calibration_new_report
-```
-
-输出目录必须不存在；脚本不接触硬件。存档系数与报告见[系数数据](calibration_generator_nominal_20261023/coefficients.tcl)和[拟合报告](calibration_generator_nominal_20261023/calibration.json)。仅统计完成的逐点记录，即使所在计划后续失败，已完成50mVpp样本仍可用；拒绝模拟数据、旧帧、无效信号、多候选、错误频率和非HIGHZ记录。
-
-## 3. 在线调试结构与安全默认值
-
-```text
-VIO输出暂存系数 ──单独提交request toggle──> Runtime_Calibration
-                                                 │
-原始measurement_valid＋raw ──> 每包锁存系数及版本 ──> µV结果
-                                                 │
-                      VIO输入 <── ack/版本/计数/状态/实际系数
-原有ILA、有效判决、HMI和数码管raw路径：保持原样
-```
-
-`G_FPGA_Top.ENABLE_RUNTIME_CALIBRATION`默认0，兼容现有工程。运行安装脚本后改为1，新增VIO旁路；不改变原有10探针ILA，不把校准量替换成内部滤波/触发样本。现有HMI仍显示raw，不能把它当已校准mV。
-新源码的活动系数按上面的实测默认bank复位，epoch=0；VIO输出暂存区仍按原IP初始化为0，request/ack均为0时不会自动覆盖活动bank。因此不需重新生成VIO IP。只有显式翻转request才提交暂存值，提交前仍须先完整填写全部暂存字段；不要把全零暂存区误提交。每次上电后默认系数可直接使用；只有想覆盖默认值时才需要下述JTAG加载步骤。旧bit仍按历史“活动bank全零”方式工作。
-
-每次只有一个未确认请求。先写四个暂存字段并commit，再单独翻转request并commit。等ack相等后，回读活动系数确认。RTL仅在处理包间隙接受新bank，每包锁存自身epoch。更新后旧结果不会被新版本重新解释；等下一包result_epoch==epoch再使用。默认不允许使用零系数、溢出或无信号结果。
-
-## 4. 用户首次手动构建（仅一次）
-
-在当前正确目录的Vivado GUI Tcl Console执行：
+使用与程序匹配的`debug_nets.ltx`，只保留一个JTAG操作者，停止其他自动捕获任务。以下命令在已连接目标的Vivado Tcl Console执行，不会编译或下载程序：
 
 ```tcl
-source C:/Users/Joe/Documents/Verilog/G_FPGA/scripts/setup_runtime_calibration.tcl
-```
-
-脚本注册Runtime_Calibration并生成vio_calibration IP输出产物，保留已有generic覆盖，仅设置ENABLE_RUNTIME_CALIBRATION=1。不调用综合、实现、bit或program，不关闭项目。保存工程，检查新增模块/IP可见。
-随后由用户手动完成综合→实现→检查时序/DRC→生成bit→下载，并关联同次生成的LTX。**完成后告诉助手**，再验证实际VIO探针名称及在线事务。本轮没有运行此安装脚本，未生成新VIO IP或bit；IP配置字段、顶层完整连接及新增资源/时序仍待首次GUI构建验证。
-
-## 5. 已烧写后在线加载，不再重编译
-
-先停止自动服务/ILA任务，使用同一个Hardware Manager连接，禁止多个工具抢JTAG。
-
-```tcl
-source C:/Users/Joe/Documents/Verilog/G_FPGA/scripts/runtime_calibration_vio.tcl
-source C:/Users/Joe/Documents/Verilog/G_FPGA/docs/calibration_generator_nominal_20261023/coefficients.tcl
-rc_apply [dict get $rc_coefficients vpp] [dict get $rc_coefficients rms] [dict get $rc_coefficients fft]
+source C:/Users/Joe/Documents/Verilog/G_FPGA/scripts/flash_store_vio.tcl
+rc_store_status
+rc_store::active
 rc_read
 ```
 
-`rc_apply`校验uint32、两阶段提交、ack和活动系数回读；超时不重放未知写操作。`rc_read`返回µV、epoch、result_count及valid。单位仍是本次系数定义的“发生器设定参考µV”。同一系数下按`µV/1000`换算参考mV。
-VIO读数是逐项读取，不是原子抓拍：脚本对比两次计数、版本、状态并拒绝busy/跨版本结果。调用者必须观察result_count增加才可声称新包，重复读到相同计数不是新测量。
-探针按精确末级信号名匹配，支持实际点号与斜杠层级，遇到缺失/重名直接报错；首次上板若综合命名变化，先检查`get_hw_probes`，不模糊匹配任意同宽探针。脚本已在本机Vivado2025.2与新bit上验证；刷新开关及HEX补零修订见首次实板记录。系数写入前明确HEX显示格式，并按实际WIDTH补足位数。
+`rc_read`单位是µV；只有valid=1、result_epoch匹配，且result_count相对上次增加，才是新有效结果。源OFF时无效/零输出正常，不能用来标定。
 
-关闭标定而不重编译：
+已验证系数的在线应用示例（这是写操作，正常启动无需重复执行）：
 
 ```tcl
-rc_apply 0 0 0 0
+rc_apply 3576768 3601627 4079 1
+rc_store::active
+rc_read
 ```
 
-目前只提供三项幅值系数，不支持在线重配FFT长度、FIR结构或MMCM，这些仍需重新生成硬件。动态RMS门限、频响表和全谐波校准可后续扩展；本次不修改信号判决。
+先设置新源输入并验证新结果，再选择是否持久化：
 
-## 6. 验证记录
+```tcl
+rc_save
+# 需要SAVED_AND_VERIFIED；若bank已相同，UNCHANGED也正常
+rc_store_status
+rc_export C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/calibration_export_new.json ROMFIX-20261106
+```
 
-新增Runtime_Calibration行为仿真覆盖初始无标定、请求延后、每包锁存、版本、无信号、舍入、饱和、忙时输入诊断及复位。运行`scripts/run_runtime_calibration_sim.ps1`。
-既有九组contest RTL仿真复跑通过。仪器/拟合/Tcl mock共46项Python测试通过；mock曾发现Tcl `%x`将FFFFFFFF读成−1，已修正为严格校验后的无符号解析并通过回归。
-这些不替代首次带VIO顶层的综合、布线时序及实板验收。
+导出使用新文件名。回退到已保存值使用`rc_reload`；不是回退到RTL默认值。禁用活动标定可用`rc_apply 0 0 0 0`，会改变显示有效性，不是普通检查步骤。
+
+## 独占命令行入口
+
+在仓库根目录PowerShell运行；directory必须尚不存在。以下仅查询：
+
+```powershell
+.\.venv-hds\Scripts\python.exe -E scripts/instruments/runtime_vio.py store_status `
+  --ltx G_FPGA.runs/impl_1/debug_nets.ltx --directory test_results/calibration_status_new
+```
+
+同一入口支持inspect/read/apply/store_save/store_reload/store_export。脚本持有JTAG锁，超时不自动重放未知写操作；先只读核对状态、bank和序号，再处理。
+
+## 标定流程与判据
+
+1. 源OFF时锁紧BNC/SMA，确认供电/共地、HIGHZ、CW、0V偏置。约189～192kHz背景有两次接触故障历史，优先复查连接。
+2. 在已确认量程内取多个幅值；每个点校验源前后回读、频率、一个新ILA事件、信号有效和候选数。拒绝旧帧、错误设置及受杂散污染点。
+3. 分别对Vpp/RMS/FFT作过原点拟合；自由截距仅诊断，不擅自从任意波形减去常数。
+4. 用未参与拟合的幅值验证，再用实际VIO换算输出验证；训练残差不是精度认证。
+5. 在线apply后核对活动值、epoch和新有效包，再save并导出。需要时另做断电恢复和多音/频带检查。
+
+不需要为更新系数重综合或生成MCS。新系数在参数Flash中，程序镜像升级必须保留该区。记录格式、保护和错误码见[Flash机制](flash_calibration_persistence_20261030.md)。旧实验与最初安装步骤见[历史原文](runtime_calibration_history_20261106.md)。
