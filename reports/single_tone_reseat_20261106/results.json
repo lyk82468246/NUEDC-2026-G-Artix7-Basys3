@@ -1,0 +1,550 @@
+[
+  {
+    "hz": 100000,
+    "source_before": {
+      "channel": 1,
+      "output": true,
+      "waveform": "SIN",
+      "hz": 100000.0,
+      "amplitude": 0.2,
+      "offset_v": 0.0,
+      "load_ohm": 9.9e+37,
+      "concurrent": false,
+      "mode": "CW",
+      "modulation": {
+        "AM": false,
+        "FM": false,
+        "PM": false,
+        "FSK": false,
+        "BURS": false
+      }
+    },
+    "source_after": {
+      "channel": 1,
+      "output": true,
+      "waveform": "SIN",
+      "hz": 100000.0,
+      "amplitude": 0.2,
+      "offset_v": 0.0,
+      "load_ohm": 9.9e+37,
+      "concurrent": false,
+      "mode": "CW",
+      "modulation": {
+        "AM": false,
+        "FM": false,
+        "PM": false,
+        "FSK": false,
+        "BURS": false
+      }
+    },
+    "ila": {
+      "samples": 1024,
+      "completed_packet_samples": 1,
+      "last_registers": {
+        "Sample in Buffer": 1023,
+        "Sample in Window": 1023,
+        "TRIGGER": 0,
+        "measurement_valid": 0,
+        "vpp_out": 3666,
+        "vrms_out": 1287,
+        "amp_f1_out": 1606478,
+        "max_index_out": 200,
+        "uart_state": 2,
+        "diagnostic_status": 371200159,
+        "diagnostic_adc": 2247,
+        "diagnostic_bins": 200,
+        "diagnostic_noise": 255,
+        "component_magnitudes": 1606478,
+        "component_count": 1,
+        "frame_id": 1740,
+        "calibration_epoch": 1,
+        "snapshot_metadata": 135
+      },
+      "diagnostic": {
+        "error_code": 1,
+        "run_state": 3,
+        "controls": 2,
+        "capture_enable": false,
+        "controller_release": false,
+        "capture_start": false,
+        "frame_valid": false,
+        "time_result_valid": false,
+        "fft_result_valid": false,
+        "peak_result_valid": false,
+        "signal_valid": true,
+        "capture_busy": false,
+        "calc_busy": false,
+        "fft_busy": false,
+        "peak_busy": false,
+        "hmi_busy": true,
+        "packet_finished": false,
+        "acquisition_fault": false,
+        "events_since_frame_start": {
+          "frame_complete": true,
+          "time_complete": true,
+          "fft_complete": true,
+          "peak_complete": true,
+          "measurement_snapshot": true
+        }
+      },
+      "adc_window": {
+        "min": 1792,
+        "max": 2247
+      },
+      "candidate_bins": [
+        200,
+        0,
+        0
+      ],
+      "candidate_snapshot": {
+        "frame_id": 1740,
+        "count": 1,
+        "bins": [
+          200,
+          0,
+          0
+        ],
+        "magnitudes_raw": [
+          1606478,
+          0,
+          0
+        ],
+        "qualified": true
+      },
+      "component_snapshot": {
+        "schema": 3,
+        "frame_id": 1740,
+        "calibration_epoch": 1,
+        "signal_valid": true,
+        "calibration_enabled": true,
+        "calibration_present": true,
+        "mode": 0,
+        "single": false,
+        "three_cycles": false,
+        "count": 1,
+        "bins": [
+          200,
+          0,
+          0
+        ],
+        "magnitudes_raw": [
+          1606478,
+          0,
+          0
+        ]
+      }
+    },
+    "csv": "sine_100000.csv"
+  },
+  {
+    "hz": 42000,
+    "source_before": {
+      "channel": 1,
+      "output": true,
+      "waveform": "SIN",
+      "hz": 42000.0,
+      "amplitude": 0.2,
+      "offset_v": 0.0,
+      "load_ohm": 9.9e+37,
+      "concurrent": false,
+      "mode": "CW",
+      "modulation": {
+        "AM": false,
+        "FM": false,
+        "PM": false,
+        "FSK": false,
+        "BURS": false
+      }
+    },
+    "source_after": {
+      "channel": 1,
+      "output": true,
+      "waveform": "SIN",
+      "hz": 42000.0,
+      "amplitude": 0.2,
+      "offset_v": 0.0,
+      "load_ohm": 9.9e+37,
+      "concurrent": false,
+      "mode": "CW",
+      "modulation": {
+        "AM": false,
+        "FM": false,
+        "PM": false,
+        "FSK": false,
+        "BURS": false
+      }
+    },
+    "ila": {
+      "samples": 1024,
+      "completed_packet_samples": 1,
+      "last_registers": {
+        "Sample in Buffer": 1023,
+        "Sample in Window": 1023,
+        "TRIGGER": 0,
+        "measurement_valid": 0,
+        "vpp_out": 3663,
+        "vrms_out": 1287,
+        "amp_f1_out": 1606552,
+        "max_index_out": 84,
+        "uart_state": 2,
+        "diagnostic_status": 371200159,
+        "diagnostic_adc": 1823,
+        "diagnostic_bins": 84,
+        "diagnostic_noise": 257,
+        "component_magnitudes": 1606552,
+        "component_count": 1,
+        "frame_id": 1810,
+        "calibration_epoch": 1,
+        "snapshot_metadata": 135
+      },
+      "diagnostic": {
+        "error_code": 1,
+        "run_state": 3,
+        "controls": 2,
+        "capture_enable": false,
+        "controller_release": false,
+        "capture_start": false,
+        "frame_valid": false,
+        "time_result_valid": false,
+        "fft_result_valid": false,
+        "peak_result_valid": false,
+        "signal_valid": true,
+        "capture_busy": false,
+        "calc_busy": false,
+        "fft_busy": false,
+        "peak_busy": false,
+        "hmi_busy": true,
+        "packet_finished": false,
+        "acquisition_fault": false,
+        "events_since_frame_start": {
+          "frame_complete": true,
+          "time_complete": true,
+          "fft_complete": true,
+          "peak_complete": true,
+          "measurement_snapshot": true
+        }
+      },
+      "adc_window": {
+        "min": 1823,
+        "max": 2249
+      },
+      "candidate_bins": [
+        84,
+        0,
+        0
+      ],
+      "candidate_snapshot": {
+        "frame_id": 1810,
+        "count": 1,
+        "bins": [
+          84,
+          0,
+          0
+        ],
+        "magnitudes_raw": [
+          1606552,
+          0,
+          0
+        ],
+        "qualified": true
+      },
+      "component_snapshot": {
+        "schema": 3,
+        "frame_id": 1810,
+        "calibration_epoch": 1,
+        "signal_valid": true,
+        "calibration_enabled": true,
+        "calibration_present": true,
+        "mode": 0,
+        "single": false,
+        "three_cycles": false,
+        "count": 1,
+        "bins": [
+          84,
+          0,
+          0
+        ],
+        "magnitudes_raw": [
+          1606552,
+          0,
+          0
+        ]
+      }
+    },
+    "csv": "sine_42000.csv"
+  },
+  {
+    "hz": 11000,
+    "source_before": {
+      "channel": 1,
+      "output": true,
+      "waveform": "SIN",
+      "hz": 11000.0,
+      "amplitude": 0.2,
+      "offset_v": 0.0,
+      "load_ohm": 9.9e+37,
+      "concurrent": false,
+      "mode": "CW",
+      "modulation": {
+        "AM": false,
+        "FM": false,
+        "PM": false,
+        "FSK": false,
+        "BURS": false
+      }
+    },
+    "source_after": {
+      "channel": 1,
+      "output": true,
+      "waveform": "SIN",
+      "hz": 11000.0,
+      "amplitude": 0.2,
+      "offset_v": 0.0,
+      "load_ohm": 9.9e+37,
+      "concurrent": false,
+      "mode": "CW",
+      "modulation": {
+        "AM": false,
+        "FM": false,
+        "PM": false,
+        "FSK": false,
+        "BURS": false
+      }
+    },
+    "ila": {
+      "samples": 1024,
+      "completed_packet_samples": 1,
+      "last_registers": {
+        "Sample in Buffer": 1023,
+        "Sample in Window": 1023,
+        "TRIGGER": 0,
+        "measurement_valid": 0,
+        "vpp_out": 3662,
+        "vrms_out": 1286,
+        "amp_f1_out": 1606056,
+        "max_index_out": 22,
+        "uart_state": 2,
+        "diagnostic_status": 371200159,
+        "diagnostic_adc": 2016,
+        "diagnostic_bins": 22,
+        "diagnostic_noise": 286,
+        "component_magnitudes": 1606056,
+        "component_count": 1,
+        "frame_id": 1886,
+        "calibration_epoch": 1,
+        "snapshot_metadata": 135
+      },
+      "diagnostic": {
+        "error_code": 1,
+        "run_state": 3,
+        "controls": 2,
+        "capture_enable": false,
+        "controller_release": false,
+        "capture_start": false,
+        "frame_valid": false,
+        "time_result_valid": false,
+        "fft_result_valid": false,
+        "peak_result_valid": false,
+        "signal_valid": true,
+        "capture_busy": false,
+        "calc_busy": false,
+        "fft_busy": false,
+        "peak_busy": false,
+        "hmi_busy": true,
+        "packet_finished": false,
+        "acquisition_fault": false,
+        "events_since_frame_start": {
+          "frame_complete": true,
+          "time_complete": true,
+          "fft_complete": true,
+          "peak_complete": true,
+          "measurement_snapshot": true
+        }
+      },
+      "adc_window": {
+        "min": 2016,
+        "max": 2165
+      },
+      "candidate_bins": [
+        22,
+        0,
+        0
+      ],
+      "candidate_snapshot": {
+        "frame_id": 1886,
+        "count": 1,
+        "bins": [
+          22,
+          0,
+          0
+        ],
+        "magnitudes_raw": [
+          1606056,
+          0,
+          0
+        ],
+        "qualified": true
+      },
+      "component_snapshot": {
+        "schema": 3,
+        "frame_id": 1886,
+        "calibration_epoch": 1,
+        "signal_valid": true,
+        "calibration_enabled": true,
+        "calibration_present": true,
+        "mode": 0,
+        "single": false,
+        "three_cycles": false,
+        "count": 1,
+        "bins": [
+          22,
+          0,
+          0
+        ],
+        "magnitudes_raw": [
+          1606056,
+          0,
+          0
+        ]
+      }
+    },
+    "csv": "sine_11000.csv"
+  },
+  {
+    "hz": 12000,
+    "source_before": {
+      "channel": 1,
+      "output": true,
+      "waveform": "SIN",
+      "hz": 12000.0,
+      "amplitude": 0.2,
+      "offset_v": 0.0,
+      "load_ohm": 9.9e+37,
+      "concurrent": false,
+      "mode": "CW",
+      "modulation": {
+        "AM": false,
+        "FM": false,
+        "PM": false,
+        "FSK": false,
+        "BURS": false
+      }
+    },
+    "source_after": {
+      "channel": 1,
+      "output": true,
+      "waveform": "SIN",
+      "hz": 12000.0,
+      "amplitude": 0.2,
+      "offset_v": 0.0,
+      "load_ohm": 9.9e+37,
+      "concurrent": false,
+      "mode": "CW",
+      "modulation": {
+        "AM": false,
+        "FM": false,
+        "PM": false,
+        "FSK": false,
+        "BURS": false
+      }
+    },
+    "ila": {
+      "samples": 1024,
+      "completed_packet_samples": 1,
+      "last_registers": {
+        "Sample in Buffer": 1023,
+        "Sample in Window": 1023,
+        "TRIGGER": 0,
+        "measurement_valid": 0,
+        "vpp_out": 3657,
+        "vrms_out": 1286,
+        "amp_f1_out": 1606481,
+        "max_index_out": 24,
+        "uart_state": 2,
+        "diagnostic_status": 371200159,
+        "diagnostic_adc": 2232,
+        "diagnostic_bins": 24,
+        "diagnostic_noise": 281,
+        "component_magnitudes": 1606481,
+        "component_count": 1,
+        "frame_id": 1956,
+        "calibration_epoch": 1,
+        "snapshot_metadata": 135
+      },
+      "diagnostic": {
+        "error_code": 1,
+        "run_state": 3,
+        "controls": 2,
+        "capture_enable": false,
+        "controller_release": false,
+        "capture_start": false,
+        "frame_valid": false,
+        "time_result_valid": false,
+        "fft_result_valid": false,
+        "peak_result_valid": false,
+        "signal_valid": true,
+        "capture_busy": false,
+        "calc_busy": false,
+        "fft_busy": false,
+        "peak_busy": false,
+        "hmi_busy": true,
+        "packet_finished": false,
+        "acquisition_fault": false,
+        "events_since_frame_start": {
+          "frame_complete": true,
+          "time_complete": true,
+          "fft_complete": true,
+          "peak_complete": true,
+          "measurement_snapshot": true
+        }
+      },
+      "adc_window": {
+        "min": 2110,
+        "max": 2232
+      },
+      "candidate_bins": [
+        24,
+        0,
+        0
+      ],
+      "candidate_snapshot": {
+        "frame_id": 1956,
+        "count": 1,
+        "bins": [
+          24,
+          0,
+          0
+        ],
+        "magnitudes_raw": [
+          1606481,
+          0,
+          0
+        ],
+        "qualified": true
+      },
+      "component_snapshot": {
+        "schema": 3,
+        "frame_id": 1956,
+        "calibration_epoch": 1,
+        "signal_valid": true,
+        "calibration_enabled": true,
+        "calibration_present": true,
+        "mode": 0,
+        "single": false,
+        "three_cycles": false,
+        "count": 1,
+        "bins": [
+          24,
+          0,
+          0
+        ],
+        "magnitudes_raw": [
+          1606481,
+          0,
+          0
+        ]
+      }
+    },
+    "csv": "sine_12000.csv"
+  }
+]
