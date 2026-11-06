@@ -1,0 +1,137 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="760" viewBox="0 0 1440 760" role="img" aria-labelledby="title desc">
+<title id="title">模拟前端原理图：两级 SGM8302 非反相放大与反馈电容</title>
+<desc id="desc">依据用户提供的2026-09-27图纸重新绘制。输入50欧姆并联终端，两级反馈3.6千欧姆并22皮法，反馈下臂1千欧姆，输出串联50欧姆。共用正负5伏供电。非实焊核验图。</desc>
+<style>text{font-family:"Microsoft YaHei","Noto Sans CJK SC",Arial,sans-serif;fill:#172b40;font-size:17px}.small{font-size:14px}.title{font-size:25px;font-weight:700}.heading{font-size:19px;font-weight:700}.wire{stroke:#245a72;stroke-width:2.4;fill:none;stroke-linejoin:round}.part{stroke:#172b40;stroke-width:2;fill:white}.node{fill:#245a72}.note{fill:#52677b}</style>
+<rect width="1440" height="760" fill="white"/>
+<text class="title" x="36" y="43">模拟前端原理图（依据用户图纸重绘）</text>
+<text class="small note" x="36" y="72">原图更新：2026-09-27　｜　重绘：2026-11-06　｜　元件值为原图标称值，未逐件核对实焊值</text>
+<circle class="part" cx="75" cy="210" r="15"/>
+<circle class="node" cx="75" cy="210" r="4"/>
+<path class="wire" d="M75,210 H104"/>
+<path class="wire" d="M75,225 L75,250"/>
+<path class="wire" d="M75,250 L75,260"/>
+<path class="wire" d="M59,260 H91"/>
+<path class="wire" d="M65,266 H85"/>
+<path class="wire" d="M71,272 H79"/>
+<text x="75" y="178" class="" text-anchor="middle">RF1 · SMA</text>
+<path class="wire" d="M104,210 H340"/>
+<circle class="node" cx="170" cy="210" r="4"/>
+<text x="197" y="195" class="" text-anchor="start">V_IN</text>
+<path class="wire" d="M170,210 L170,285.5"/>
+<rect class="part" x="160" y="285.5" width="20" height="50"/>
+<path class="wire" d="M170,335.5 L170,411"/>
+<text x="187" y="315.5" class="small" text-anchor="start">R1  50 Ω</text>
+<path class="wire" d="M170,411 L170,421"/>
+<path class="wire" d="M154,421 H186"/>
+<path class="wire" d="M160,427 H180"/>
+<path class="wire" d="M166,433 H174"/>
+<path class="part" d="M340,175 L340,305 L470,240 Z"/>
+<text x="351" y="218" class="" text-anchor="start">+</text>
+<text x="351" y="278" class="" text-anchor="start">−</text>
+<text x="330" y="203" class="small" text-anchor="end">3</text>
+<text x="330" y="264" class="small" text-anchor="end">2</text>
+<text x="476" y="231" class="small" text-anchor="start">1</text>
+<text x="394" y="141" class="heading" text-anchor="middle">U3A · SGM8302</text>
+<path class="wire" d="M300,270 H340"/>
+<path class="wire" d="M300,270 L300,365"/>
+<path class="wire" d="M470,240 H500"/>
+<path class="wire" d="M500,240 L500,365"/>
+<path class="wire" d="M300,320 H370.0"/>
+<rect class="part" x="370.0" y="310" width="60" height="20"/>
+<path class="wire" d="M430.0,320 H500"/>
+<text x="400.0" y="302" class="small" text-anchor="middle">R4  3.6 kΩ</text>
+<path class="wire" d="M300,365 H395.0"/>
+<path class="wire" d="M405.0,365 H500"/>
+<path class="part" d="M395.0,352 V378 M405.0,352 V378"/>
+<text x="400.0" y="399" class="small" text-anchor="middle">C1  22 pF</text>
+<path class="wire" d="M300,320 H250"/>
+<path class="wire" d="M250,320 L250,347.5"/>
+<rect class="part" x="240" y="347.5" width="20" height="50"/>
+<path class="wire" d="M250,397.5 L250,425"/>
+<text x="267" y="377.5" class="small" text-anchor="start">R3  1 kΩ</text>
+<path class="wire" d="M250,425 L250,435"/>
+<path class="wire" d="M234,435 H266"/>
+<path class="wire" d="M240,441 H260"/>
+<path class="wire" d="M246,447 H254"/>
+<circle class="node" cx="300" cy="320" r="4"/>
+<circle class="node" cx="500" cy="320" r="4"/>
+<circle class="node" cx="500" cy="240" r="4"/>
+<text x="295" y="291" class="small" text-anchor="end">F1</text>
+<path class="part" d="M920,175 L920,305 L1050,240 Z"/>
+<text x="931" y="218" class="" text-anchor="start">+</text>
+<text x="931" y="278" class="" text-anchor="start">−</text>
+<text x="910" y="203" class="small" text-anchor="end">5</text>
+<text x="910" y="264" class="small" text-anchor="end">6</text>
+<text x="1056" y="231" class="small" text-anchor="start">7</text>
+<text x="974" y="141" class="heading" text-anchor="middle">U3B · SGM8302</text>
+<path class="wire" d="M880,270 H920"/>
+<path class="wire" d="M880,270 L880,365"/>
+<path class="wire" d="M1050,240 H1080"/>
+<path class="wire" d="M1080,240 L1080,365"/>
+<path class="wire" d="M880,320 H950.0"/>
+<rect class="part" x="950.0" y="310" width="60" height="20"/>
+<path class="wire" d="M1010.0,320 H1080"/>
+<text x="980.0" y="302" class="small" text-anchor="middle">R6  3.6 kΩ</text>
+<path class="wire" d="M880,365 H975.0"/>
+<path class="wire" d="M985.0,365 H1080"/>
+<path class="part" d="M975.0,352 V378 M985.0,352 V378"/>
+<text x="980.0" y="399" class="small" text-anchor="middle">C2  22 pF</text>
+<path class="wire" d="M880,320 H830"/>
+<path class="wire" d="M830,320 L830,347.5"/>
+<rect class="part" x="820" y="347.5" width="20" height="50"/>
+<path class="wire" d="M830,397.5 L830,425"/>
+<text x="847" y="377.5" class="small" text-anchor="start">R5  1 kΩ</text>
+<path class="wire" d="M830,425 L830,435"/>
+<path class="wire" d="M814,435 H846"/>
+<path class="wire" d="M820,441 H840"/>
+<path class="wire" d="M826,447 H834"/>
+<circle class="node" cx="880" cy="320" r="4"/>
+<circle class="node" cx="1080" cy="320" r="4"/>
+<circle class="node" cx="1080" cy="240" r="4"/>
+<text x="875" y="291" class="small" text-anchor="end">F2</text>
+<path class="wire" d="M500,240 H700"/>
+<path class="wire" d="M700,240 L700,210"/>
+<path class="wire" d="M700,210 H920"/>
+<text x="582" y="227" class="" text-anchor="start">V_MID</text>
+<text x="1088" y="199" class="" text-anchor="start">V_OUT</text>
+<path class="wire" d="M1080,240 H1130.0"/>
+<rect class="part" x="1130.0" y="230" width="60" height="20"/>
+<path class="wire" d="M1190.0,240 H1240"/>
+<text x="1160.0" y="222" class="small" text-anchor="middle">R2  50 Ω</text>
+<path class="wire" d="M1240,240 H1325"/>
+<circle class="part" cx="1325" cy="240" r="15"/>
+<circle class="node" cx="1325" cy="240" r="4"/>
+<path class="wire" d="M1325,240 H1354"/>
+<path class="wire" d="M1325,255 L1325,280"/>
+<path class="wire" d="M1325,280 L1325,290"/>
+<path class="wire" d="M1309,290 H1341"/>
+<path class="wire" d="M1315,296 H1335"/>
+<path class="wire" d="M1321,302 H1329"/>
+<text x="1325" y="208" class="" text-anchor="middle">RF2 · SMA</text>
+<rect x="35" y="486" width="1370" height="187" rx="8" fill="#f3f7fa" stroke="#b8cbd8"/>
+<text x="56" y="516" class="heading" text-anchor="start">U3 共用电源与去耦（图纸连接）</text>
+<text x="56" y="548" class="" text-anchor="start">J1：1 = +5 V；2 = GND；3 = −5 V</text>
+<text x="56" y="576" class="" text-anchor="start">U3：8脚 = +5 V；4脚 = −5 V</text>
+<text x="56" y="612" class="small" text-anchor="start">注：外部单 +5 V → Boost 至 12 V → 用户所称 MP5418 模块 → ±5 V</text>
+<text x="56" y="638" class="small note" text-anchor="start">上述电源转换链为用户确认；具体模块型号、支路、纹波和负载能力待实物核对。</text>
+<text x="850" y="527" class="" text-anchor="middle">+5 V</text>
+<path class="wire" d="M850,535 L850,564"/>
+<path class="part" d="M833,564 H867 M833,574 H867"/>
+<path class="wire" d="M850,574 L850,608"/>
+<path class="wire" d="M850,608 L850,618"/>
+<path class="wire" d="M834,618 H866"/>
+<path class="wire" d="M840,624 H860"/>
+<path class="wire" d="M846,630 H854"/>
+<text x="878" y="577" class="small" text-anchor="start">C3  100 nF</text>
+<text x="1130" y="527" class="" text-anchor="middle">−5 V</text>
+<path class="wire" d="M1130,535 L1130,564"/>
+<path class="part" d="M1113,564 H1147 M1113,574 H1147"/>
+<path class="wire" d="M1130,574 L1130,608"/>
+<path class="wire" d="M1130,608 L1130,618"/>
+<path class="wire" d="M1114,618 H1146"/>
+<path class="wire" d="M1120,624 H1140"/>
+<path class="wire" d="M1126,630 H1134"/>
+<text x="1158" y="577" class="small" text-anchor="start">C4  100 nF</text>
+<text x="36" y="707" class="small" text-anchor="start">结构说明：输入并联端接 → 两级非反相放大（反馈 R∥C）→ 输出串联匹配；不是高频增益趋零的理想全极点低通。</text>
+<text x="36" y="735" class="small note" text-anchor="start">本图用于报告设计说明，不是实物照片、端口电压标定结果或模拟抗混叠验收证据。</text>
+</svg>

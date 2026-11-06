@@ -1,0 +1,85 @@
+{
+  "audit_date": "2026-11-06",
+  "head_before_audit": "06f43f1fae52e3c154b763ddff3fdb619b4fd408",
+  "rtl_baseline": "e733a9e",
+  "rtl_ip_xdc_diff_from_baseline": "",
+  "hardware_access": "none; all equipment offline; files-only audit",
+  "reports": [
+    {
+      "path": "G_FPGA_Top_utilization_placed.rpt",
+      "sha256": "9396acfcc9c43fd92445463ecc1219aeee24264eb808d59866c2a1360682362e",
+      "bytes": 12718
+    },
+    {
+      "path": "G_FPGA_Top_timing_summary_routed.rpt",
+      "sha256": "12a58dcf6672cf0202a3a179a10071246e9e7459b8a34705a4371381d7afe784",
+      "bytes": 1281384
+    },
+    {
+      "path": "G_FPGA_Top_drc_routed.rpt",
+      "sha256": "f907652aadd6960c7fe48fb314dab0859aeaf9974b25ea531046a832b46b2925",
+      "bytes": 32715
+    },
+    {
+      "path": "G_FPGA_Top_methodology_drc_routed.rpt",
+      "sha256": "65dc3496bdd6c57dfa240a870dcc70b9882b0a754187ed492d65737b0a01837f",
+      "bytes": 27401
+    },
+    {
+      "path": "G_FPGA_Top_route_status.rpt",
+      "sha256": "f48e53b2db286a64ac21016aa620a0bc6258f0332de932acdbc6cc0559683032",
+      "bytes": 651
+    }
+  ],
+  "schematic": {
+    "source": "C:\\Users\\Joe\\Desktop\\d393d354-d0aa-4f82-bd98-059d3b6bbc2f.pdf",
+    "sha256": "095327bcf222b5420fcd617cd639970898d1245908ab13705b1dc266922a4c79"
+  },
+  "artifacts": {
+    "G_FPGA.runs/impl_1/G_FPGA_Top.bit": {
+      "sha256": "1b7bbc35dad18f18bfef5151cc301771b2401476d1b674b133562e60156a48bd",
+      "bytes": 1859336
+    },
+    "G_FPGA.runs/impl_1/debug_nets.ltx": {
+      "sha256": "3b704948864e919c99e849f1ca708592239c449f3e0aa59fa3b2e7e5377ef4c2",
+      "bytes": 215026
+    },
+    "test_results/p2_boot_20261106_romfix_e733a9e.mcs": {
+      "sha256": "1fdde9a6568f37c9d3f415a4696e594697683f404afc633cf87ad2530228daa4",
+      "bytes": 5229506
+    }
+  },
+  "fir_xci_design_only": {
+    "taps": 95,
+    "symmetric": true,
+    "coefficient_sum": 0.997070312497,
+    "coefficient_fractional_bits": 16,
+    "xci_clock_mhz": "4.096",
+    "physical_rtl_clock_mhz": 100,
+    "response_db": {
+      "10000": -0.025342223912226052,
+      "100000": -3.7602355010506096e-05,
+      "200000": 0.07325013388670576,
+      "500000": 0.5792431963938427,
+      "600000": 0.8153636695545232,
+      "900000": -63.154502431357606,
+      "1000000": -85.57366850221653
+    }
+  },
+  "analog_schematic_ideal_only": {
+    "rg_ohm": 1000,
+    "rf_ohm": 3600,
+    "cf_farad": 2.2e-11,
+    "stage_dc_gain": 4.6,
+    "two_stage_dc_gain": 21.16,
+    "pole_hz": 2009532.1097461532,
+    "note": "H_stage(s)=1+(Rf/Rg)/(1+s*Rf*Cf); high-frequency gain tends to 1 per stage, not zero; not physical measurement"
+  },
+  "schematic_redraw": {
+    "path": "docs/report_assets_20261106/analog_frontend_schematic.svg",
+    "format": "UTF-8 SVG XML, no raster embeds",
+    "authorization": "User explicitly requested: 把原理图用非二进制格式重画并上传",
+    "sha256": "e5f75d089370b717f2c11fd7c004f711d427701035241f418c8054a6ced6abde",
+    "original_pdf_and_raster_uploaded": false
+  }
+}
