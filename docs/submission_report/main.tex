@@ -1,0 +1,247 @@
+% !TeX program = xelatex
+% 周期信号测量分析装置 - 设计报告
+% 正式设计报告正文；图片放置在 figures/，缺失时自动使用占位框。
+\documentclass[UTF8,a4paper,12pt,oneside]{ctexart}
+\usepackage[a4paper,top=3.15cm,bottom=1.55cm,left=2.0cm,right=2.0cm,footskip=1.08cm]{geometry}
+\usepackage{fontspec,amsmath,amssymb,graphicx,booktabs,tabularx,array,multirow,float,xcolor}
+\usepackage{fancyhdr,caption,enumitem,hyperref}
+\setCJKmainfont[AutoFakeBold=2]{SimSun}
+\setCJKsansfont{Microsoft YaHei}
+\setmainfont{Times New Roman}
+\emergencystretch=1em
+\hypersetup{hidelinks,pdfauthor={},pdftitle={周期信号测量分析装置——设计报告}}
+\definecolor{figbg}{HTML}{F2F3F4}
+\definecolor{figline}{HTML}{BBC0C6}
+\AtBeginDocument{\fontsize{12pt}{22pt}\selectfont}
+\setlength{\parindent}{2em}
+\setlength{\parskip}{0pt}
+\setlength{\abovedisplayskip}{4pt}
+\setlength{\belowdisplayskip}{4pt}
+\setlength{\abovedisplayshortskip}{2pt}
+\setlength{\belowdisplayshortskip}{2pt}
+\setlength{\textfloatsep}{7pt}
+\setlength{\intextsep}{6pt}
+\setlength{\floatsep}{7pt}
+\captionsetup{font={small},labelfont=bf,skip=3pt}
+\ctexset{
+  section={format=\bfseries\fontsize{14pt}{18pt}\selectfont,beforeskip=7pt,afterskip=4pt},
+  subsection={format=\bfseries\fontsize{12pt}{19pt}\selectfont,beforeskip=4pt,afterskip=2pt}
+}
+\setlist[itemize]{nosep,leftmargin=1.8em,topsep=0pt}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\fancyfoot[R]{\fontsize{10pt}{12pt}\selectfont\thepage}
+\newcommand{\Unit}[1]{\,\mathrm{#1}}
+\newcommand{\Blank}{\rule{1.25cm}{0.3pt}}
+\newcommand{\ReportFig}[4]{%
+  \begin{figure}[H]\centering
+  \IfFileExists{figures/#1}{\includegraphics[width=.93\linewidth,height=#3,keepaspectratio]{figures/#1}}{%
+    \fcolorbox{figline}{figbg}{\parbox[c][#3][c]{.91\linewidth}{\centering\fontsize{9pt}{13pt}\selectfont\textbf{插图位置}\quad \texttt{\detokenize{#1}}\\[3pt]#4}}}
+  \caption{#2}\end{figure}}
+\newcommand{\TableStart}{\begingroup\fontsize{9.4pt}{12.8pt}\selectfont\renewcommand{\arraystretch}{1.07}\setlength{\tabcolsep}{4pt}}
+\newcommand{\TableEnd}{\endgroup}
+\begin{document}
+% 摘要单独占一页
+\thispagestyle{empty}
+\begin{center}
+  \vspace*{.95cm}
+  {\bfseries\fontsize{18pt}{28pt}\selectfont 周期信号测量分析装置}\par
+  \vspace{1.0cm}
+  {\bfseries\fontsize{15pt}{22pt}\selectfont 设计报告摘要}\par
+\end{center}
+\vspace{1.0cm}
+\noindent\textbf{摘要：}设计了一种基于Artix-7 FPGA的周期信号测量分析装置。系统采用单路+5\,V供电，经双运放信号调理和12位AD9226采样，利用95抽头数字FIR、8192点平顶窗FFT、频谱峰值筛选及真有效值运算，实现周期信号的基频、峰峰值、有效值和最多三个正弦分量的频率与幅值测量。通过帧缓存、运行控制器及串口屏实现波形和频谱显示，并采用定点系数进行电压标定。实板完成单音和幅值标定，并识别出A模式三音的10.5、31.5和42 kHz分量；FPGA实现满足当前内部时序要求。\par
+\vspace{.6cm}
+\noindent\textbf{关键词：}FPGA；周期信号；快速傅里叶变换；真有效值；频谱分析
+\newpage
+\setcounter{page}{1}
+
+\section{系统方案论证}
+\subsection{设计任务与技术指标}
+装置用于测量由基波及谐波组成的周期信号，并在屏幕上显示时域波形和正频率谱。A模式对应100～250\,mV峰峰值、10～200\,kHz有效分量；B模式对应50～250\,mV、10～500\,kHz；C模式在B模式信号上叠加200\,mV峰峰值、频率不低于1\,MHz的单音干扰，测量结果应对应有用信号。各模式均需输出峰峰值、真有效值、基频和各正弦分量的峰值，频谱分辨率要求为500\,Hz，频率测量误差不大于1\,kHz，电压测量误差不大于5\,mV，并完成1个或3个周期波形显示。
+\subsection{总体方案选择}
+本装置采用\textbf{AD9226与Artix-7 FPGA组成的全硬件信号处理方案}。FPGA负责采集、滤波、时域统计、频谱分析、结果锁存和串口屏控制，使采样与计算由统一状态机管理。
+\subsection{系统总体结构}
+模拟信号经过两级SGM8302运放调理送入AD9226，FPGA生成采样时钟并读取12位并行数据。数字处理分为时域参数、FFT分量识别和波形绘制三路，共用同一帧采样数据；完成测量后统一锁存参数并发送到TJC串口屏。外部单路+5\,V直接供给Basys 3、AD9226模块和串口屏。板内转换得到的正负电源轨仅供SGM8302运放。
+\ReportFig{system_block.pdf}{系统总体结构框图}{2.8cm}{模拟调理、ADC、FPGA采样与三路处理、结果锁存、串口屏；补充单+5\,V电源树。}
+系统使用100\,MHz主时钟，并产生约4.096\,MHz采样时钟。测量控制器支持A/B/C模式、单次与连续测量及波形周期数切换。
+
+
+\section{理论分析与计算}
+\subsection{采样率与频率分辨率}
+系统采样率约为$f_s=4.0960452\,\mathrm{MHz}$，采样帧长度取$N=8192$点。离散频谱的频率间隔及单帧采样时间为
+\begin{equation}
+ \Delta f=\frac{f_s}{N}\approx500.0055\,\mathrm{Hz},\qquad
+ T_{\mathrm{cap}}=\frac{N}{f_s}\approx2.000\,\mathrm{ms}.
+\end{equation}
+有效信号最高频率为500\,kHz，低于奈奎斯特频率$f_s/2\approx2.048\,\mathrm{MHz}$，选取8192点FFT能够使频谱格点间隔接近500\,Hz。
+\subsection{数字预处理}
+AD9226输出12位偏移二进制数据。FPGA先进行有符号转换并扩展为16位：
+\begin{equation}
+ x[n]=(D_{\mathrm{ADC}}[n]-2048)\,2^4.
+\end{equation}
+采样值经95抽头FIR滤波和残余直流IIR跟踪处理，随后利用过零检测定位采样帧起点。ADC采样时钟域与运算时钟域通过数据保持及事件同步完成数据移交。
+\subsection{时域参数计算}
+对一帧$N$点有效样本，分别求极值差和均方根，得到
+\begin{equation}
+ U_{pp}=\max_n u[n]-\min_n u[n],\quad
+ U_{\mathrm{rms}}=\sqrt{\frac1N\sum_{n=0}^{N-1}u^2[n]}.
+\end{equation}
+FPGA采用16位有符号样本、44位平方累加寄存器以及CORDIC开方运算。平方累加结构适用于含多个谐波的非正弦周期信号，避免使用只适用于理想正弦波的峰值与RMS换算关系。最后按测量通道分别进行定点电压标定。
+\subsection{频谱分析与幅值计算}
+频域支路首先使用五项平顶窗$w[n]$抑制非整周期截断带来的幅值估计偏差，之后计算
+\begin{equation}
+ X[k]=\sum_{n=0}^{N-1}x[n]w[n]e^{-j2\pi kn/N},\qquad f_k=k\frac{f_s}{N}.
+\end{equation}
+FFT采用8192点Radix-4 Burst I/O定点结构，CORDIC完成复数幅值计算，幅值结果缓存后供谱峰筛选。窗相干增益和数值运算尺度通过标定系数统一转换至电压量纲。
+
+
+\subsection{谐波分量识别与基频测量}
+被测复合信号表示为
+\begin{equation}
+ u(t)=\sum_{i=1}^{M}A_i\sin(2\pi f_i t+\varphi_i),\qquad M\le3,
+\end{equation}
+其中$A_i$为对应正弦分量的峰值。频谱分析器在对应模式的有效频带内搜索较大谱峰，通过邻近主瓣排除避免对同一分量重复计数，再结合谱底估计和谐波倍频关系选择不超过三个有效分量。结果按频率排序，频率由FFT频点号及采样率换算。A模式的搜索范围约为第20～400频点，B/C模式扩展至约第20～1000频点，主瓣排除宽度为相邻$\pm6$个频点。
+\ReportFig{peak_selection.pdf}{频谱峰值筛选及主瓣排除示意}{3.1cm}{绘出宽主瓣与三个有效分量；标记候选峰、邻近频点排除及基频识别。}
+\subsection{波形重建与显示}
+由于采样频率与输入信号频率之比随频率变化，直接抽取采样点绘制可能造成波形线段粗糙或周期显示不完整。装置利用半帧加权基波投影确定显示周期与相位，从原时域采样序列中采用16抽头、64相位带限插值，形成240个显示点。
+\subsection{抗干扰频段分析}
+模拟前端的两级反馈网络使高频增益下降。按下文传递函数计算，每级极点约为2.01\,MHz，两级增益由低频的21.16倍逐渐趋近1倍。反馈网络的衰减有限，采样前还要考虑运放实际频响及ADC输入余量。
+
+采样后，干扰折叠至$f_a=|f_J-mf_s|$，其中$m$取使$f_a\le f_s/2$的整数。按95抽头系数计算，FIR在0.9\,MHz至奈奎斯特频率之间的最大增益约为$-63$\,dB。因此从1\,MHz起，首段可依靠数字阻带抑制干扰的范围延伸到$f_s-0.9\,\mathrm{MHz}\approx3.196\,\mathrm{MHz}$。超过该频点，折叠分量进入过渡带，并在约3.496\,MHz进入600\,kHz以内的通带。
+
+在线性、无过载模型中，以100\,kHz标定参考增益归一化，200\,mVpp干扰在首段阻带内的残余低于0.15\,mVpp。4\,MHz干扰折叠至96.045\,kHz，按标称反馈网络和FIR计算的残余约48\,mVpp。3.196\,MHz是首段数字阻带的理论边界，整机误差限值还须用扫频实测确定。
+
+\section{电路与程序设计}
+\subsection{供电与模拟调理电路}
+整机由单路外部+5\,V供电。板内升压模块产生12\,V中间电源，经双极性电源转换模块得到模拟运放所需的$+5\,\mathrm{V}$和$-5\,\mathrm{V}$，为交流信号的双极性调理提供电压余量。数字处理与模拟电路采用公共参考地。
+模拟前端由SGM8302双运放构成两级非反相放大。每级采用$R_g=1\,\mathrm{k\Omega}$、$R_f=3.6\,\mathrm{k\Omega}$，并在反馈电阻两端并联$C_f=22\,\mathrm{pF}$。其理想单级传递函数为
+\begin{equation}
+ H_1(s)=1+\frac{R_f/R_g}{1+sR_fC_f},\qquad H_{\mathrm{AFE}}(s)=H_1^2(s).
+\end{equation}
+低频单级增益为$4.6$，两级总增益约为$21.16$；反馈电容使高频增益逐渐减小。按标称元件计算，两级增益在500\,kHz和1\,MHz处相对低频分别下降约0.50\,dB和1.82\,dB。输入与输出设有50\,$\Omega$接口相关匹配电阻，便于连接信号发生器与ADC模块。
+\ReportFig{hardware_connection.pdf}{模拟前端及电源连接原理图}{5.6cm}{使用仓库已重绘的SGM8302原理图，并加入单+5\,V输入及板内电源转换。}
+\subsection{ADC接口及时钟设计}
+FPGA利用MMCM、BUFR与ODDR等时钟资源提供稳定的ADC采样时钟。FPGA在转发时钟的下降沿锁存12位并行数据。数据经跨时钟域同步和数字预处理后写入时域缓存。
+
+
+\subsection{数据缓存与运算模块}
+时域采样数据写入三份8192$\times$16位BRAM镜像，分别供时域统计、FFT和波形绘制模块读取。镜像在同一采集事务中同步更新，采样结束后冻结，使各计算模块均针对相同样本帧工作。
+频域通路依次执行窗函数乘法、FFT、CORDIC幅值运算以及谱峰分析。时域通路完成极值统计和平方累加，显示通路提取波形样本并插值。
+\subsection{测量状态机与显示控制}
+控制器按待机、采集准备、运算、结果整理和显示传输等阶段组织测量。完成当前帧的计算及显示任务后释放缓存，连续模式自动进入下一轮采集；单次模式保持本轮结果，允许切换页面和波形周期数而无需重新采样。
+\ReportFig{frame_transaction.pdf}{采样、计算与屏幕传输时序}{3.0cm}{展示冻结采样帧、时域和FFT处理、结果锁存、UART绘图及下一轮采集。}
+系统采用115200\,bit/s、8N1 UART与TJC串口屏通信。wave页输出1/3周期波形、峰峰值、RMS与基频；fft页绘制定性频谱并显示最多三组正弦分量的频率与幅值。绘图区域为240$\times$160点，FPGA按顺序发送图形和文本指令，以保证单帧数据显示一致。
+\subsection{定点电压标定}
+峰峰值、RMS与频谱正弦峰值分别采用独立的Q16.16系数$G$。换算关系为
+\begin{equation}
+ V_{\mu\mathrm{V}}=\operatorname{sat}\bigl((R_{\mathrm{raw}}G+2^{15})\gg16\bigr).
+\end{equation}
+装置支持通过VIO调整活动系数，并保存至配置Flash中的A/B双记录区。启动时加载有效记录，实现测量参数掉电保持。
+
+
+\section{测试方案与测试结果}
+\subsection{测试条件与方法}
+以AFG1022函数信号发生器产生单音与多音测试信号，经模拟前端和AD9226进入FPGA。利用Vivado ILA/VIO读取频率、峰峰值、RMS及分量幅值，采用串口屏检查波形与频谱显示。单音测试设置发生器为HIGHZ幅值显示模式、零直流偏置；电压误差采用信号发生器的设定值作为比较参考。
+对频率、电压和响应时间分别定义
+\begin{equation}
+ \Delta f=f_{\mathrm{meas}}-f_{\mathrm{set}},\qquad
+ \Delta U=U_{\mathrm{meas}}-U_{\mathrm{ref}},\qquad
+ T=t_{\mathrm{display}}-t_{\mathrm{start}}.
+\end{equation}
+\subsection{功能仿真与FPGA实现}
+在仿真中对窗函数ROM输出对齐、FFT输入握手、数据背压及处理完成信号进行验证。针对三帧数据累计检查24576个窗乘法输入，FFT输入样本和窗系数保持正确对应；时域处理、结果锁存与UART发送逻辑使用专门测试平台检查。
+\TableStart
+\begin{table}[H]\centering
+\caption{FPGA资源利用率与实现时序结果}
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}X r r r}
+\toprule 项目 & 使用 & 可用 & 利用率/结果\\\midrule
+LUT & 19887 & 20800 & 95.61\%\\
+FF & 28675 & 41600 & 68.93\%\\
+BRAM Tile & 48.5 & 50 & 97.00\%\\
+DSP48E1 & 90 & 90 & 100.00\%\\\midrule
+WNS & \multicolumn{2}{r}{\,+0.280 ns} & TNS=0\\
+WHS & \multicolumn{2}{r}{\,+0.011 ns} & THS=0\\\bottomrule
+\end{tabularx}
+\end{table}
+\TableEnd
+
+\subsection{单音频率测量}
+在200\,mVpp输入幅值下，分别设置11、12、42、100\,kHz正弦信号。系统识别到的主频点号为22、24、84、200，对应频率约11、12、42、100\,kHz，验证了单音峰值定位及频率转换功能。
+\TableStart
+\begin{table}[H]\centering
+\caption{单音频率测量结果}
+\begin{tabularx}{\linewidth}{r r r >{\raggedleft\arraybackslash}X}
+\toprule 设定频率/kHz & 主频点号 & 测量频率/kHz & 频率偏差/kHz\\\midrule
+11 & 22 & 11.0 & 0.0\\
+12 & 24 & 12.0 & 0.0\\
+42 & 84 & 42.0 & 0.0\\
+100 & 200 & 100.0 & 0.0\\\bottomrule
+\end{tabularx}
+\end{table}
+\TableEnd
+
+
+\subsection{幅值标定及误差分析}
+在100\,kHz单音条件下选取100、150、200、250\,mVpp进行分通路标定，并选取125、225\,mVpp作为检验点。按标定系数计算的代表性结果见表\ref{tab:cal}。
+\TableStart
+\begin{table}[H]\centering
+\caption{100 kHz单音标定误差（mV）}\label{tab:cal}
+\begin{tabularx}{\linewidth}{l r r r r}
+\toprule 组别 & 设定Vpp & $\Delta U_{pp}$ & $\Delta U_{\mathrm{rms}}$ & 分量峰值偏差\\\midrule
+标定 & 100 & $+0.695$ & $+0.037$ & $+0.053$\\
+标定 & 250 & $-0.419$ & $-0.018$ & $-0.031$\\
+检查 & 125 & $+0.800$ & $+0.046$ & $+0.050$\\
+检查 & 225 & $-0.142$ & $-0.028$ & $-0.035$\\\bottomrule
+\end{tabularx}
+\end{table}
+\TableEnd
+标定后，设置100\,kHz、175\,mVpp正弦波，在线测得峰峰值175.193\,mV、RMS 61.881\,mV及正弦峰值87.518\,mV，分别相对设定参考偏差$+0.193$、约$+0.009$、$+0.018$\,mV。单音条件下，各参数的标定换算具有良好的数值一致性。
+\subsection{复合信号测量}
+低频与高频用例采用基频、三次及四次谐波。采用正弦分量峰值作为频谱幅值参考，使用离线生成的多音波形作为函数发生器的任意波输入。测量结果见表\ref{tab:multi}。
+\TableStart
+\begin{table}[H]\centering
+\caption{A/B模式复合信号测试记录}\label{tab:multi}
+\begin{tabularx}{\linewidth}{l >{\raggedright\arraybackslash}X c c c}
+\toprule 模式 & 实测分量频率/kHz（峰值/mV） & Vpp/mV & RMS/mV & 基频/kHz\\\midrule
+A & 10.5(60.22)、31.5(25.10)、42(15.08) & 137.425 & 47.372 & 10.5\\
+B & 125(30.17)、375(12.54)、500(7.54) & 69.477 & 23.741 & 125\\
+B弱基波 & 125(5.05)、375(25.11)、500(20.10) & 88.524 & 23.027 & 125\\
+\end{tabularx}
+\end{table}
+\TableEnd
+11月13日A组的Vpp/RMS参考值为137.041/47.170 mV。B组的Vpp/RMS参考值为68.521/23.585 mV。B弱基波组的Vpp/RMS参考值为87.755/22.913 mV。各电压值按保存的标定系数换算，误差以发生器HIGHZ设定为参考。
+
+
+\ReportFig{screen_triptych.pdf}{A模式三音信号实屏显示：1T、3T及频谱}{4.0cm}{}
+\subsection{高频干扰与整机性能测试}
+C模式测试在固定三音信号上叠加200\,mVpp标称峰峰值的高频正弦干扰，每种条件记录一帧，误差以未加干扰的有用信号标称值为参考。 分量峰值偏差（按基频、三次、四次排列，单位mV）为无干扰：+0.178、+0.060、+0.047，1 MHz：+0.101、+0.009、+0.011，2 MHz：+0.090、+0.000、+0.005。
+\TableStart
+\begin{table}[H]\centering
+\caption{C模式干扰对照}
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}X l l l}
+\toprule 测试条件 & Vpp误差/mV & RMS误差/mV & 基频误差/kHz\\\midrule
+无外加干扰 & $+1.174$ & $+0.156$ & $+0.000$\\
+叠加1\,MHz、200\,mVpp & $+1.119$ & $+0.046$ & $+0.000$\\
+叠加2\,MHz、200\,mVpp & $+0.737$ & $+0.046$ & $+0.000$\\
+叠加4\,MHz、200\,mVpp & \multicolumn{3}{c}{该帧未输出有效结果}\\
+\end{tabularx}
+\end{table}
+\TableEnd
+\TableStart
+\begin{table}[H]\centering
+\caption{显示与整机功能测试}
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}X c >{\raggedright\arraybackslash}X}
+\toprule 测试内容 & 测量结果 & 要求\\\midrule
+1/3周期波形显示 & 已拍摄 & 波形完整、切换正常\\
+频谱及三分量显示 & 已拍摄 & 频率及幅值对应正确\\
+单次测量完成时间/s & 目测约0.3以内 & 不超过2\,s\\
+\bottomrule
+\end{tabularx}
+\end{table}
+\TableEnd
+保持三音及干扰幅度不变，先测2.125～4.750\,MHz的20个频点，再在首次超差附近每隔25\,kHz补测。2.575\,MHz两次均通过，2.600\,MHz两次峰峰值误差均超过5\,mV（+5.376、+5.486\,mV），而三条有用谱线仍可识别。最高通过的已测点为3.125\,MHz。2.600\,MHz的折叠频率约为1.496\,MHz，仍在FIR阻带内，线性模型无法解释该处超差。4\,MHz组出现96.0\,kHz混叠候选，该帧识别失效。\par 从按键到屏幕稳定的单次响应目测约0.3 s以内。
+\section{总结}
+本装置以Artix-7 FPGA为核心，采用单路+5\,V供电，实现周期信号的采集、时频域分析、三分量识别与波形显示。单音测量、幅值标定、A模式三音测量和实现时序测试验证了主要处理链路；C模式首次观察到峰峰值超差的干扰频点为2.600\,MHz，更高频点存在恢复与失效。
+\end{document}
