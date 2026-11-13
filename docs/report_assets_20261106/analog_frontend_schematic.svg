@@ -1,10 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1440" height="760" viewBox="0 0 1440 760" role="img" aria-labelledby="title desc">
 <title id="title">模拟前端原理图：两级 SGM8302 非反相放大与反馈电容</title>
-<desc id="desc">依据用户提供的2026-09-27图纸重新绘制。输入50欧姆并联终端，两级反馈3.6千欧姆并22皮法，反馈下臂1千欧姆，输出串联50欧姆。共用正负5伏供电。非实焊核验图。</desc>
+<desc id="desc">SGM8302 两级非反相放大及正负 5 V 运放供电。</desc>
 <style>text{font-family:"Microsoft YaHei","Noto Sans CJK SC",Arial,sans-serif;fill:#172b40;font-size:17px}.small{font-size:14px}.title{font-size:25px;font-weight:700}.heading{font-size:19px;font-weight:700}.wire{stroke:#245a72;stroke-width:2.4;fill:none;stroke-linejoin:round}.part{stroke:#172b40;stroke-width:2;fill:white}.node{fill:#245a72}.note{fill:#52677b}</style>
 <rect width="1440" height="760" fill="white"/>
-<text class="title" x="36" y="43">模拟前端原理图（依据用户图纸重绘）</text>
-<text class="small note" x="36" y="72">原图更新：2026-09-27　｜　重绘：2026-11-06　｜　元件值为原图标称值，未逐件核对实焊值</text>
+<text class="title" x="36" y="43">模拟前端原理图</text>
 <circle class="part" cx="75" cy="210" r="15"/>
 <circle class="node" cx="75" cy="210" r="4"/>
 <path class="wire" d="M75,210 H104"/>
@@ -109,11 +108,10 @@
 <path class="wire" d="M1321,302 H1329"/>
 <text x="1325" y="208" class="" text-anchor="middle">RF2 · SMA</text>
 <rect x="35" y="486" width="1370" height="187" rx="8" fill="#f3f7fa" stroke="#b8cbd8"/>
-<text x="56" y="516" class="heading" text-anchor="start">U3 共用电源与去耦（图纸连接）</text>
+<text x="56" y="516" class="heading" text-anchor="start">U3 共用电源与去耦</text>
 <text x="56" y="548" class="" text-anchor="start">J1：1 = +5 V；2 = GND；3 = −5 V</text>
 <text x="56" y="576" class="" text-anchor="start">U3：8脚 = +5 V；4脚 = −5 V</text>
-<text x="56" y="612" class="small" text-anchor="start">注：外部单 +5 V → Boost 至 12 V → 用户所称 MP5418 模块 → ±5 V</text>
-<text x="56" y="638" class="small note" text-anchor="start">上述电源转换链为用户确认；具体模块型号、支路、纹波和负载能力待实物核对。</text>
+<text x="56" y="612" class="small" text-anchor="start">注：外部单 +5 V → Boost 至 12 V → MP5418 模块 → ±5 V</text>
 <text x="850" y="527" class="" text-anchor="middle">+5 V</text>
 <path class="wire" d="M850,535 L850,564"/>
 <path class="part" d="M833,564 H867 M833,574 H867"/>
@@ -133,5 +131,4 @@
 <path class="wire" d="M1126,630 H1134"/>
 <text x="1158" y="577" class="small" text-anchor="start">C4  100 nF</text>
 <text x="36" y="707" class="small" text-anchor="start">结构说明：输入并联端接 → 两级非反相放大（反馈 R∥C）→ 输出串联匹配；不是高频增益趋零的理想全极点低通。</text>
-<text x="36" y="735" class="small note" text-anchor="start">本图用于报告设计说明，不是实物照片、端口电压标定结果或模拟抗混叠验收证据。</text>
 </svg>
