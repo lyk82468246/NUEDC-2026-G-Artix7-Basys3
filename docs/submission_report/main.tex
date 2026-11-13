@@ -36,7 +36,7 @@
 \newcommand{\Blank}{\rule{1.25cm}{0.3pt}}
 \newcommand{\ReportFig}[4]{%
   \begin{figure}[H]\centering
-  \IfFileExists{figures/#1}{\includegraphics[width=.93\linewidth,height=#3,keepaspectratio]{figures/#1}}{%
+  \IfFileExists{figures/#1}{\includegraphics[width=.99\linewidth,height=#3,keepaspectratio]{figures/#1}}{%
     \fcolorbox{figline}{figbg}{\parbox[c][#3][c]{.91\linewidth}{\centering\fontsize{9pt}{13pt}\selectfont\textbf{插图位置}\quad \texttt{\detokenize{#1}}\\[3pt]#4}}}
   \caption{#2}\end{figure}}
 % 图纸由原Release文件提供；新增扫频图c_sweep.pdf由原始测量记录绘制。
@@ -123,7 +123,7 @@ C模式的高频干扰先经过模拟放大网络和ADC采样，再由95抽头�
  H_1(s)=1+\frac{R_f/R_g}{1+sR_fC_f},\qquad H_{\mathrm{AFE}}(s)=H_1^2(s).
 \end{equation}
 低频单级增益为$4.6$，两级总增益约为$21.16$；反馈电容使高频增益逐渐减小。按标称元件计算，两级增益在500\,kHz和1\,MHz处相对低频分别下降约0.50\,dB和1.82\,dB。输入端采用50\,$\Omega$电阻对地端接，输出端通过串联50\,$\Omega$电阻连接ADC模块。
-\ReportFig{hardware_connection.pdf}{模拟前端及电源连接原理图}{6.8cm}{使用已绘制的SGM8302电路图及单+5\,V供电结构。}
+\ReportFig{hardware_connection.pdf}{模拟前端及电源连接原理图}{8.0cm}{使用已绘制的SGM8302电路图及单+5\,V供电结构。}
 \subsection{ADC接口及时钟设计}
 FPGA利用MMCM、BUFR与ODDR等时钟资源提供稳定的ADC采样时钟。AD9226的12位并行采样值在采样边沿锁存，经同步后写入时域缓存。
 
@@ -155,50 +155,44 @@ FPGA利用MMCM、BUFR与ODDR等时钟资源提供稳定的ADC采样时钟。AD92
 
 \subsection{功能仿真与FPGA实现}
 在仿真中检查窗函数ROM读取对齐、FFT输入握手与背压。三帧合计24576点的输入对齐测试通过；采样帧所有权、时域运算、结果锁存和UART控制另由专用测试平台检查。目标器件实现结果见表\ref{tab:resource}。
-\TableStart
-\begin{table}[H]\centering
-\caption{FPGA资源利用率与实现时序}\label{tab:resource}
-\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}X r r r}
-\toprule 项目 & 使用量 & 器件总量 & 利用率/结果\\\midrule
+\par\noindent
+\begin{minipage}[t]{0.54\linewidth}\vspace{0pt}\centering
+\captionof{table}{FPGA资源利用率与实现时序}\label{tab:resource}
+\TableStart\setlength{\tabcolsep}{3pt}\begin{tabular}{lrrr}
+\toprule 项目 & 使用量 & 总量 & 利用率/结果\\\midrule
 LUT & 19887 & 20800 & 95.61\%\\
 FF & 28675 & 41600 & 68.93\%\\
 BRAM Tile & 48.5 & 50 & 97.00\%\\
 DSP48E1 & 90 & 90 & 100.00\%\\\midrule
 WNS & \multicolumn{2}{r}{+0.280 ns} & TNS=0\\
 WHS & \multicolumn{2}{r}{+0.011 ns} & THS=0\\\bottomrule
-\end{tabularx}
-\end{table}
-\TableEnd
-FFT、CORDIC和时域运算使用较多DSP资源，多份帧缓存使BRAM使用率达到97\%。通过定点计算与统一测量控制，在XC7A35T上集成了各处理功能。
+\end{tabular}\TableEnd\end{minipage}\hfill
+\begin{minipage}[t]{0.43\linewidth}\vspace{0pt}FFT、CORDIC和时域运算使用较多DSP资源，多份帧缓存使BRAM使用率达到97\%。通过定点计算与统一测量控制，在XC7A35T上集成了各处理功能。\end{minipage}\par\medskip
 
 \subsection{单音测频与幅值标定}
 在200\,mVpp信号源设定值下，以11、12、42、100\,kHz正弦信号测试频率识别，得到主频点号22、24、84、200。表\ref{tab:single}中的频率由实际识别的频点号与采样率换算，不把显示舍入后的零误差理解为无限精度。
-\TableStart
-\begin{table}[H]\centering
-\caption{单音测频结果（频点映射计算值）}\label{tab:single}
-\begin{tabularx}{\linewidth}{r r >{\raggedleft\arraybackslash}X r}
-\toprule 信号源频率/kHz & 主频点号 & 映射频率/kHz & 偏差/Hz\\\midrule
+\par\noindent
+\begin{minipage}[t]{0.57\linewidth}\vspace{0pt}\centering
+\captionof{table}{单音测频结果（频点映射计算值）}\label{tab:single}
+\TableStart\setlength{\tabcolsep}{3pt}\begin{tabular}{rrrr}
+\toprule 设定/kHz & 频点 & 映射/kHz & 偏差/Hz\\\midrule
 11 & 22 & 11.00012 & +0.12\\
 12 & 24 & 12.00013 & +0.13\\
 42 & 84 & 42.00046 & +0.46\\
 100 & 200 & 100.00110 & +1.10\\\bottomrule
-\end{tabularx}
-\end{table}
-\TableEnd
-对100\,kHz单音，选取100、150、200、250\,mVpp进行三通路标定，并以125、225\,mVpp检查。表\ref{tab:cal}为将标定系数应用于采集原始量后的误差。
-\TableStart
-\begin{table}[H]\centering
-\caption{100 kHz正弦信号幅值标定误差（mV）}\label{tab:cal}
-\begin{tabularx}{\linewidth}{l r r r r}
-\toprule 组别 & 设定Vpp & $\Delta U_{pp}$ & $\Delta U_{\rm rms}$ & 分量峰值偏差\\\midrule
+\end{tabular}\TableEnd\end{minipage}\hfill
+\begin{minipage}[t]{0.4\linewidth}\vspace{0pt}对100\,kHz单音，选取100、150、200、250\,mVpp进行三通路标定，并以125、225\,mVpp检查。表\ref{tab:cal}为将标定系数应用于采集原始量后的误差。\end{minipage}\par\medskip
+\par\noindent
+\begin{minipage}[t]{0.54\linewidth}\vspace{0pt}\centering
+\captionof{table}{100 kHz正弦信号幅值标定误差（mV）}\label{tab:cal}
+\TableStart\setlength{\tabcolsep}{3pt}\begin{tabular}{lrrrr}
+\toprule 组别 & 设定Vpp & $\Delta U_{pp}$ & $\Delta U_{\rm rms}$ & 峰值偏差\\\midrule
 标定 & 100 & +0.695 & +0.037 & +0.053\\
 标定 & 250 & $-0.419$ & $-0.018$ & $-0.031$\\
 检查 & 125 & +0.800 & +0.046 & +0.050\\
 检查 & 225 & $-0.142$ & $-0.028$ & $-0.035$\\\bottomrule
-\end{tabularx}
-\end{table}
-\TableEnd
-在线设置175\,mVpp、100\,kHz正弦波后，测得Vpp=175.193\,mV、RMS=61.881\,mV和分量峰值87.518\,mV，相对设定参考的偏差为+0.193、+0.009及+0.018\,mV。
+\end{tabular}\TableEnd\end{minipage}\hfill
+\begin{minipage}[t]{0.43\linewidth}\vspace{0pt}在线设置175\,mVpp、100\,kHz正弦波后，测得Vpp=175.193\,mV、RMS=61.881\,mV和分量峰值87.518\,mV，相对设定参考的偏差为+0.193、+0.009及+0.018\,mV。\end{minipage}\par\medskip
 
 \subsection{A/B模式复合信号测试}
 采用基波、三次和四次谐波组成的三音信号。A组三分量频率为10.5/31.5/42\,kHz，设定峰值为60/25/15\,mV；B高频组为125/375/500\,kHz，设定峰值为30/12.5/7.5\,mV；弱基波组沿用B组频率，设定峰值为5/25/20\,mV，其中三次谐波初相为90$^\circ$，其余分量初相均为0$^\circ$。
@@ -214,25 +208,23 @@ B弱基波 & 5.05 / 25.11 / 20.10 & +0.769 & +0.114 & 0.110\\\bottomrule
 \end{table}
 \TableEnd
 三组基频分别识别为10.5、125和125\,kHz。对应理论Vpp/RMS分别为137.041/47.170、68.521/23.585和87.755/22.913\,mV，实测Vpp/RMS分别为137.425/47.372、69.477/23.741和88.524/23.027\,mV。三组指定波形的电压误差均在5\,mV以内，弱基波案例仍正确识别125\,kHz基频。
-\ReportFig{screen_triptych.pdf}{A模式三音信号的1周期、3周期和频谱显示}{4.5cm}{实屏照片：1周期、3周期和频谱，保证屏幕读数清晰。}
+\ReportFig{screen_triptych.pdf}{A模式三音信号的1周期、3周期和频谱显示}{4.85cm}{实屏照片：1周期、3周期和频谱，保证屏幕读数清晰。}
 
 \subsection{C模式抗干扰测量与扫频}
 在有用三音信号上叠加标称200\,mVpp高频单音干扰，比较加干扰前后的时频域结果。有用信号的三个频率为125、375和500\,kHz，峰值分别为30、12.5和7.5\,mV，初相均为0°。干扰与三音在AFG1022任意波表中合成，由CH1输出。表\ref{tab:cpoint}列出代表性频点；其中4\,MHz干扰在采样后折叠到约96.045\,kHz，所记录的测量帧未输出有效结果。
-\TableStart
-\begin{table}[H]\centering
-\caption{C模式代表性干扰频点测试}\label{tab:cpoint}
-\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}X r r c}
-\toprule 干扰频率 & $\Delta U_{pp}$/mV & $\Delta U_{\rm rms}$/mV & 基频识别\\\midrule
+\par\noindent
+\begin{minipage}[t]{0.55\linewidth}\vspace{0pt}\centering
+\captionof{table}{C模式代表性干扰频点测试}\label{tab:cpoint}
+\TableStart\setlength{\tabcolsep}{3pt}\begin{tabular}{lrrc}
+\toprule 干扰频率 & $\Delta U_{pp}$/mV & $\Delta U_{\rm rms}$/mV & 基频\\\midrule
 不加干扰 & +1.174 & +0.156 & 正确\\
 1\,MHz & +1.119 & +0.046 & 正确\\
 2\,MHz & +0.737 & +0.046 & 正确\\
 2.600\,MHz & +5.376 / +5.486 & --- & 正确\\
 4\,MHz & \multicolumn{3}{c}{该帧未输出有效结果}\\\bottomrule
-\end{tabularx}
-\end{table}
-\TableEnd
-在2.125～4.750\,MHz范围内进行粗扫，并在异常区间按25\,kHz步进补测。2.575\,MHz两次测试满足Vpp误差限值，2.600\,MHz两次均超过5\,mV，而所需三条有用谱线仍能识别；3.125\,MHz为本次已测频点中最高的通过点。可见失效情况随干扰频率变化，并非单调的频率截止特性。2.600\,MHz干扰折叠到约1.496\,MHz，虽然落入FIR数字阻带，仍可能因模拟信号链、ADC非线性或其他因素产生测量偏差。
-\ReportFig{c_sweep.pdf}{C模式高频干扰扫频结果}{3.5cm}{按真实扫频数据绘制：横轴干扰频率，纵轴Vpp误差；标出±5mV限值，失效帧独立标记。}
+\end{tabular}\TableEnd\end{minipage}\hfill
+\begin{minipage}[t]{0.42\linewidth}\vspace{0pt}粗扫范围为2.125～4.750\,MHz，边界附近每隔25\,kHz补测。2.575\,MHz两次通过，2.600\,MHz两次Vpp超差，三条谱线仍可识别。最高通过测点为3.125\,MHz。2.600\,MHz折叠至约1.496\,MHz，仍在FIR阻带内，线性模型无法解释该处超差。\end{minipage}\par\medskip
+\ReportFig{c_sweep.pdf}{C模式高频干扰扫频结果}{5.3cm}{按真实扫频数据绘制：横轴干扰频率，纵轴Vpp误差；标出±5mV限值，失效帧独立标记。}
 \subsection{显示与响应时间测试}
 串口屏完成单周期、三周期波形及三分量频谱的显示，实屏结果见前述三联图。为评价2\,s完成时间，采用按键启动到屏幕全部参数和图形稳定更新的时间作为端到端响应时间。现场观察时，从按键到屏幕稳定的响应短于人手计时的反应上限，人工无法测出具体时长。
 
