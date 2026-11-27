@@ -1,0 +1,106 @@
+===== User console excerpt, original lines 246-251 =====
+rc_store_status
+stage PERSISTENT busy 0 ready 1 saved_valid 1 source 2 error 0 ack 0 initialized 1 dirty 0 saving 0 apply_block 0 rejected 0 panel_pending 0 status_register 0 security_register 0 jedec 12722198 sequence 1 saved_epoch 2 bank 79294142238186840429235802095
+rc_store::active
+bank 79294142238186840429235802095 epoch 1 flags 129
+rc_export C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/calibration_before_wavefix_20261127.json e723d26
+stage PERSISTENT busy 0 ready 1 saved_valid 1 source 2 error 0 ack 0 initialized 1 dirty 0 saving 0 apply_block 0 rejected 0 panel_pending 0 status_register 0 security_register 0 jedec 12722198 sequence 1 saved_epoch 2 bank 79294142238186840429235802095
+
+===== User console excerpt, original lines 269-298 =====
+#     puts "AUDITED IMAGE: $output; manifest: $report"
+#     puts "Not programmed. Audit covers address ranges, NOT the programmer's erase policy."
+#     puts "Never Entire Device/chip erase; preserve 0x3E0000..0x3FFFFF and verify params after a manual upgrade."
+#     return $report
+# }
+rc_create_boot_mcs \
+  C:/Users/Joe/Documents/Verilog/G_FPGA/G_FPGA.runs/impl_1/G_FPGA_Top.bit \
+  C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/boot_20261127_wavefix_e723d26.mcs
+Command: write_cfgmem -format mcs -interface SPIx1 -size 4 -loadbit {up 0x0 C:/Users/Joe/Documents/Verilog/G_FPGA/G_FPGA.runs/impl_1/G_FPGA_Top.bit} -file C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/boot_20261127_wavefix_e723d26.mcs.pending.mcs
+Creating config memory files...
+Creating bitstream load up from address 0x00000000
+Loading bitfile C:/Users/Joe/Documents/Verilog/G_FPGA/G_FPGA.runs/impl_1/G_FPGA_Top.bit
+Writing file C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/boot_20261127_wavefix_e723d26.mcs.pending.mcs
+Writing log file C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/boot_20261127_wavefix_e723d26.mcs.pending.prm
+===================================
+Configuration Memory information
+===================================
+File Format        MCS
+Interface          SPIX1
+Size               4M
+Start Address      0x00000000
+End Address        0x003FFFFF
+
+Addr1         Addr2         Date                    File(s)
+0x00000000    0x001BAA5F    Nov 27 11:17:48 2026    C:/Users/Joe/Documents/Verilog/G_FPGA/G_FPGA.runs/impl_1/G_FPGA_Top.bit
+0 Infos, 0 Warnings, 0 Critical Warnings and 0 Errors encountered.
+write_cfgmem completed successfully
+AUDITED IMAGE: C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/boot_20261127_wavefix_e723d26.mcs; manifest: C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/boot_20261127_wavefix_e723d26.mcs.audit.json
+Not programmed. Audit covers address ranges, NOT the programmer's erase policy.
+Never Entire Device/chip erase; preserve 0x3E0000..0x3FFFFF and verify params after a manual upgrade.
+
+===== User console excerpt, original lines 299-342 =====
+C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/boot_20261127_wavefix_e723d26.mcs.audit.json
+set dev [current_hw_device]
+xc7a35t_0
+set mem [get_property PROGRAM.HW_CFGMEM $dev]
+cfgmem_0
+puts "CFGMEM=$mem"
+CFGMEM=cfgmem_0
+set_property PROGRAM.FILES \
+  {C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/boot_20261127_wavefix_e723d26.mcs} $mem
+set_property PROGRAM.ADDRESS_RANGE {use_file} $mem
+set_property PROGRAM.ERASE 1 $mem
+set_property PROGRAM.CFG_PROGRAM 1 $mem
+set_property PROGRAM.VERIFY 1 $mem
+set_property PROGRAM.BLANK_CHECK 0 $mem
+puts "FILE=[get_property PROGRAM.FILES $mem]"
+FILE=C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/boot_20261127_wavefix_e723d26.mcs
+puts "ADDRESS_RANGE=[get_property PROGRAM.ADDRESS_RANGE $mem]"
+ADDRESS_RANGE=use_file
+set_property PROGRAM.ADDRESS_RANGE  {use_file} [ get_property PROGRAM.HW_CFGMEM [lindex [get_hw_devices xc7a35t_0] 0]]
+set_property PROGRAM.FILES [list "C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/boot_20261127_wavefix_e723d26.mcs" ] [ get_property PROGRAM.HW_CFGMEM [lindex [get_hw_devices xc7a35t_0] 0]]
+set_property PROGRAM.PRM_FILE {} [ get_property PROGRAM.HW_CFGMEM [lindex [get_hw_devices xc7a35t_0] 0]]
+set_property PROGRAM.UNUSED_PIN_TERMINATION {pull-none} [ get_property PROGRAM.HW_CFGMEM [lindex [get_hw_devices xc7a35t_0] 0]]
+set_property PROGRAM.BLANK_CHECK  0 [ get_property PROGRAM.HW_CFGMEM [lindex [get_hw_devices xc7a35t_0] 0]]
+set_property PROGRAM.ERASE  1 [ get_property PROGRAM.HW_CFGMEM [lindex [get_hw_devices xc7a35t_0] 0]]
+set_property PROGRAM.CFG_PROGRAM  1 [ get_property PROGRAM.HW_CFGMEM [lindex [get_hw_devices xc7a35t_0] 0]]
+set_property PROGRAM.VERIFY  1 [ get_property PROGRAM.HW_CFGMEM [lindex [get_hw_devices xc7a35t_0] 0]]
+set_property PROGRAM.CHECKSUM  0 [ get_property PROGRAM.HW_CFGMEM [lindex [get_hw_devices xc7a35t_0] 0]]
+startgroup
+create_hw_bitstream -hw_device [lindex [get_hw_devices xc7a35t_0] 0] [get_property PROGRAM.HW_CFGMEM_BITFILE [ lindex [get_hw_devices xc7a35t_0] 0]]; program_hw_devices [lindex [get_hw_devices xc7a35t_0] 0]; refresh_hw_device [lindex [get_hw_devices xc7a35t_0] 0];
+INFO: [Labtools 27-3164] End of startup status: HIGH
+INFO: [Labtools 27-2302] Device xc7a35t (JTAG device index = 0) is programmed with a design that has 1 SPI core(s).
+WARNING: [Labtools 27-3413] Dropping logic core with cellname:'u_ila_system' at location 'uuid_157561AF5A3D5DF1B9F74E414E4ADAF8' from probes file, since it cannot be found on the programmed device.
+WARNING: [Labtools 27-3413] Dropping logic core with cellname:'g_flash_persistent.u_vio_flash_store' at location 'uuid_57A5EC6D1A895EDFBEDE62F7113038D3' from probes file, since it cannot be found on the programmed device.
+WARNING: [Labtools 27-3413] Dropping logic core with cellname:'g_runtime_calibration.u_vio_calibration' at location 'uuid_FA052AA4E36D5EA2BED919AA299D284B' from probes file, since it cannot be found on the programmed device.
+program_hw_cfgmem -hw_cfgmem [ get_property PROGRAM.HW_CFGMEM [lindex [get_hw_devices xc7a35t_0] 0]]
+Mfg ID : c2   Memory Type : 20   Memory Capacity : 16   Device ID 1 : 0   Device ID 2 : 0
+Performing Erase Operation...
+Erase Operation successful.
+Performing Program and Verify Operations...
+Program/Verify Operation successful.
+INFO: [Labtoolstcl 44-377] Flash programming completed successfully
+program_hw_cfgmem: Time (s): cpu = 00:00:03 ; elapsed = 00:00:49 . Memory (MB): peak = 2046.352 ; gain = 0.000
+endgroup
+ERROR: [Labtoolstcl 44-513] HW Target shutdown. Closing target: localhost:3121/xilinx_tcf/Digilent/[TARGET_SERIAL_REDACTED]
+
+===== User console excerpt, original lines 373-385 =====
+current_hw_device [get_hw_devices xc7a35t_0]
+refresh_hw_device [lindex [get_hw_devices xc7a35t_0] 0]
+INFO: [Labtools 27-2302] Device xc7a35t (JTAG device index = 0) is programmed with a design that has 1 ILA core(s).
+INFO: [Labtools 27-2302] Device xc7a35t (JTAG device index = 0) is programmed with a design that has 2 VIO core(s).
+create_hw_cfgmem -hw_device [get_hw_devices xc7a35t_0] -mem_dev [lindex [get_cfgmem_parts {mx25l3273f-spi-x1_x2_x4}] 0]
+display_hw_ila_data [ get_hw_ila_data hw_ila_data_1 -of_objects [get_hw_ilas -of_objects [get_hw_devices xc7a35t_0] -filter {CELL_NAME=~"u_ila_system"}]]
+set dev [current_hw_device]
+xc7a35t_0
+set_property PROBES.FILE \
+  {C:/Users/Joe/Documents/Verilog/G_FPGA/G_FPGA.runs/impl_1/debug_nets.ltx} $dev
+refresh_hw_device $dev
+INFO: [Labtools 27-2302] Device xc7a35t (JTAG device index = 0) is programmed with a design that has 1 ILA core(s).
+INFO: [Labtools 27-2302] Device xc7a35t (JTAG device index = 0) is programmed with a design that has 2 VIO core(s).
+
+===== User console excerpt, original lines 587-590 =====
+rc_store_status
+stage PERSISTENT busy 0 ready 1 saved_valid 1 source 2 error 0 ack 0 initialized 1 dirty 0 saving 0 apply_block 0 rejected 0 panel_pending 0 status_register 0 security_register 0 jedec 12722198 sequence 1 saved_epoch 2 bank 79294142238186840429235802095
+rc_store::active
+bank 79294142238186840429235802095 epoch 1 flags 131

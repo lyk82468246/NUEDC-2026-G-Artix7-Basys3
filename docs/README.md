@@ -32,7 +32,7 @@
 
 | 主题 | 最近证据 | 历史对照 |
 | --- | --- | --- |
-| 程序与镜像 | [11月6日MCS/时序](../reports/boot_mcs_20261106/README.md) | [10月30日构建](build_verification_20261030.md) |
+| 程序与镜像 | [11月27日MCS/时序/系数保留与冷启动](../reports/boot_release_20261127/README.md) | [11月6日构建](../reports/boot_mcs_20261106/README.md)、[10月30日构建](build_verification_20261030.md) |
 | 标定 | [AFG多点标定及B槽保存](../reports/afg_calibration_20261106/README.md) | [旧VIO验证](runtime_vio_hardware_20261023.md) |
 | Flash恢复 | [11月5日A槽恢复](../reports/flash_persistence_20261105/README.md) | [格式/机制](flash_calibration_persistence_20261030.md) |
 | 单音故障 | [BNC/SMA恢复复测](../reports/single_tone_reseat_20261106/README.md)、[修复前候选](../reports/single_tone_candidates_20261106/README.md) | [10月23日BNC接触恢复](bnc_recovery_20261023.md) |

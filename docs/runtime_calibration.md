@@ -24,7 +24,7 @@
 | 启动/BtnC | P2先恢复有效保存记录，再放行采集；没有有效记录才回退RTL默认值 |
 | `rc_export` | 导出已解码的活动/保存系数与元数据，不是原始Flash转储 |
 
-当前B槽sequence1、saved_epoch2已保存核对。本轮未做新B槽断电恢复；恢复后活动epoch不要求等于saved_epoch。VIO的暂存/request可能跨BtnC保留，RTL不会因此自动重新提交旧暂存值。
+当前B槽sequence1、saved_epoch2已保存核对，2026-11-27完成镜像升级保留及重新上电恢复验证，见[记录](../reports/boot_release_20261127/README.md)；恢复后活动epoch不要求等于saved_epoch。VIO的暂存/request可能跨BtnC保留，RTL不会因此自动重新提交旧暂存值。
 
 ## 当前GUI连接中的操作
 

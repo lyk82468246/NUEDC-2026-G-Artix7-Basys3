@@ -1,21 +1,19 @@
 # 当前版本与验证状态
 
-**2026-11-27源码变更**：时域显示新增默认启用的`DISPLAY_WAVE_REVERSE_X`，用于补偿用户观察到的Tk预览与实屏左右镜像。见[修订与仿真记录](wave_direction_20261127.md)。本轮不执行综合、实现、bit/MCS生成或烧写，以下11月6日构建指标仍仅属于原硬件版本，不能用来签核这次RTL修改。
-
-核对日期：2026-11-06。本页集中记录当前程序、活动标定和验证边界；操作方法见[文档导航](README.md)。历史报告仅对其记录的构建及接线有效。
+核对日期：2026-11-27。当前RTL功能版本为`e723d26`，新增时域波形横向补偿。用户已确认新bit实屏方向正确，并完成Flash编程/Verify、重新上电和信号发生器功能复测。完整证据见[本轮构建与启动验证](../reports/boot_release_20261127/README.md)，仿真见[方向修订记录](wave_direction_20261127.md)。
 
 ## 程序与调试文件
 
 | 项目 | 当前记录 |
 | --- | --- |
-| RTL功能版本 | `e733a9e`：修复FFT平顶窗ROM使能/读取配对；包含schema3原始候选诊断 |
-| bit | `G_FPGA.runs/impl_1/G_FPGA_Top.bit`，2026-11-06 08:33:21 |
-| LTX | 同目录`debug_nets.ltx`，08:33:22；1 ILA、2 VIO |
-| 实现时序 | WNS +0.280 ns、WHS +0.011 ns、TNS/THS 0；报告08:32:08 |
-| 当前启动镜像 | `test_results/p2_boot_20261106_romfix_e733a9e.mcs`；用户确认已烧写并成功加载 |
-| 旧启动镜像 | `test_results/p2_boot_01.mcs`为11月5日22:27版，不能当作最新版重烧 |
+| RTL功能版本 | `e723d26`，包含此前`e733a9e`窗ROM读取修复与本轮wave方向补偿 |
+| bit / LTX | `G_FPGA.runs/impl_1/G_FPGA_Top.bit`、`debug_nets.ltx`，2026-11-27 11:17:48 |
+| 实现时序 | WNS +0.123 ns、WHS +0.016 ns、TNS/THS 0 |
+| 当前启动镜像 | `test_results/boot_20261127_wavefix_e723d26.mcs`，用户已烧写并重新上电验证 |
+| 发布版本 | `v2026.11.27`，产物及SHA256见本轮manifest |
+| 历史镜像 | 11月6日`p2_boot_20261106_romfix_e733a9e.mcs`及更早`p2_boot_01.mcs`均非当前版本 |
 
-[MCS地址审计与bit哈希](../reports/boot_mcs_20261106/README.md)用于对应本地文件；不等于读回器件全部配置位。运行目录和MCS是本地生成产物，不随Git克隆自动出现。文档和测试数据提交无需重新生成硬件；2026-11-27的显示RTL变更需要重新构建才能生效。
+源码、构建报告及硬件证据必须按版本对应。11月6日构建与标定历史仍保留在[原镜像审计](../reports/boot_mcs_20261106/README.md)。运行目录中的bit/MCS不随Git克隆自动出现，可从Release获取本轮发布产物。
 
 ## 标定状态
 
@@ -27,7 +25,7 @@
 
 均为unsigned Q16.16 µV/raw。2026-11-06在线应用epoch2，B槽source2、sequence1、saved_epoch2，保存回读`SAVED_AND_VERIFIED`、dirty0、error0；保存与活动bank一致。[原始数据与验证](../reports/afg_calibration_20261106/README.md)包含100kHz四点拟合、125/225mVpp独立幅值验证、175mVpp实际VIO输出和10/200kHz检查。
 
-参考是AFG1022 **HIGHZ显示设定值**，不是连接器端独立绝对电压标定。FFT幅值为正弦峰值，不是Vpp或RMS。当前记录优先于RTL默认值；无需重生成bit/MCS。该新B槽尚未做本轮断电恢复复测，不能用此前A槽冷启动记录替代。
+参考是AFG1022 **HIGHZ显示设定值**，不是连接器端独立绝对电压标定。FFT幅值为正弦峰值，不是Vpp或RMS。当前记录优先于RTL默认值；无需重生成bit/MCS。2026-11-27镜像升级前后及重新上电均读到相同B槽sequence1/saved_epoch2，活动bank与保存bank一致，dirty0/error0，已补齐本板该B槽的升级保留与冷启动恢复证据。
 
 ## 已验证与待验证
 

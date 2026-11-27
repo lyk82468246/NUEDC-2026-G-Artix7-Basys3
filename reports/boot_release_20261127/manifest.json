@@ -1,0 +1,60 @@
+{
+  "release": "v2026.11.27",
+  "rtl_commit": "e723d264bb147a6dc214f67deaf26a4905fd8075",
+  "vivado": "2025.2",
+  "bit_build_local": "2026-11-27 11:17:48 Asia/Shanghai",
+  "timing": {
+    "wns_ns": 0.123,
+    "whs_ns": 0.016,
+    "tns_ns": 0,
+    "ths_ns": 0
+  },
+  "resources_placed": {
+    "lut": 20017,
+    "ff": 28709,
+    "bram_tiles": 48.5,
+    "dsp": 90
+  },
+  "drc": {
+    "warnings": 53,
+    "errors": 0
+  },
+  "calibration_before_and_after": {
+    "bank": "79294142238186840429235802095",
+    "saved_valid": 1,
+    "source": 2,
+    "sequence": 1,
+    "saved_epoch": 2,
+    "active_epoch": 1,
+    "vpp_gain": 3576768,
+    "rms_gain": 3601627,
+    "fft_gain": 4079,
+    "dirty": 0,
+    "error": 0
+  },
+  "validation": "User performed Flash programming, power cycle, screen and signal-generator checks. No numeric measurement dataset supplied for this round.",
+  "report_pdf_source_commit": "1b62b05",
+  "report_pdf_scope": "Unchanged Nov13 report, includes historical Nov6 hardware baseline, not revalidated as a Nov27 report.",
+  "artifacts": {
+    "boot_20261127_wavefix_e723d26.mcs": {
+      "sha256": "94bf8d25b8e00a37419b63d133ae1c0b2582ae12e394ce0988d5ee4a962c1e0b",
+      "bytes": 5099799
+    },
+    "boot_20261127_wavefix_e723d26.mcs.audit.json": {
+      "sha256": "898b295d6007466564144bfb818d2d226b73041c4560f9b61db16b66b8ded4c4",
+      "bytes": 509
+    },
+    "debug_nets.ltx": {
+      "sha256": "3b704948864e919c99e849f1ca708592239c449f3e0aa59fa3b2e7e5377ef4c2",
+      "bytes": 215026
+    },
+    "G_FPGA_Top.bit": {
+      "sha256": "efa5a85b6f7f6f4ad57d108142ead96beee671d2e1596f2f87fbc618b8fc783a",
+      "bytes": 1813224
+    },
+    "NUEDC_2026_G_Report.pdf": {
+      "sha256": "92def3c6b8c5fc5ec909a01943edff0c30b246ad75f68c9e13a3fa982402db12",
+      "bytes": 16752131
+    }
+  }
+}

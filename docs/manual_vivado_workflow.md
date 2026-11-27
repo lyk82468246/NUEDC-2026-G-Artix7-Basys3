@@ -52,7 +52,7 @@ refresh_hw_device $dev
 
 ## 离线生成新MCS
 
-当前已烧写镜像为`test_results/p2_boot_20261106_romfix_e733a9e.mcs`。以下模板用于未来升级，输出必须用尚不存在的新名称：
+当前已烧写镜像为`test_results/boot_20261127_wavefix_e723d26.mcs`，见[升级保留系数验证](../reports/boot_release_20261127/README.md)。以下模板用于未来升级，输出必须用尚不存在的新名称：
 
 ```tcl
 source C:/Users/Joe/Documents/Verilog/G_FPGA/scripts/create_boot_mcs.tcl
