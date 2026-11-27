@@ -11,9 +11,9 @@ Push-Location -LiteralPath $prepRun
 try {
     $prepFiles=@('BIN2BCD.v','Display_Unsigned_Divider.v','Display_Frame_Calibrator.v','Display_Sine_ROM.v','Display_Fundamental_Aligner.v','Display_Interpolation_ROM.v','Display_Bandlimited_Interpolator.v','Display_Wave_Renderer.v','Display_Spectrum_Renderer.v','Display_mV_Formatter.v') |
         ForEach-Object {Join-Path "$prepRoot\sources\rtl" $_}
-    & "$VivadoRoot\bin\xvlog.bat" -sv -work xil_defaultlib @prepFiles "$prepRoot\sim\tb_display_prepare.sv"
+    & "$VivadoRoot\bin\xvlog.bat" -sv -work xil_defaultlib @prepFiles "$prepRoot\sim\tb_display_prepare.sv" "$prepRoot\sim\tb_display_wave_direction.sv"
     if($LASTEXITCODE -ne 0){throw 'Display preparation compile failed'}
-    foreach($prepTop in @('tb_display_prepare','tb_display_prepare_compact','tb_display_prepare_full_y')){
+    foreach($prepTop in @('tb_display_prepare','tb_display_prepare_compact','tb_display_prepare_full_y','tb_display_wave_direction')){
         & "$VivadoRoot\bin\xelab.bat" "xil_defaultlib.$prepTop" -s $prepTop
         if($LASTEXITCODE -ne 0){throw "Display preparation elaboration failed: $prepTop"}
         & "$VivadoRoot\bin\xsim.bat" $prepTop -runall -log "$prepTop.log"

@@ -8,7 +8,7 @@ module tb_debug_top_contract;
         .key_cycle(1'b0),.key_down(1'b0),.key_left(1'b0),.key_right(1'b0),.sw(16'd2),.adc_data_in(12'd0));
     G_FPGA_Top #(.ENABLE_DISPLAY(0)) legacy(.sys_clk(1'b0),.sys_rst_n(1'b1),
         .key_cycle(1'b0),.key_down(1'b0),.key_left(1'b0),.key_right(1'b0),.sw(16'd2),.adc_data_in(12'd0));
-    G_FPGA_Top #(.DEFAULT_CALIBRATION_ENABLED(0)) uncal(.sys_clk(1'b0),.sys_rst_n(1'b1),
+    G_FPGA_Top #(.DEFAULT_CALIBRATION_ENABLED(0),.DISPLAY_WAVE_REVERSE_X(0)) uncal(.sys_clk(1'b0),.sys_rst_n(1'b1),
         .key_cycle(1'b0),.key_down(1'b0),.key_left(1'b0),.key_right(1'b0),.sw(16'd2),.adc_data_in(12'd0));
     initial begin
         #1;
@@ -20,6 +20,9 @@ module tb_debug_top_contract;
             plain.display_vpp_gain===32'd3623460 && plain.display_rms_gain===32'd3701829 &&
             plain.display_fft_gain===32'd4194) else $fatal(1,"Static boot bank mismatch");
         assert(uncal.calibration_enabled===1'b0)else $fatal(1,"Boot opt-out ignored");
+        assert(plain.u_capture_calc_subsystem.g_display.u_display.u_wave.REVERSE_X==1 &&
+            uncal.u_capture_calc_subsystem.g_display.u_display.u_wave.REVERSE_X==0)
+            else $fatal(1,"Wave direction top parameter did not reach renderer");
         assert(vio.g_runtime_calibration.u_runtime_calibration.DEFAULT_ENABLED==1 &&
             vio.g_runtime_calibration.u_runtime_calibration.DEFAULT_VPP_GAIN==3623460 &&
             vio.g_runtime_calibration.u_runtime_calibration.DEFAULT_RMS_GAIN==3701829 &&

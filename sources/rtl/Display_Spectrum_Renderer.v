@@ -25,8 +25,8 @@ module Display_Spectrum_Renderer #(parameter integer W=240,H=160,REVERSE_X=0)(
     reg [2:0] used;
     reg [15:0] xpos[0:2],point;
     reg [7:0] ypos[0:2],level;
-    // Stream ordinal stays increasing. Some panels insert newest add at right;
-    // send high-frequency positions first so the final physical axis increases.
+    // Stream ordinal stays increasing. Compensate the observed panel's reverse
+    // spatial ordering by sending high-frequency positions first.
     wire [15:0] lookup_point=REVERSE_X?(W-1-point):point;
     wire div_ready,div_valid,div_zero;
     wire [47:0] q;

@@ -15,7 +15,7 @@
 | 手动综合/实现、bit/LTX、MCS升级 | [Vivado手动工作流](manual_vivado_workflow.md) |
 | 在线标定、保存与恢复 | [标定操作指南](runtime_calibration.md)、[参数Flash机制](flash_calibration_persistence_20261030.md) |
 | ILA捕获、候选与有效性、故障码 | [当前ILA指南](ila_diagnostics.md) |
-| 屏幕接口 | [屏幕spec](TJC_UART_FORMAT.md)、[显示集成契约](display_integration_20261029.md)；最终控件/尺寸需与实际工程核对 |
+| 屏幕接口 | [屏幕spec](TJC_UART_FORMAT.md)、[时域方向修订](wave_direction_20261127.md)、[显示集成契约](display_integration_20261029.md)；最终控件/尺寸需与实际工程核对 |
 | AFG1022控制 | [脚本](afg1022_automation.md)、[GUI](afg1022_gui.md)、[组合波配方](afg1022_acceptance_waveforms.md) |
 
 ## 设计与复现

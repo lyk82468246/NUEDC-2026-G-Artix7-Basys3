@@ -1,0 +1,436 @@
+===== test_results/display_prepare_sim/tb_display_prepare.log =====
+#-----------------------------------------------------------
+# xsim v2025.2 (64-bit)
+# SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+# IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+# SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+# Start of session at: Fri Nov 27 10:11:53 2026
+# Process ID         : 23404
+# Current directory  : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/display_prepare_sim
+# Command line       : xsim.exe -log tb_display_prepare.log -mode tcl -source {xsim.dir/tb_display_prepare/xsim_script.tcl}
+# Log file           : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/display_prepare_sim/tb_display_prepare.log
+# Journal file       : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/display_prepare_sim\xsim.jou
+# Running On         : LAPTOP-LI
+# Platform           : Windows Server 2016 or Windows 10
+# Operating System   : 26100
+# Processor Detail   : 11th Gen Intel(R) Core(TM) i5-1135G7 @ 2.40GHz
+# CPU Frequency      : 2419 MHz
+# CPU Physical cores : 4
+# CPU Logical cores  : 8
+# Host memory        : 16425 MB
+# Swap memory        : 16425 MB
+# Total Virtual      : 32850 MB
+# Available Virtual  : 13696 MB
+#-----------------------------------------------------------
+source xsim.dir/tb_display_prepare/xsim_script.tcl
+# xsim {tb_display_prepare} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: display preparation 240x160 divider/calibration/wave/spectrum/mV, backpressure and invalid/reset
+$finish called at time : 1842570 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_prepare.sv" Line 228
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Nov 27 10:11:58 2026...
+
+===== test_results/display_prepare_sim/tb_display_prepare_compact.log =====
+#-----------------------------------------------------------
+# xsim v2025.2 (64-bit)
+# SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+# IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+# SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+# Start of session at: Fri Nov 27 10:12:21 2026
+# Process ID         : 11708
+# Current directory  : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/display_prepare_sim
+# Command line       : xsim.exe -log tb_display_prepare_compact.log -mode tcl -source {xsim.dir/tb_display_prepare_compact/xsim_script.tcl}
+# Log file           : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/display_prepare_sim/tb_display_prepare_compact.log
+# Journal file       : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/display_prepare_sim\xsim.jou
+# Running On         : LAPTOP-LI
+# Platform           : Windows Server 2016 or Windows 10
+# Operating System   : 26100
+# Processor Detail   : 11th Gen Intel(R) Core(TM) i5-1135G7 @ 2.40GHz
+# CPU Frequency      : 2419 MHz
+# CPU Physical cores : 4
+# CPU Logical cores  : 8
+# Host memory        : 16425 MB
+# Swap memory        : 16425 MB
+# Total Virtual      : 32850 MB
+# Available Virtual  : 13474 MB
+#-----------------------------------------------------------
+source xsim.dir/tb_display_prepare_compact/xsim_script.tcl
+# xsim {tb_display_prepare_compact} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: display preparation 200x128 divider/calibration/wave/spectrum/mV, backpressure and invalid/reset
+$finish called at time : 1703570 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_prepare.sv" Line 228
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Nov 27 10:12:24 2026...
+
+===== test_results/display_prepare_sim/tb_display_prepare_full_y.log =====
+#-----------------------------------------------------------
+# xsim v2025.2 (64-bit)
+# SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+# IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+# SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+# Start of session at: Fri Nov 27 10:12:36 2026
+# Process ID         : 25420
+# Current directory  : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/display_prepare_sim
+# Command line       : xsim.exe -log tb_display_prepare_full_y.log -mode tcl -source {xsim.dir/tb_display_prepare_full_y/xsim_script.tcl}
+# Log file           : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/display_prepare_sim/tb_display_prepare_full_y.log
+# Journal file       : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/display_prepare_sim\xsim.jou
+# Running On         : LAPTOP-LI
+# Platform           : Windows Server 2016 or Windows 10
+# Operating System   : 26100
+# Processor Detail   : 11th Gen Intel(R) Core(TM) i5-1135G7 @ 2.40GHz
+# CPU Frequency      : 2419 MHz
+# CPU Physical cores : 4
+# CPU Logical cores  : 8
+# Host memory        : 16425 MB
+# Swap memory        : 16425 MB
+# Total Virtual      : 32850 MB
+# Available Virtual  : 13495 MB
+#-----------------------------------------------------------
+source xsim.dir/tb_display_prepare_full_y/xsim_script.tcl
+# xsim {tb_display_prepare_full_y} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: display preparation 17x256 divider/calibration/wave/spectrum/mV, backpressure and invalid/reset
+$finish called at time : 1067720 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_prepare.sv" Line 228
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Nov 27 10:12:39 2026...
+
+===== test_results/display_prepare_sim/tb_display_wave_direction.log =====
+#-----------------------------------------------------------
+# xsim v2025.2 (64-bit)
+# SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+# IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+# SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+# Start of session at: Fri Nov 27 10:12:58 2026
+# Process ID         : 25628
+# Current directory  : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/display_prepare_sim
+# Command line       : xsim.exe -log tb_display_wave_direction.log -mode tcl -source {xsim.dir/tb_display_wave_direction/xsim_script.tcl}
+# Log file           : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/display_prepare_sim/tb_display_wave_direction.log
+# Journal file       : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/display_prepare_sim\xsim.jou
+# Running On         : LAPTOP-LI
+# Platform           : Windows Server 2016 or Windows 10
+# Operating System   : 26100
+# Processor Detail   : 11th Gen Intel(R) Core(TM) i5-1135G7 @ 2.40GHz
+# CPU Frequency      : 2419 MHz
+# CPU Physical cores : 4
+# CPU Logical cores  : 8
+# Host memory        : 16425 MB
+# Swap memory        : 16425 MB
+# Total Virtual      : 32850 MB
+# Available Virtual  : 13678 MB
+#-----------------------------------------------------------
+source xsim.dir/tb_display_wave_direction/xsim_script.tcl
+# xsim {tb_display_wave_direction} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: wave reverse BAND=0 ALIGN=0, 1T/3T/fallback/invalid, stalls and panel placement
+PASS: wave reverse BAND=1 ALIGN=0, 1T/3T/fallback/invalid, stalls and panel placement
+PASS: wave reverse BAND=0 ALIGN=1, 1T/3T/fallback/invalid, stalls and panel placement
+PASS: wave reverse BAND=1 ALIGN=1, 1T/3T/fallback/invalid, stalls and panel placement
+PASS: all waveform direction cases
+$finish called at time : 8691410 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_wave_direction.sv" Line 101
+run: Time (s): cpu = 00:00:00 ; elapsed = 00:00:13 . Memory (MB): peak = 196.250 ; gain = 0.062
+exit
+INFO: xsimkernel Simulation Memory Usage: 12220 KB (Peak: 12220 KB), Simulation CPU Usage: 12296 ms
+INFO: [Common 17-206] Exiting xsim at Fri Nov 27 10:13:14 2026...
+
+===== test_results/display_hmi_sim/tb_display_hmi.log =====
+#-----------------------------------------------------------
+# xsim v2025.2 (64-bit)
+# SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+# IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+# SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+# Start of session at: Fri Nov 27 10:11:12 2026
+# Process ID         : 13304
+# Current directory  : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/display_hmi_sim
+# Command line       : xsim.exe -log tb_display_hmi.log -mode tcl -source {xsim.dir/tb_display_hmi/xsim_script.tcl}
+# Log file           : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/display_hmi_sim/tb_display_hmi.log
+# Journal file       : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/display_hmi_sim\xsim.jou
+# Running On         : LAPTOP-LI
+# Platform           : Windows Server 2016 or Windows 10
+# Operating System   : 26100
+# Processor Detail   : 11th Gen Intel(R) Core(TM) i5-1135G7 @ 2.40GHz
+# CPU Frequency      : 2419 MHz
+# CPU Physical cores : 4
+# CPU Logical cores  : 8
+# Host memory        : 16425 MB
+# Swap memory        : 16425 MB
+# Total Virtual      : 32850 MB
+# Available Virtual  : 14102 MB
+#-----------------------------------------------------------
+source xsim.dir/tb_display_hmi/xsim_script.tcl
+# xsim {tb_display_hmi} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: UART spec including us/FFT midpoint labels, zero-origin plot, page policy, atomic gains, all pixels, HOLD, invalid/CAL, reset/STOP drain
+$finish called at time : 10368270 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_hmi.sv" Line 277
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Nov 27 10:11:17 2026...
+
+===== test_results/display_hmi_sim/tb_display_hmi_full.log =====
+#-----------------------------------------------------------
+# xsim v2025.2 (64-bit)
+# SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+# IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+# SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+# Start of session at: Fri Nov 27 10:11:28 2026
+# Process ID         : 26668
+# Current directory  : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/display_hmi_sim
+# Command line       : xsim.exe -log tb_display_hmi_full.log -mode tcl -source {xsim.dir/tb_display_hmi_full/xsim_script.tcl}
+# Log file           : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/display_hmi_sim/tb_display_hmi_full.log
+# Journal file       : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/display_hmi_sim\xsim.jou
+# Running On         : LAPTOP-LI
+# Platform           : Windows Server 2016 or Windows 10
+# Operating System   : 26100
+# Processor Detail   : 11th Gen Intel(R) Core(TM) i5-1135G7 @ 2.40GHz
+# CPU Frequency      : 2419 MHz
+# CPU Physical cores : 4
+# CPU Logical cores  : 8
+# Host memory        : 16425 MB
+# Swap memory        : 16425 MB
+# Total Virtual      : 32850 MB
+# Available Virtual  : 13741 MB
+#-----------------------------------------------------------
+source xsim.dir/tb_display_hmi_full/xsim_script.tcl
+# xsim {tb_display_hmi_full} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: UART spec including us/FFT midpoint labels, zero-origin plot, page policy, atomic gains, all pixels, HOLD, invalid/CAL, reset/STOP drain
+$finish called at time : 71679750 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_hmi.sv" Line 277
+run: Time (s): cpu = 00:00:00 ; elapsed = 00:00:27 . Memory (MB): peak = 195.504 ; gain = 0.000
+exit
+INFO: xsimkernel Simulation Memory Usage: 13052 KB (Peak: 13052 KB), Simulation CPU Usage: 19671 ms
+INFO: [Common 17-206] Exiting xsim at Fri Nov 27 10:11:59 2026...
+
+===== test_results/display_hmi_sim/tb_display_hmi_inverted.log =====
+#-----------------------------------------------------------
+# xsim v2025.2 (64-bit)
+# SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+# IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+# SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+# Start of session at: Fri Nov 27 10:12:17 2026
+# Process ID         : 14468
+# Current directory  : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/display_hmi_sim
+# Command line       : xsim.exe -log tb_display_hmi_inverted.log -mode tcl -source {xsim.dir/tb_display_hmi_inverted/xsim_script.tcl}
+# Log file           : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/display_hmi_sim/tb_display_hmi_inverted.log
+# Journal file       : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/display_hmi_sim\xsim.jou
+# Running On         : LAPTOP-LI
+# Platform           : Windows Server 2016 or Windows 10
+# Operating System   : 26100
+# Processor Detail   : 11th Gen Intel(R) Core(TM) i5-1135G7 @ 2.40GHz
+# CPU Frequency      : 2419 MHz
+# CPU Physical cores : 4
+# CPU Logical cores  : 8
+# Host memory        : 16425 MB
+# Swap memory        : 16425 MB
+# Total Virtual      : 32850 MB
+# Available Virtual  : 13662 MB
+#-----------------------------------------------------------
+source xsim.dir/tb_display_hmi_inverted/xsim_script.tcl
+# xsim {tb_display_hmi_inverted} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: UART spec including us/FFT midpoint labels, zero-origin plot, page policy, atomic gains, all pixels, HOLD, invalid/CAL, reset/STOP drain
+$finish called at time : 10478820 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_hmi.sv" Line 277
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Nov 27 10:12:23 2026...
+
+===== test_results/display_hmi_sim/tb_display_hmi_no_guard.log =====
+#-----------------------------------------------------------
+# xsim v2025.2 (64-bit)
+# SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+# IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+# SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+# Start of session at: Fri Nov 27 10:12:33 2026
+# Process ID         : 12972
+# Current directory  : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/display_hmi_sim
+# Command line       : xsim.exe -log tb_display_hmi_no_guard.log -mode tcl -source {xsim.dir/tb_display_hmi_no_guard/xsim_script.tcl}
+# Log file           : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/display_hmi_sim/tb_display_hmi_no_guard.log
+# Journal file       : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/display_hmi_sim\xsim.jou
+# Running On         : LAPTOP-LI
+# Platform           : Windows Server 2016 or Windows 10
+# Operating System   : 26100
+# Processor Detail   : 11th Gen Intel(R) Core(TM) i5-1135G7 @ 2.40GHz
+# CPU Frequency      : 2419 MHz
+# CPU Physical cores : 4
+# CPU Logical cores  : 8
+# Host memory        : 16425 MB
+# Swap memory        : 16425 MB
+# Total Virtual      : 32850 MB
+# Available Virtual  : 13674 MB
+#-----------------------------------------------------------
+source xsim.dir/tb_display_hmi_no_guard/xsim_script.tcl
+# xsim {tb_display_hmi_no_guard} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: UART spec including us/FFT midpoint labels, zero-origin plot, page policy, atomic gains, all pixels, HOLD, invalid/CAL, reset/STOP drain
+$finish called at time : 6791090 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_hmi.sv" Line 277
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Nov 27 10:12:38 2026...
+
+===== test_results/display_hmi_sim/tb_display_aligned_hmi.log =====
+#-----------------------------------------------------------
+# xsim v2025.2 (64-bit)
+# SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+# IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+# SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+# Start of session at: Fri Nov 27 10:12:49 2026
+# Process ID         : 17932
+# Current directory  : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/display_hmi_sim
+# Command line       : xsim.exe -log tb_display_aligned_hmi.log -mode tcl -source {xsim.dir/tb_display_aligned_hmi/xsim_script.tcl}
+# Log file           : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/display_hmi_sim/tb_display_aligned_hmi.log
+# Journal file       : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/display_hmi_sim\xsim.jou
+# Running On         : LAPTOP-LI
+# Platform           : Windows Server 2016 or Windows 10
+# Operating System   : 26100
+# Processor Detail   : 11th Gen Intel(R) Core(TM) i5-1135G7 @ 2.40GHz
+# CPU Frequency      : 2419 MHz
+# CPU Physical cores : 4
+# CPU Logical cores  : 8
+# Host memory        : 16425 MB
+# Swap memory        : 16425 MB
+# Total Virtual      : 32850 MB
+# Available Virtual  : 13642 MB
+#-----------------------------------------------------------
+source xsim.dir/tb_display_aligned_hmi/xsim_script.tcl
+# xsim {tb_display_aligned_hmi} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: full-size aligned composite HMI, actual UART fine-period labels, same-page suppression and refresh transaction
+$finish called at time : 11175430 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_aligned_hmi.sv" Line 81
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Nov 27 10:12:56 2026...
+
+===== test_results/display_hmi_sim/tb_display_hmi_forward.log =====
+#-----------------------------------------------------------
+# xsim v2025.2 (64-bit)
+# SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+# IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+# SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+# Start of session at: Fri Nov 27 10:13:05 2026
+# Process ID         : 25108
+# Current directory  : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/display_hmi_sim
+# Command line       : xsim.exe -log tb_display_hmi_forward.log -mode tcl -source {xsim.dir/tb_display_hmi_forward/xsim_script.tcl}
+# Log file           : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/display_hmi_sim/tb_display_hmi_forward.log
+# Journal file       : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/display_hmi_sim\xsim.jou
+# Running On         : LAPTOP-LI
+# Platform           : Windows Server 2016 or Windows 10
+# Operating System   : 26100
+# Processor Detail   : 11th Gen Intel(R) Core(TM) i5-1135G7 @ 2.40GHz
+# CPU Frequency      : 2419 MHz
+# CPU Physical cores : 4
+# CPU Logical cores  : 8
+# Host memory        : 16425 MB
+# Swap memory        : 16425 MB
+# Total Virtual      : 32850 MB
+# Available Virtual  : 13522 MB
+#-----------------------------------------------------------
+source xsim.dir/tb_display_hmi_forward/xsim_script.tcl
+# xsim {tb_display_hmi_forward} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: UART spec including us/FFT midpoint labels, zero-origin plot, page policy, atomic gains, all pixels, HOLD, invalid/CAL, reset/STOP drain
+$finish called at time : 10368270 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_display_hmi.sv" Line 277
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Nov 27 10:13:10 2026...
+
+===== test_results/measurement_debug_sim/measurement_debug.log =====
+#-----------------------------------------------------------
+# xsim v2025.2 (64-bit)
+# SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+# IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+# SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+# Start of session at: Fri Nov 27 10:10:38 2026
+# Process ID         : 25784
+# Current directory  : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/measurement_debug_sim
+# Command line       : xsim.exe -log measurement_debug.log -mode tcl -source {xsim.dir/measurement_debug/xsim_script.tcl}
+# Log file           : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/measurement_debug_sim/measurement_debug.log
+# Journal file       : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/measurement_debug_sim\xsim.jou
+# Running On         : LAPTOP-LI
+# Platform           : Windows Server 2016 or Windows 10
+# Operating System   : 26100
+# Processor Detail   : 11th Gen Intel(R) Core(TM) i5-1135G7 @ 2.40GHz
+# CPU Frequency      : 2419 MHz
+# CPU Physical cores : 4
+# CPU Logical cores  : 8
+# Host memory        : 16425 MB
+# Swap memory        : 16425 MB
+# Total Virtual      : 32850 MB
+# Available Virtual  : 14223 MB
+#-----------------------------------------------------------
+source xsim.dir/measurement_debug/xsim_script.tcl
+# xsim {measurement_debug} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: atomic debug snapshot RAW=0 widths/slots/invalid/reset/epoch collision
+$finish called at time : 540 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_measurement_debug_snapshot.sv" Line 73
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Nov 27 10:10:43 2026...
+
+===== test_results/measurement_debug_sim/measurement_debug_raw.log =====
+#-----------------------------------------------------------
+# xsim v2025.2 (64-bit)
+# SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+# IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+# SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+# Start of session at: Fri Nov 27 10:10:58 2026
+# Process ID         : 9492
+# Current directory  : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/measurement_debug_sim
+# Command line       : xsim.exe -log measurement_debug_raw.log -mode tcl -source {xsim.dir/measurement_debug_raw/xsim_script.tcl}
+# Log file           : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/measurement_debug_sim/measurement_debug_raw.log
+# Journal file       : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/measurement_debug_sim\xsim.jou
+# Running On         : LAPTOP-LI
+# Platform           : Windows Server 2016 or Windows 10
+# Operating System   : 26100
+# Processor Detail   : 11th Gen Intel(R) Core(TM) i5-1135G7 @ 2.40GHz
+# CPU Frequency      : 2419 MHz
+# CPU Physical cores : 4
+# CPU Logical cores  : 8
+# Host memory        : 16425 MB
+# Swap memory        : 16425 MB
+# Total Virtual      : 32850 MB
+# Available Virtual  : 14067 MB
+#-----------------------------------------------------------
+source xsim.dir/measurement_debug_raw/xsim_script.tcl
+# xsim {measurement_debug_raw} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: atomic debug snapshot RAW=1 widths/slots/invalid/reset/epoch collision
+$finish called at time : 540 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_measurement_debug_snapshot.sv" Line 73
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Nov 27 10:11:00 2026...
+
+===== test_results/measurement_debug_sim/debug_top_contract.log =====
+#-----------------------------------------------------------
+# xsim v2025.2 (64-bit)
+# SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+# IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+# SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+# Start of session at: Fri Nov 27 10:11:25 2026
+# Process ID         : 26716
+# Current directory  : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/measurement_debug_sim
+# Command line       : xsim.exe -log debug_top_contract.log -mode tcl -source {xsim.dir/debug_top_contract/xsim_script.tcl}
+# Log file           : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/measurement_debug_sim/debug_top_contract.log
+# Journal file       : C:/Users/Joe/Documents/Verilog/G_FPGA/test_results/measurement_debug_sim\xsim.jou
+# Running On         : LAPTOP-LI
+# Platform           : Windows Server 2016 or Windows 10
+# Operating System   : 26100
+# Processor Detail   : 11th Gen Intel(R) Core(TM) i5-1135G7 @ 2.40GHz
+# CPU Frequency      : 2419 MHz
+# CPU Physical cores : 4
+# CPU Logical cores  : 8
+# Host memory        : 16425 MB
+# Swap memory        : 16425 MB
+# Total Virtual      : 32850 MB
+# Available Virtual  : 14069 MB
+#-----------------------------------------------------------
+source xsim.dir/debug_top_contract/xsim_script.tcl
+# xsim {debug_top_contract} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+PASS: top port contract VIO on/off, legacy/new HMI, real capture permit blocked during replay (black-box DSP IP)
+$finish called at time : 4 ns : File "C:/Users/Joe/Documents/Verilog/G_FPGA/sim/tb_debug_top_contract.sv" Line 55
+exit
+INFO: [Common 17-206] Exiting xsim at Fri Nov 27 10:11:29 2026...

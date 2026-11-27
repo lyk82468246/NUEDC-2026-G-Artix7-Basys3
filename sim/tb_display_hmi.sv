@@ -2,7 +2,7 @@
 // Decode actual UART wire (including start/stop), not the command FSM's data.
 // Goldens cover atomic gain/raw snapshots, selected-page commands, every plot
 // point, HOLD replay, no-signal clearing, missing slots, reset and STOP drain.
-module tb_display_hmi #(parameter N=64,W=8,YINV=0,PERIODIC=0,GUARD=1,REV=1);
+module tb_display_hmi #(parameter N=64,W=8,YINV=0,PERIODIC=0,GUARD=1,REV=1,WREV=1);
     localparam H=160,CPB=10;
     reg clk=0,rst=1;always #5 clk=~clk;
     reg capture_start=0,allow_redraw=1,tv=0,pv=0;
@@ -22,7 +22,7 @@ module tb_display_hmi #(parameter N=64,W=8,YINV=0,PERIODIC=0,GUARD=1,REV=1);
     reg [511:0] received=0;
     integer ff_count=0;
     Display_HMI #(.CLK_FREQ_HZ(1152000),.BAUD_RATE(115200),.FRAME_LENGTH(N),
-        .W(W),.H(H),.INVERT_Y(YINV),.WAVE_ALIGNMENT(0),.WAVE_BANDLIMITED(0),.FFT_REVERSE_X(REV),.REFRESH_GUARD(GUARD),.PAGE_REFRESH_FRAMES(PERIODIC),.ENABLE_STATUS(1),.STARTUP_CYCLES(1000),
+        .W(W),.H(H),.INVERT_Y(YINV),.WAVE_ALIGNMENT(0),.WAVE_BANDLIMITED(0),.FFT_REVERSE_X(REV),.WAVE_REVERSE_X(WREV),.REFRESH_GUARD(GUARD),.PAGE_REFRESH_FRAMES(PERIODIC),.ENABLE_STATUS(1),.STARTUP_CYCLES(1000),
         .COMMAND_GAP_CYCLES(3),.PAGE_GAP_CYCLES(20)) dut(
         .clk(clk),.rst(rst),.capture_start(capture_start),.allow_redraw(allow_redraw),
         .time_result_valid(tv),.peak_result_valid(pv),.vpp_raw(vpp),.rms_raw(rms),
@@ -103,7 +103,7 @@ module tb_display_hmi #(parameter N=64,W=8,YINV=0,PERIODIC=0,GUARD=1,REV=1);
         longint signed coord,a,b,frac,s,y,absolute;integer p,batch_first;
         begin
             for(p=0;p<W;p=p+1) begin
-                coord=(64'(p)*c*N*4096)/((W-1)*golden_bin);a=coord/4096;frac=coord%4096;
+                coord=(64'(WREV?W-1-p:p)*c*N*4096)/((W-1)*golden_bin);a=coord/4096;frac=coord%4096;
                 b=(a==N-1)?a:a+1;
                 s=(64'(memory[a])*4096+(64'(memory[b])-memory[a])*frac)>>>12;
                 absolute=(s<0)?-s:s;y=(absolute*79+500)/1000;
@@ -290,5 +290,5 @@ module tb_display_hmi_no_guard;
 endmodule
 
 module tb_display_hmi_forward;
- tb_display_hmi #(.REV(0)) t();
+ tb_display_hmi #(.REV(0),.WREV(0)) t();
 endmodule

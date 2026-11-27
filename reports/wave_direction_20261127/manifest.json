@@ -1,0 +1,93 @@
+{
+  "date": "2026-11-27",
+  "tool": "Vivado XSim 2025.2",
+  "baseline_commit": "1b62b05",
+  "hardware_operations": false,
+  "source_hash_format": "SHA256 of UTF-8 file bytes with CRLF normalized to LF",
+  "sources": {
+    "sources/rtl/Display_Bandlimited_Interpolator.v": "cbb823b92d44f8703cc1af6c244d7742f0eefc4fe6906c31202a49a99b897590",
+    "sources/rtl/Display_Frame_Calibrator.v": "c0d480adde06d23b0ab7a105c381173ccc4c5fbf348aafefa4dc6de12cc869cc",
+    "sources/rtl/Display_Fundamental_Aligner.v": "5aa02ea7ad7346c798364b4bdddd0083346d6a7f8472a2ab74bfe9c2939be2e6",
+    "sources/rtl/Display_HMI.v": "148afbb2129d95c6af46eef8f2080395da3b6b3fded54328bbbe564561879722",
+    "sources/rtl/Display_Interpolation_ROM.v": "e2b0c7e0a588cefe75ce3f252faf7b8248b60554fbebac7f878120673bb37169",
+    "sources/rtl/Display_mV_Formatter.v": "50607641af82bdab9f265257eb27176bd6f08bb42ad0c9cb8502f22dd54f5f13",
+    "sources/rtl/Display_Sine_ROM.v": "be83c76a28bb3f6cd037d91a96fd6acd011249722f813f1ec05c590bc4dc1bb3",
+    "sources/rtl/Display_Spectrum_Renderer.v": "b148b7ea302bddc09794aae2566ad120a9e3b8fd7ac6434eb529eceefd9cfebc",
+    "sources/rtl/Display_UART_Command.v": "a10aee234eb4555fecc380c28e26522a7fd873e1470a259e170a4935e0ba696d",
+    "sources/rtl/Display_Unsigned_Divider.v": "c4768b5045483c0693853d3cf4bf7a384bbee1e81575fdb7f8204de3b4b808e6",
+    "sources/rtl/Display_Wave_Renderer.v": "b9f4ed8dd28a61ea4d539fcf7747a5a306f7b3604fc0eb6e76544262f0c9e8aa",
+    "sources/rtl/G_FPGA_Top.v": "5a5f19c014c3e85b95437da2aa27a6a1bf10bbc4edfecb4002eb08645ad729e4",
+    "sources/rtl/Capture_Calc_Subsystem.v": "419f1d9f96717af04b0ade141a2ae5cfaa57ab679cec304ed11335e68c480eaa",
+    "sim/tb_display_wave_direction.sv": "6984ea823ef58bc905a080c7da87a64d4cf24f3471caee142967213918052230",
+    "sim/tb_display_hmi.sv": "e541fb6a11f4b28c3016c0a350faf46a1bebc23f37c5aaac65fbcfac43122428",
+    "sim/tb_display_aligned_hmi.sv": "c50ee694ed86511a8c5ad0975b94803bed0870eab3943f947b4322f23a3d6d4d",
+    "sim/tb_debug_top_contract.sv": "89c6d7f3ddc506d69b51edd5d7df2a4a44891ce503940a4e5ceed7375cc42027"
+  },
+  "simulations": [
+    {
+      "snapshot": "tb_display_prepare",
+      "result": "PASS",
+      "log_sha256": "baf1952b57a47cd49e44f3d14688c9658100b840c08fab151196152cd79fe5db"
+    },
+    {
+      "snapshot": "tb_display_prepare_compact",
+      "result": "PASS",
+      "log_sha256": "54d202e0624eebe4096f6948c995e42dd0d4710472f07cc3559eb7c188baf5d1"
+    },
+    {
+      "snapshot": "tb_display_prepare_full_y",
+      "result": "PASS",
+      "log_sha256": "1d97808e86653ed840c3d8784825b91701e1ef847536dff56be10536e76f0e67"
+    },
+    {
+      "snapshot": "tb_display_wave_direction",
+      "result": "PASS",
+      "log_sha256": "6a9bbfe6c34fad3a867bcbebdb65619595a0285e1da6342a6084801ac7866200"
+    },
+    {
+      "snapshot": "tb_display_hmi",
+      "result": "PASS",
+      "log_sha256": "4a366677cf275fc39f33ff301aa36eec8f455775c70dea8e23044f3eef263cc9"
+    },
+    {
+      "snapshot": "tb_display_hmi_full",
+      "result": "PASS",
+      "log_sha256": "14a3566ff9cdacf3e2f52c7043ddc44dbb18e57d5f34f54176b64c26980b60e5"
+    },
+    {
+      "snapshot": "tb_display_hmi_inverted",
+      "result": "PASS",
+      "log_sha256": "71265131b22ab9e442ed50db2f317a3607dbe9bb9a7b2485d20e57602f6bb9fe"
+    },
+    {
+      "snapshot": "tb_display_hmi_no_guard",
+      "result": "PASS",
+      "log_sha256": "b782f19b33ed8c08c0f4f1599e604728e15d1738abc5f240274859f22b3b1237"
+    },
+    {
+      "snapshot": "tb_display_aligned_hmi",
+      "result": "PASS",
+      "log_sha256": "e77ab8ad1ae2c63a3cf13911b1408fc721f0e9db8dce0e90783e0161366f009e"
+    },
+    {
+      "snapshot": "tb_display_hmi_forward",
+      "result": "PASS",
+      "log_sha256": "db4a001de5302e28960355704187880f9a0e2a08e92290d8fc45b8b33c125c00"
+    },
+    {
+      "snapshot": "measurement_debug",
+      "result": "PASS",
+      "log_sha256": "1ff07f1f4f7200e954621f6568be6af3570b8eb363266d3f6f013e918504237a"
+    },
+    {
+      "snapshot": "measurement_debug_raw",
+      "result": "PASS",
+      "log_sha256": "959fb9924c15a0344052bb41c2982f06edc807a54ace1afef2dc6f1da50d20dd"
+    },
+    {
+      "snapshot": "debug_top_contract",
+      "result": "PASS",
+      "log_sha256": "1e9ae583f72a5fc7076807752bdb3e24d83d17e88d4189ae434920f89840e176"
+    }
+  ]
+}

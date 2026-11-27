@@ -8,7 +8,7 @@
 // Y is a LOGICAL positive-up level; the final screen adapter chooses inversion.
 module Display_Wave_Renderer #(
     parameter integer FRAME_LENGTH=8192,ADDR_WIDTH=13,W=240,H=160,F=12,
-    parameter integer ENABLE_ALIGNMENT=0,BANDLIMITED=0
+    parameter integer ENABLE_ALIGNMENT=0,BANDLIMITED=0,REVERSE_X=0
 )(
     input wire clk,rst,input wire in_valid,output wire in_ready,
     input wire signal_valid,three_cycles,input wire [11:0] fundamental_bin,
@@ -25,7 +25,7 @@ module Display_Wave_Renderer #(
     localparam IDLE=0,SCAN_REQ=1,SCAN_READ=2,ADDR_START=3,ADDR_WAIT=4,
         READ0_REQ=5,READ0=6,READ1_REQ=7,READ1=8,INTERPOLATE=9,
         Y_START=10,Y_WAIT=11,EMIT=12,WAIT_PIXEL=13,ALIGN_START=14,ALIGN_WAIT=15,
-        FIR_START=16,FIR_WAIT=17,SCAN_ABS=18;
+        FIR_START=16,FIR_WAIT=17,SCAN_ABS=18,PREP_SPAN=19;
     localparam integer MID=H/2,YSPAN=(H-1)/2;
     localparam [ADDR_WIDTH-1:0] LAST=FRAME_LENGTH-1;
     localparam [47:0] MAXQ=(FRAME_LENGTH-1)*(48'd1<<F);
@@ -39,6 +39,14 @@ module Display_Wave_Renderer #(
     reg [47:0] coord;
     reg [31:0] origin_q12,span_q12;
     reg [47:0] phase_numerator;
+    // Transport ordinal always rises 0..W-1. Reverse only the logical time
+    // coordinate, including the axis pre-scan, to compensate panel insertion.
+    wire [15:0] lookup_point=REVERSE_X?(W-1-point):point;
+    // Register the constant scaling separately from the coordinate subtract.
+    // W is constant. Keep this scaling in fabric, not a new DSP.
+    (* use_dsp = "no" *) reg [47:0] aligned_full_numerator;
+    wire [47:0] aligned_numerator=REVERSE_X?
+        (aligned_full_numerator-phase_numerator):phase_numerator;
     wire align_ready,align_valid,align_locked,align_rd_en;
     wire [ADDR_WIDTH-1:0] align_rd_addr;
     wire [31:0] align_bin,align_period,align_origin;
@@ -86,13 +94,13 @@ module Display_Wave_Renderer #(
         -$signed({interpolated_sample[15],interpolated_sample}):{1'b0,interpolated_sample};
     wire div_ready,div_valid,div_zero;
     wire div_request=(state==ADDR_START || (state==Y_START && amax_raw!=0));
-    wire [47:0] address_numerator=({32'd0,point}*FRAME_LENGTH*cycles)<<F;
+    wire [47:0] address_numerator=({32'd0,lookup_point}*FRAME_LENGTH*cycles)<<F;
     wire [47:0] address_denominator=(W-1)*{36'd0,bin};
     wire [47:0] y_numerator=({31'd0,abs_sample}*YSPAN)+({32'd0,amax_raw}>>1);
     wire [47:0] quotient;
     Display_Unsigned_Divider #(.WIDTH(48)) u_div(
         .clk(clk),.rst(rst),.in_valid(div_request),.in_ready(div_ready),
-        .numerator((state==ADDR_START)?(alignment_locked?phase_numerator:address_numerator):y_numerator),
+        .numerator((state==ADDR_START)?(alignment_locked?aligned_numerator:address_numerator):y_numerator),
         .denominator((state==ADDR_START)?(alignment_locked?PIXEL_INTERVALS:address_denominator):{32'd0,amax_raw}),
         .out_valid(div_valid),.out_ready(state==ADDR_WAIT || state==Y_WAIT),
         .quotient(quotient),.remainder(),.divide_by_zero(div_zero));
@@ -114,7 +122,7 @@ module Display_Wave_Renderer #(
             sample0<=0;sample1<=0;interpolated_sample<=0;pending_y<=MID;
             axis_valid<=0;amax_raw<=0;plot_valid<=0;window_clamped<=0;
             alignment_locked<=0;refined_bin_q20<=0;origin_q12<=0;span_q12<=0;phase_numerator<=0;
-            preparing<=0;
+            preparing<=0;aligned_full_numerator<=0;
             scan_absolute<=0;
             pixel_valid<=0;pixel_index<=0;pixel_y<=0;frame_id_out<=0;done<=0;
         end else begin
@@ -147,7 +155,11 @@ module Display_Wave_Renderer #(
                     origin_q12<=align_locked?(align_origin+(BANDLIMITED?(align_period<<2):32'd0)):
                         (BANDLIMITED?(32'd16<<F):32'd0);
                     span_q12<=(cycles==3)?((align_period<<1)+align_period):align_period;
-                    axis_valid<=!BANDLIMITED;state<=ADDR_START;
+                    axis_valid<=!BANDLIMITED;state<=PREP_SPAN;
+                end
+                PREP_SPAN:begin
+                    aligned_full_numerator<=REVERSE_X?(span_q12*PIXEL_INTERVALS):48'd0;
+                    state<=ADDR_START;
                 end
                 ADDR_START:if(div_ready) state<=ADDR_WAIT;
                 ADDR_WAIT:if(div_valid) begin
